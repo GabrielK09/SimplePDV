@@ -1,16 +1,13 @@
 package handle
 
 import (
-	"context"
 	"encoding/json"
 	responsehelper "myApi/helpers/response"
+	"myApi/interface/product"
 	"net/http"
-
-	_ "github.com/jackc/pgx/v5"
 )
 
 func HandleRegisterProduct(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -19,13 +16,36 @@ func HandleRegisterProduct(w http.ResponseWriter, r *http.Request) {
 
 		json.NewEncoder(w).Encode(resp)
 		return
-	} // Method error
+	}
 
-	//w.WriteHeader(http.StatusCreated)
+	var payload product.ProductContract
 
-	defer conn.Close(context.Background())
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
-	resp := responsehelper.Response(true, nil, "Usuário criado com sucesso!")
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		resp := responsehelper.Response(false, err, "Campos obrigatórios ausentes.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	if err := payload.Create(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		resp := responsehelper.Response(false, err, "Erro ao gravar o produto.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	resp := responsehelper.Response(true, payload, "Produto criado com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
 }

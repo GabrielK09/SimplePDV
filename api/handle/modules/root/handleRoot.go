@@ -1,18 +1,12 @@
 package handle
 
 import (
-	"context"
 	"encoding/json"
 	responsehelper "myApi/helpers/response"
 	"net/http"
-
-	"github.com/jackc/pgx/v5"
 )
 
-var conn *pgx.Conn
-
 func HandleRoot(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -21,13 +15,11 @@ func HandleRoot(w http.ResponseWriter, r *http.Request) {
 
 		json.NewEncoder(w).Encode(resp)
 		return
-	} // Method error
+	}
 
-	//w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 
-	defer conn.Close(context.Background())
-
-	resp := responsehelper.Response(true, nil, "Usuário criado com sucesso!")
+	resp := responsehelper.Response(true, nil, "Api rodando!")
 
 	json.NewEncoder(w).Encode(resp)
 }

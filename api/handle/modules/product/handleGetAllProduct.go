@@ -1,15 +1,10 @@
 package handle
 
 import (
-	"context"
 	"encoding/json"
 	responsehelper "myApi/helpers/response"
 	"net/http"
-
-	"github.com/jackc/pgx/v5"
 )
-
-var conn *pgx.Conn
 
 func HandleGetAllProduct(w http.ResponseWriter, r *http.Request) {
 
@@ -24,8 +19,6 @@ func HandleGetAllProduct(w http.ResponseWriter, r *http.Request) {
 	} // Method error
 
 	//w.WriteHeader(http.StatusCreated)
-
-	defer conn.Close(context.Background())
 
 	resp := responsehelper.Response(true, nil, "Usuário criado com sucesso!")
 
