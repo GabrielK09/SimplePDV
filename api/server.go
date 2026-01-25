@@ -2,16 +2,17 @@ package api
 
 import (
 	"log"
-	auth "myApi/api/handle/auth"
-	root "myApi/api/handle/root"
-	user "myApi/api/handle/user"
+	product "myApi/api/handle/modules/product"
+	root "myApi/api/handle/modules/root"
 	"net/http"
 )
 
 func StartServer() {
 	http.HandleFunc("/api", root.HandleRoot)
-	http.HandleFunc("/api/user/all", user.HandleUser)
-	http.HandleFunc("/api/register", auth.HandleAuth)
+	http.HandleFunc("/api/product/register", product.HandleRegisterProduct)
+	http.HandleFunc("/api/product/all", product.HandleGetAllProduct)
+	http.HandleFunc("/api/product/update/:id", product.HandleUpdateProduct)
+	http.HandleFunc("/api/product/update/:id", product.HandleDeleteProduct)
 
 	log.Println("Servidor rodando em http://localhost:9000/api")
 
