@@ -8,13 +8,14 @@ import (
 	sale "myApi/api/handle/modules/sale/sale"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
 func StartServer() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/api", root.HandleRoot)
+	r.HandleFunc("/api/root", root.HandleRoot)
 
 	// Products \\
 	r.HandleFunc("/api/product/all", product.HandleGetProduct)
@@ -35,5 +36,5 @@ func StartServer() {
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	log.Println("Servidor rodando em http://localhost:9000/api")
-	log.Fatal(http.ListenAndServe(":9000", r))
+	log.Fatal(http.ListenAndServe(":9000", handlers.CORS()(r)))
 }
