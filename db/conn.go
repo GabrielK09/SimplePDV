@@ -6,36 +6,45 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
 var Pool *pgxpool.Pool
 
-func Init() error {
+func Init() (*pgxpool.Pool, error) {
 	godotenv.Load()
 	if Pool != nil {
-		return nil
+		return Pool, nil
 	}
 
 	dsn := os.Getenv("DB_URL")
 	if dsn == "" {
-		return fmt.Errorf("DB_URL não definida")
+		return nil, fmt.Errorf("DB_URL não definida")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, dsn)
+	config, err := pgxpool.ParseConfig(dsn)
+
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
-		return err
+		return nil, err
 	}
 
 	Pool = pool
-	return nil
+	return pool, nil
 }

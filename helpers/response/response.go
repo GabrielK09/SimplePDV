@@ -4,10 +4,10 @@ import (
 	"myApi/interface/response"
 )
 
-func Response(status bool, data interface{}, message string) response.ResponseContract {
+func Response(status bool, data any, message string) response.ResponseContract {
 	return response.ResponseContract{
 		Status:  status,
-		Message: message,
 		Data:    data,
+		Message: message,
 	}
 }

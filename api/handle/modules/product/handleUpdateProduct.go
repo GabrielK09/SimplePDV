@@ -2,14 +2,17 @@ package handle
 
 import (
 	"encoding/json"
+	"log"
 	responsehelper "myApi/helpers/response"
+	"myApi/interface/product"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v5"
 )
 
 func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
@@ -18,11 +21,60 @@ func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 		json.NewEncoder(w).Encode(resp)
 		return
-	} // Method error
+	}
 
-	//w.WriteHeader(http.StatusCreated)
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
 
-	resp := responsehelper.Response(true, nil, "Usuário criado com sucesso!")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 
-	json.NewEncoder(w).Encode(resp)
+		log.Println("Id inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id inválido."),
+		)
+
+		return
+	}
+
+	product, err := product.Show(id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+
+		log.Println("Produto não localizado:", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Produto não localizado."),
+		)
+
+		return
+	}
+
+	log.Println("Produto localizado: ", product)
+
+	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err.Error(), "Erro ao processar dados"),
+		)
+		return
+
+	}
+
+	product.Id = id
+
+	updated, err := product.Update()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err.Error(), "Erro ao atualizar o produto não localizado."),
+		)
+
+		return
+	}
+
+	json.NewEncoder(w).Encode(
+		responsehelper.Response(true, updated, "Produto alterado com sucesso!"),
+	)
 }

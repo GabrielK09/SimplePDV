@@ -1,8 +1,7 @@
 {
-    "name": "Teste",
-	"un": "",
-	"qtde": 2,
-	"returned": "",
-	"saled": "",
-	"date_of_purchase": ""
+  "name": "Produto teste",
+  "price": 30.00,
+  "qtde": 2,
+  "returned": 1,
+  "saled": 0
 }

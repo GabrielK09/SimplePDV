@@ -1,10 +1,10 @@
 CREATE TABLE products (
-    id bigint NOT NULL,
+	id SERIAL PRIMARY KEY,
 	name character varying NOT NULL,
-	un VARCHAR(4) DEFAULT 'UN',
+	price FLOAT NOT NULL,
 	qtde INT NOT NULL,           
 	returned INT DEFAULT 0,
 	saled INT DEFAULT 0,
-	date_of_purchase timestamp without time zone,
-	CONSTRAINT products_pkey PRIMARY KEY (id)
+	created_at timestamp without time zone,
+  	updated_at timestamp without time zone
 )

@@ -1,0 +1,11 @@
+{
+	"customer": "",
+	"specie": "",
+	"sale_value": "",
+	"status": "",
+	"products": {
+		"product_id": 1,
+		"qtde": 0,
+		"sale_value": 0	
+	}
+}
