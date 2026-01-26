@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -118,6 +119,8 @@ func (p *ProductContract) Update() (ProductContract, error) {
 }
 
 func Show(id int) (*ProductContract, error) {
+	log.Printf("Show ID: %d", id)
+
 	query := `
 		SELECT
 			id,
@@ -125,8 +128,7 @@ func Show(id int) (*ProductContract, error) {
 			price, 
 			qtde, 
 			returned, 
-			saled, 
-			date_of_purchase 
+			saled
 		FROM
 			products
 

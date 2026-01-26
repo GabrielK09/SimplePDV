@@ -20,7 +20,7 @@ type SaleItemContract []struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type SaleItem []SaleItemContract
+type Products []any
 
 var conn *pgxpool.Pool
 
@@ -28,11 +28,11 @@ func SetConnection(db *pgxpool.Pool) {
 	conn = db
 }
 
-func (i SaleItem) Validate() map[string]string {
+func (i SaleItemContract) Validate() map[string]string {
 	errorsField := make(map[string]string)
 
 	for _, p := range i {
-		if p. <= 0 {
+		if p.SaleValue <= 0 {
 			errorsField["sale_value"] = "O valor da venda não pode ser zerado."
 		}
 

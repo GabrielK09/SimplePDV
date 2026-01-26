@@ -10,14 +10,14 @@ import (
 )
 
 type SaleContract struct {
-	Id        int                         `json:"id"`
-	Customer  string                      `json:"customer"`
-	Specie    string                      `json:"specie"`
-	SaleValue float64                     `json:"sale_value"`
-	Status    string                      `json:"status"`
-	Products  []saleitem.SaleItemContract `json:"products"`
-	CreatedAt time.Time                   `json:"created_at"`
-	UpdatedAt time.Time                   `json:"updated_at"`
+	Id        int                       `json:"id"`
+	Customer  string                    `json:"customer"`
+	Specie    string                    `json:"specie"`
+	SaleValue float64                   `json:"sale_value"`
+	Status    string                    `json:"status"`
+	Products  saleitem.SaleItemContract `json:"products"`
+	CreatedAt time.Time                 `json:"created_at"`
+	UpdatedAt time.Time                 `json:"updated_at"`
 }
 
 var conn *pgxpool.Pool

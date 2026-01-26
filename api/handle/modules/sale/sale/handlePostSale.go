@@ -2,6 +2,7 @@ package sale
 
 import (
 	"encoding/json"
+	"log"
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/sale"
 
@@ -29,8 +30,9 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := payload.Validate(); err != nil {
+	if err := payload.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		log.Println("Campos obrigatórios ausentes:", err)
 		resp := responsehelper.Response(false, err, "Campos obrigatórios ausentes.")
 
 		json.NewEncoder(w).Encode(resp)
