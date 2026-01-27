@@ -1,14 +1,13 @@
-package cashregister
+package controller
 
 import (
 	"encoding/json"
 	responsehelper "myApi/helpers/response"
-	"myApi/interface/cashRegister"
-
+	"myApi/interface/product"
 	"net/http"
 )
 
-func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
+func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -19,7 +18,7 @@ func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cashRegisters, err := cashRegister.GetAll()
+	products, err := product.GetAll()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -31,8 +30,7 @@ func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, cashRegisters, "Todo movimento do caixa.")
+	resp := responsehelper.Response(true, products, "Todos os produtos cadastrados.")
 
 	json.NewEncoder(w).Encode(resp)
-
 }

@@ -1,15 +1,13 @@
-package sale
+package controller
 
 import (
 	"encoding/json"
-	"log"
 	responsehelper "myApi/helpers/response"
-	"myApi/interface/sale"
-
+	"myApi/interface/product"
 	"net/http"
 )
 
-func HandlePostSale(w http.ResponseWriter, r *http.Request) {
+func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -18,13 +16,13 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 		json.NewEncoder(w).Encode(resp)
 		return
-	} // Erro de método da rota
+	}
 
-	var payload sale.SaleContract
+	var payload product.ProductContract
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao validar os dados.")
+		w.WriteHeader(http.StatusBadRequest)
+		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
@@ -32,7 +30,6 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	if err := payload.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		log.Println("Campos obrigatórios ausentes:", err)
 		resp := responsehelper.Response(false, err, "Campos obrigatórios ausentes.")
 
 		json.NewEncoder(w).Encode(resp)
@@ -41,17 +38,14 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	if err := payload.Create(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("Erro no create:", err)
-		resp := responsehelper.Response(false, err, "Erro ao salvar a venda.")
+		resp := responsehelper.Response(false, err, "Erro ao gravar o produto.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-
-	resp := responsehelper.Response(true, payload, "Dados da venda cadastrado com sucesso.")
+	resp := responsehelper.Response(true, payload, "Produto criado com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
-
 }

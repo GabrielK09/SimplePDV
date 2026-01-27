@@ -2,10 +2,10 @@ package api
 
 import (
 	"log"
-	product "myApi/api/handle/modules/product"
-	root "myApi/api/handle/modules/root"
-	cashregister "myApi/api/handle/modules/sale/cashRegister"
-	sale "myApi/api/handle/modules/sale/sale"
+	productController "myApi/api/handle/modules/controller/product"
+	root "myApi/api/handle/modules/controller/root"
+	cashregisterController "myApi/api/handle/modules/controller/sale/cashRegister"
+	saleController "myApi/api/handle/modules/controller/sale/sale"
 	"net/http"
 
 	"github.com/gorilla/handlers"
@@ -18,19 +18,20 @@ func StartServer() {
 	r.HandleFunc("/api/root", root.HandleRoot)
 
 	// Products \\
-	r.HandleFunc("/api/product/all", product.HandleGetProduct)
-	r.HandleFunc("/api/product/register", product.HandlePostProduct)
-	r.HandleFunc("/api/product/update/{id}", product.HandleUpdateProduct)
-	r.HandleFunc("/api/product/delete/{id}", product.HandleDeleteProduct)
+	r.HandleFunc("/api/product/all", productController.HandleGetProduct)
+	r.HandleFunc("/api/product/register", productController.HandlePostProduct)
+	r.HandleFunc("/api/product/update/{id}", productController.HandleUpdateProduct)
+	r.HandleFunc("/api/product/delete/{id}", productController.HandleDeleteProduct)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Cash Register \\
-	r.HandleFunc("/api/cash-register/all", cashregister.HandleGetCashRegister)
-	r.HandleFunc("/api/cash-register/register", cashregister.HandlePostCashRegister)
+	r.HandleFunc("/api/cash-register/all", cashregisterController.HandleGetCashRegister)
+	r.HandleFunc("/api/cash-register/register", cashregisterController.HandlePostCashRegister)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Sale \\
-	r.HandleFunc("/api/sale/register", sale.HandlePostSale)
+	r.HandleFunc("/api/sale/register", saleController.HandlePostSale)
+	r.HandleFunc("/api/sale/pay", saleController.HandlePutPaySale)
 	//r.HandleFunc("/api/sale/pay", )
 
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\

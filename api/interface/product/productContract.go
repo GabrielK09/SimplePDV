@@ -2,8 +2,11 @@ package product
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -165,9 +168,7 @@ func GetAll() ([]ProductContract, error) {
 			price,
 			qtde,           
 			returned,
-			saled,
-			created_at,
-			updated_at
+			saled
 		FROM
 			products
 	`
@@ -178,6 +179,7 @@ func GetAll() ([]ProductContract, error) {
 	)
 
 	if err != nil {
+		log.Println("Erro: ", err)
 		return nil, err
 	}
 
@@ -194,6 +196,7 @@ func GetAll() ([]ProductContract, error) {
 			&p.Returned,
 			&p.Saled,
 		); err != nil {
+			log.Println("Erro: ", err)
 			return nil, err
 		}
 
@@ -226,44 +229,26 @@ func Delete(id int) error {
 	return nil
 }
 
-func (p *ProductContract) DiscountedQtde(qtde int) (ProductContract, error) {
-	tx, err := conn.Begin(context.Background())
-
-	if err != nil {
-		return ProductContract{}, err
-	}
-
-	p, err = Show(p.Id)
-
-	if err != nil {
-		return ProductContract{}, err
+func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde int) error {
+	if qtde <= 0 {
+		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
 
 	query := `
 		UPDATE	
-			products p 
+			products 
 
 		SET
-			p.qtde = p.qtde - $2,
+			qtde = qtde - $2
 
 		WHERE	
-			p.id = $1
+			id = $1
+
+		RETURNING
+			id,
+			qtde,
+			name
 	`
 
-	err = tx.QueryRow(
-		context.Background(),
-		query,
-		p.Id,
-		qtde,
-	).Scan(
-		&p.Id,
-		&p.Qtde,
-	)
-
-	if err != nil {
-		tx.Rollback(context.Background())
-		return ProductContract{}, err
-	}
-
-	return *p, nil
+	return tx.QueryRow(ctx, query, p.Id, qtde).Scan(&p.Id, &p.Qtde, &p.Name)
 }

@@ -3,6 +3,7 @@ package sale
 import (
 	"context"
 	"fmt"
+	"log"
 	"myApi/interface/product"
 	saleitem "myApi/interface/saleItem"
 	"time"
@@ -19,6 +20,11 @@ type SaleContract struct {
 	Products  saleitem.SaleItemContract `json:"products"`
 	CreatedAt time.Time                 `json:"created_at"`
 	UpdatedAt time.Time                 `json:"updated_at"`
+}
+
+type PaySaleContract struct {
+	SaleId     int     `json:"sale_id"`
+	AmountPaid float64 `json:"amount_paid"`
 }
 
 var conn *pgxpool.Pool
@@ -98,11 +104,38 @@ func (s *SaleContract) Create() error {
 			status
 	`
 
+	queryForProduct := `
+		SELECT
+			id,
+			name,
+			qtde
+
+		FROM	
+			products
+		WHERE
+			id = $1
+
+		FOR UPDATE
+	`
+
 	for idx := range s.Products {
 		i := &s.Products[idx]
 
+		var p product.ProductContract
+
+		if err := tx.QueryRow(
+			context.Background(),
+			queryForProduct,
+			i.ProductId,
+		).Scan(
+			&p.Id,
+			&p.Name,
+			&p.Qtde,
+		); err != nil {
+			return err
+		}
+
 		totalSale := calculateTotalSale(i.SaleValue, i.Qtde)
-		p, err := product.Show(i.ProductId)
 
 		if err != nil {
 			return err
@@ -123,13 +156,132 @@ func (s *SaleContract) Create() error {
 		)
 
 		i.Name = p.Name
+		i.SaleId = saleId
 
 		if err != nil {
+			return err
+		}
+
+		if err = p.DiscountedQtde(context.Background(), tx, i.Qtde); err != nil {
 			return err
 		}
 	}
 
 	err = tx.Commit(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func PaySale(saleId int, amountPaind float64) error {
+	ctx := context.Background()
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	var s SaleContract
+
+	queryForSale := `
+		SELECT
+			sale_value,
+			status
+		FROM
+			sales
+		WHERE
+			id = $1
+	`
+
+	err = tx.QueryRow(
+		ctx,
+		queryForSale,
+		saleId,
+	).Scan(
+		&s.SaleValue,
+		&s.Status,
+	)
+
+	if s.Status == "Concluída" {
+		return fmt.Errorf("Essa venda já está finalizada.")
+	}
+
+	if amountPaind < s.SaleValue {
+		return fmt.Errorf("Valor informado menor do que da venda.")
+	}
+
+	log.Println("Venda está pendente, vai finalizar a venda e os itens.")
+
+	queryForUpdateSale := `
+		UPDATE 
+			sales
+
+		SET
+			status = 'Concluída'
+		
+		WHERE 
+			id = $1
+	`
+
+	queryForSaleItem := `
+		UPDATE
+			sale_itens
+		SET
+			status = 'Concluída'	
+		WHERE 
+			sale_id = $1
+	`
+	_, err = tx.Query(
+		ctx,
+		queryForUpdateSale,
+		saleId,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Query(
+		ctx,
+		queryForSaleItem,
+		saleId,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("Vai fazer o insert no pay_ment_forms")
+
+	queryForPayMent := `
+		INSERT INTO pay_ment_forms
+			(sale_id, specie, amount_paid)
+
+		VALUES
+			($1, $2, $3)
+		
+		RETURNING
+			id			
+	`
+
+	_, err = tx.Query(
+		ctx,
+		queryForPayMent,
+		saleId,
+		s.Specie,
+		amountPaind,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(ctx)
 
 	if err != nil {
 		return err
