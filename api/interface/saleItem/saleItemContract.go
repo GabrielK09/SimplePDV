@@ -2,30 +2,20 @@ package saleitem
 
 import (
 	"fmt"
-	"log"
 	"myApi/interface/product"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SaleItemContract []struct {
 	Id        int       `json:"id"`
+	SaleId    int       `json:"sale_id"`
 	ProductId int       `json:"product_id"`
-	Product   string    `json:"product"`
+	Name      string    `json:"name"`
 	Qtde      int       `json:"qtde"`
 	SaleValue float64   `json:"sale_value"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type Products []any
-
-var conn *pgxpool.Pool
-
-func SetConnection(db *pgxpool.Pool) {
-	conn = db
 }
 
 func (i SaleItemContract) Validate() map[string]string {
@@ -42,8 +32,6 @@ func (i SaleItemContract) Validate() map[string]string {
 
 		p, err := product.Show(p.ProductId)
 
-		log.Println("P: ", p)
-
 		if err != nil {
 			errorsField["product_id"] = fmt.Sprintf("Um erro ocorreu: %s", err)
 		}
@@ -51,7 +39,6 @@ func (i SaleItemContract) Validate() map[string]string {
 		if p == nil {
 			errorsField["product_id"] = "Produto não localizado."
 		}
-
 	}
 
 	return errorsField

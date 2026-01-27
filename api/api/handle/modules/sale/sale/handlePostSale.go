@@ -39,15 +39,14 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		if err := payload.Create(); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			resp := responsehelper.Response(false, err, "Erro ao salvar a venda.")
+	if err := payload.Create(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("Erro no create:", err)
+		resp := responsehelper.Response(false, err, "Erro ao salvar a venda.")
 
-			json.NewEncoder(w).Encode(resp)
-			return
-		}
-	*/
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 

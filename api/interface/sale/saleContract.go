@@ -3,6 +3,7 @@ package sale
 import (
 	"context"
 	"fmt"
+	"myApi/interface/product"
 	saleitem "myApi/interface/saleItem"
 	"time"
 
@@ -26,10 +27,14 @@ func SetConnection(db *pgxpool.Pool) {
 	conn = db
 }
 
+func calculateTotalSale(saleValue float64, qtde int) float64 {
+	return saleValue * float64(qtde)
+}
+
 func (s SaleContract) Validate() map[string]string {
 	errorsField := make(map[string]string)
 
-	if err := s.Products.Validate(); err != nil {
+	if err := s.Products.Validate(); len(err) > 0 {
 		errorsField["products"] = fmt.Sprintf("%s", err)
 	}
 
@@ -47,16 +52,21 @@ func (s *SaleContract) Create() error {
 		return err
 	}
 
+	defer tx.Rollback(context.Background())
+
 	querySale := `
 		INSERT INTO sales
-			(customer, specie, sale_value, status)
+			(customer, specie, sale_value)
 
 		VALUES
-			($1, $2, $3, 'Pendente')
+			($1, $2, $3)
 
 		RETURNING 
-			id
+			id,
+			status
 	`
+
+	var saleId int
 
 	err = tx.QueryRow(
 		context.Background(),
@@ -64,12 +74,66 @@ func (s *SaleContract) Create() error {
 		s.Customer,
 		s.Specie,
 		s.SaleValue,
-	).Scan(&s.Id)
+	).Scan(
+		&saleId,
+		&s.Status,
+	)
+
+	s.Id = saleId
 
 	if err != nil {
-		tx.Rollback(context.Background())
 		return err
 	}
 
-	return err
+	querySaleItem := `
+		INSERT INTO sale_itens
+			(product_id, name, qtde, sale_value, sale_id)
+
+		VALUES
+			($1, $2, $3, $4, $5)
+			
+		RETURNING 
+			id,
+			name,
+			status
+	`
+
+	for idx := range s.Products {
+		i := &s.Products[idx]
+
+		totalSale := calculateTotalSale(i.SaleValue, i.Qtde)
+		p, err := product.Show(i.ProductId)
+
+		if err != nil {
+			return err
+		}
+
+		err = tx.QueryRow(
+			context.Background(),
+			querySaleItem,
+			i.ProductId,
+			p.Name,
+			i.Qtde,
+			totalSale,
+			saleId,
+		).Scan(
+			&i.Id,
+			&i.Name,
+			&i.Status,
+		)
+
+		i.Name = p.Name
+
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"myApi/db"
 	"myApi/interface/cashRegister"
 	"myApi/interface/product"
+	"myApi/interface/sale"
 )
 
 func main() {
@@ -16,8 +17,10 @@ func main() {
 	}
 
 	log.Println("Banco de dados conectado com sucesso!")
+
 	product.SetConnection(db)
 	cashRegister.SetConnection(db)
+	sale.SetConnection(db)
 
 	api.StartServer()
 }
