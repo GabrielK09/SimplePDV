@@ -1,3 +1,4 @@
+/*
 /** @type {import('tailwindcss').Config} */
 
 module.exports = {
@@ -1084,4 +1085,4 @@ module.exports = {
     
   },
   plugins: [],
-};
+} */app/tailwind.config.js

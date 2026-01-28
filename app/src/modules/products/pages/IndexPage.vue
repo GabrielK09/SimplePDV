@@ -1,0 +1,201 @@
+<template>
+    <q-page padding>
+        <section class="text-xl" v-if="!productManagement">
+            <div
+                class="m-2"
+            >
+                <div class="flex justify-between">
+                    <h2 class="text-gray-600 m-2">Produtos</h2>
+
+                    <div class="mt-auto mb-auto">
+                        <q-btn 
+                            no-caps 
+                            color="blue"
+                            to="/admin/products/create"
+                            label="Cadastrar novo produto"
+                        
+                        />
+                    </div>
+                </div>
+
+                <div class="">
+                    <q-table
+                        borded
+                        :rows="products"
+                        :columns="columns"
+                        row-key="name"
+                        class="rounded-xl"
+                    >
+                        <template v-slot:top-right>
+                            <q-input 
+                                outlined
+                                v-model="searchInput" 
+                                type="text" 
+                                label="" 
+                                @update:model-value="filterProducts"
+                            >
+                                <template v-slot:append>
+                                    <q-icon name="search" />
+                                </template>
+                                <template v-slot:label>
+                                    <span class="text-xs">Buscar por um produto ...</span>
+                                </template>
+                            </q-input>
+                        </template>
+
+                        <template v-slot:body="props">
+                            <q-tr
+                                :props="props"
+                            >
+                                <q-td
+                                    v-for="(col, i) in props.cols"
+                                >
+                                    <template v-if="col.name === 'actions'">
+                                        <div 
+                                            class="text-center"
+                                        >
+                                            <q-btn size="10px" no-caps color="red" icon="delete" flat @click="showDialogDeleteProduct(props.row.id)"/>
+                                            
+                                        </div>
+                                    </template>
+                                    
+                                    <template v-else>
+                                        <div 
+                                            class="text-center"
+                                            :title="props.row.active !== 1 ? 'Produto desativado!' : ''"
+                                        >
+                                            {{ col.value }}
+
+                                        </div>
+                                    </template>
+                                </q-td>
+                            </q-tr>
+                        </template>
+
+                        <template v-slot:no-data>
+                            <div class="ml-auto mr-auto">
+                                <q-icon name="warning" size="30px"/>
+                                <span class="mt-auto mb-auto ml-2 text-xs">Sem produtos cadastrados</span>
+
+                            </div>
+                        </template>
+
+                    </q-table>
+                </div>
+            </div>
+        </section>
+    </q-page>
+</template>
+
+<script setup lang="ts">    
+    import { QTableColumn, useQuasar } from 'quasar';
+    import { onMounted, ref } from 'vue';    
+    import camelcaseKeys from 'camelcase-keys';
+    import { getAll, deleteProduct } from '../services/productsService';
+
+    const $q = useQuasar();
+    
+    const columns: QTableColumn[] = [
+        {
+            name: 'id',
+            label: 'ID',
+            field: 'id',
+            align: 'center'
+        },
+        {
+            name: 'name',
+            label: 'Produto',
+            field: 'name',
+            align: 'center'
+        },
+        {
+            name: 'price',
+            label: 'Preço',
+            field: 'price',
+            align: 'center',
+            format(val: number) {
+                return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
+            }
+        },
+        {
+            name: 'qtde',
+            label: 'Qtde',
+            field: 'qtde',
+            align: 'center'
+        },
+        {
+            name: 'actions',
+            label: '',
+            field: 'actions',
+            align: 'right'
+        }
+    ];
+
+    let allProducts = ref<ProductContract[]>([]);
+    let products = ref<ProductContract[]>([]);
+
+    let searchInput = ref<string>('');
+    let productManagement = ref<boolean>(false);
+
+    const getAllProducts = async () => {
+        const res = await getAll();
+        const data = camelcaseKeys(res.data, { deep: true });
+
+        products.value = data;
+        allProducts.value = [...products.value];
+        
+    };
+
+    const showDialogDeleteProduct = (productId: number) => {
+        $q.dialog({
+            title: 'Excluir produto',
+            message: `Deseja realmente remover esse produto (${productId})?`,
+            cancel: {
+                push: true,
+                label: 'Não',
+                color: 'red',
+            },
+
+            ok: {
+                push: true,
+                label: 'Sim',
+                color: 'green',
+            },
+
+        }).onOk(() => {
+            deleteProductByDialog(productId);
+
+        }).onCancel(() => {
+            return;
+        });
+    };
+
+    const deleteProductByDialog = async (productId: number) => {
+        const res = await deleteProduct(productId);
+        const data = res.data;
+
+        if(data.success)
+        {
+            $q.notify({
+                color: 'green',
+                message: data.message,
+                position: 'top',
+                timeout: 1200
+            });
+        };
+        getAllProducts();
+    };
+
+
+    const filterProducts = () => {    
+        console.log(searchInput.value);
+        
+        products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
+        console.log(allProducts.value);
+        
+    };
+
+    onMounted(() => {
+        getAllProducts();
+    });
+</script>

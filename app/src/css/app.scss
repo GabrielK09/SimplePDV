@@ -1,1 +1,32 @@
-// app global css in SCSS form
+.q-input input[type=number]::-webkit-inner-spin-button, 
+.q-input input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.q-field__native[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+@media (max-width: 1336px) {
+    .register-title {
+        text-align: center;
+    }
+
+    .back-customer-label {
+        display: none;
+    }
+
+    .back-row {
+        width: 1rem;
+        height: 1rem;
+    }
+}
+
+@media (min-width: 1336px) {
+    .back-row {
+        width: 0.75rem;
+        height: 0.75rem;
+
+    }
+}
