@@ -1,8 +1,5 @@
 <template>
-
     <q-card class="w-full max-w-5xl rounded-xl shadow-lg">
-
-      <!-- Header -->
       <q-card-section class="bg-primary text-white rounded-t-xl">
         <div class="text-lg font-semibold">
           Teste de API
@@ -29,7 +26,7 @@
             label="Rota da API"
             filled
             dense
-            placeholder="/v1/produtos"
+            placeholder="products/register"
             class="col-span-12 md:col-span-10"
           />
 
@@ -58,7 +55,6 @@
         </div>
       </q-card-section>
 
-      <!-- Response -->
       <q-separator />
 
       <q-card-section>
@@ -107,7 +103,7 @@
         console.log(method.value);
 
         data.value = '';
-        let res;
+        let res: any;
         try {
             switch (method.value) {
                 case 'GET':
@@ -143,7 +139,7 @@
 
             data.value = error.response?.data;
             isError.value = true;
-        }
+        };
     };
 
 </script>

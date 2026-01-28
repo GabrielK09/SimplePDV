@@ -21,13 +21,13 @@ type SaleContract struct {
 	CreatedAt time.Time                 `json:"created_at"`
 	UpdatedAt time.Time                 `json:"updated_at"`
 }
-
 type PaySaleContract struct {
 	SaleId     int     `json:"sale_id"`
 	AmountPaid float64 `json:"amount_paid"`
 }
 
 var conn *pgxpool.Pool
+var ctx = context.Background()
 
 func SetConnection(db *pgxpool.Pool) {
 	conn = db
@@ -35,6 +35,20 @@ func SetConnection(db *pgxpool.Pool) {
 
 func calculateTotalSale(saleValue float64, qtde int) float64 {
 	return saleValue * float64(qtde)
+}
+
+func (p PaySaleContract) ValidatePay() map[string]string {
+	errorsField := make(map[string]string)
+
+	if p.AmountPaid <= 0 {
+		errorsField["amount_paid"] = "O valor informado precisa ser maior que zero."
+	}
+
+	if _, err := Show(p.SaleId); err != nil {
+		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
+	}
+
+	return errorsField
 }
 
 func (s SaleContract) Validate() map[string]string {
@@ -49,6 +63,42 @@ func (s SaleContract) Validate() map[string]string {
 	}
 
 	return errorsField
+}
+
+func Show(id int) (*SaleContract, error) {
+	query := `
+		SELECT
+			id,
+			customer,
+			specie,
+			sale_value,
+			status
+		FROM
+			sales
+
+		WHERE
+			id = $1
+	`
+
+	var s SaleContract
+
+	err := conn.QueryRow(
+		ctx,
+		query,
+		id,
+	).Scan(
+		&s.Id,
+		&s.Customer,
+		&s.Specie,
+		&s.SaleValue,
+		&s.Status,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
 }
 
 func (s *SaleContract) Create() error {

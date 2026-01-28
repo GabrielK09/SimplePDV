@@ -31,7 +31,7 @@ func StartServer() {
 
 	// Sale \\
 	r.HandleFunc("/api/sale/register", saleController.HandlePostSale)
-	r.HandleFunc("/api/sale/pay", saleController.HandlePutPaySale)
+	r.HandleFunc("/api/sale/pay", saleController.HandlePutPaySale).Methods(http.MethodPut, http.MethodOptions)
 	//r.HandleFunc("/api/sale/pay", )
 
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\

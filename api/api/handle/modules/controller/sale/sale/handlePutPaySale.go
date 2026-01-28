@@ -32,6 +32,14 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := ps.ValidatePay(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		resp := responsehelper.Response(false, err, "Erro ao validar o pagamento da venda.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	if err := sale.PaySale(ps.SaleId, ps.AmountPaid); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao processar o pagamento da venda.")
