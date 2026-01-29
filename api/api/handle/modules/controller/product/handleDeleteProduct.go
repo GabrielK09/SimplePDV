@@ -13,7 +13,6 @@ import (
 )
 
 func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodDelete {
@@ -40,10 +39,8 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := product.Delete(id); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-
-		log.Println("Id inválido: ", err)
 		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err, "Erro ao deletar o produto."),
+			responsehelper.Response(false, err.Error(), "Erro ao deletar o produto."),
 		)
 
 		return

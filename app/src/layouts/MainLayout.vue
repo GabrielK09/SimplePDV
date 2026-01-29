@@ -1,10 +1,10 @@
 <template>
     <q-layout view="hHr LpR lFf">
-        <q-btn 
-            @click="drawerLeft = !drawerLeft" 
-            flat 
-            class="rounded" 
-            icon="menu" 
+        <q-btn
+            @click="drawerLeft = !drawerLeft"
+            flat
+            class="rounded"
+            icon="menu"
 
         />
 
@@ -16,7 +16,7 @@
         >
             <q-toolbar>
                 <q-list padding class="p-2">
-                    <q-item 
+                    <q-item
                         v-for="row in ticketRows"
                         v-ripple
                         clickable
@@ -33,26 +33,23 @@
                         <q-item-section>
                             {{ row.label }}
                         </q-item-section>
-
                     </q-item>
                 </q-list>
             </q-toolbar>
         </q-drawer>
 
         <q-page-container>
-            <div class="ml-8">
+            <div class="ml-4">
                 <router-view />
 
             </div>
         </q-page-container>
-    </q-layout> 
-    
+    </q-layout>
 </template>
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { useRoute, useRouter } from 'vue-router';
-    import { useQuasar } from 'quasar';
+    import { useRoute } from 'vue-router';
 
     type TicketRows = {
         label: string;
@@ -61,16 +58,15 @@
         path: string;
     };
 
-    const $q = useQuasar();
     const route = useRoute();
-    const router = useRouter();
     const drawerLeft = ref<boolean>(true);
-    
+
     const ticketRows = ref<TicketRows[]>([
         { label: 'DashBoard', icon: 'dashboard', name: 'dashboard', path: '' },
-        { label: 'Clientes', icon: 'group', name: 'customers', path: 'customers' },
         { label: 'Produtos', icon: 'inventory_2', name: 'inventory_2', path: 'products' },
-        { label: 'Formas de pagamento', icon: 'add_card', name: 'add_card', path: 'pay_ment_forms' },
+        { label: 'Compras', icon: 'shopping_bag', name: 'shopping_bag', path: 'shopping' },
+        { label: 'PDV', icon: 'point_of_sale', name: 'point_of_sale', path: 'pdv' },
+        { label: 'Listagem de vendas', icon: 'analytics', name: 'analytics', path: 'pdv/list-pdv' },
 
     ]);
 </script>
@@ -95,6 +91,6 @@
             position: fixed;
             bottom: 0;
             margin: 0 0 2rem 0;
-        }   
+        }
     }
 </style>

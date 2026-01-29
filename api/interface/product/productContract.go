@@ -207,6 +207,32 @@ func GetAll() ([]ProductContract, error) {
 }
 
 func Delete(id int) error {
+	verify := `
+		SELECT
+			id
+		FROM
+			sale_itens
+		WHERE
+			product_id = $1
+	`
+
+	var p ProductContract
+
+	err := conn.QueryRow(
+		context.Background(),
+		verify,
+		id,
+	).Scan(
+		&p.Id,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if p.Id != 0 {
+		return fmt.Errorf("Produto já cadastradao em uma venda.")
+	}
 
 	query := `
 		DELETE FROM
@@ -216,7 +242,7 @@ func Delete(id int) error {
 
 	`
 
-	_, err := conn.Exec(
+	_, err = conn.Exec(
 		context.Background(),
 		query,
 		id,

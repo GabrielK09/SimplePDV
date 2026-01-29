@@ -1,7 +1,7 @@
-export default function apiResponse(status: boolean, message: string, data: unknown[]|unknown) 
+export default function apiResponse(status: boolean, message: string, data: unknown[]|unknown)
 {
     return {
-        status: status,
+        success: status,
         message: message,
         data: data
     };

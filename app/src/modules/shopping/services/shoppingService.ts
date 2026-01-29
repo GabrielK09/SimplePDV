@@ -4,7 +4,7 @@ import apiResponse from "src/helpers/response/apiResponse";
 export async function getAll(): Promise<any>
 {
     try {
-        const res = await api.get('products/all');
+        const res = await api.get('shopping/all');
         const data = res.data;
 
         return apiResponse(
@@ -21,10 +21,10 @@ export async function getAll(): Promise<any>
     };
 };
 
-export async function createProduct(payLoad: ProductContract): Promise<any>
+export async function createshopping(payLoad: any): Promise<any>
 {
     try {
-        const res = await api.post('products/create', payLoad);
+        const res = await api.post('shopping/create', payLoad);
         const data = res.data;
 
         return apiResponse(
@@ -41,10 +41,10 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
     };
 };
 
-export async function update(payLoad: ProductContract): Promise<any>
+export async function deleteshopping(shoppingId: number): Promise<any>
 {
     try {
-        const res = await api.put(`products/update/${payLoad.id}`)
+        const res = await api.delete(`shopping/delete/${shoppingId}`);
         const data = res.data;
 
         return apiResponse(
@@ -52,35 +52,11 @@ export async function update(payLoad: ProductContract): Promise<any>
             data.message,
             data.data
         );
-
     } catch (error) {
         return apiResponse(
             false,
             error.response?.data?.message,
             error.response
-        );
-    };
-};
-
-export async function deleteProduct(id: number): Promise<any>
-{
-    try {
-        const res = await api.delete(`products/delete/${id}`)
-        const data = res.data;
-
-        return apiResponse(
-            true,
-            data.message,
-            data.data
-        );
-
-    } catch (error) {
-        console.error(error.response.data);
-
-        return apiResponse(
-            false,
-            error.response?.data?.message,
-            error.response?.data
         );
     };
 };
