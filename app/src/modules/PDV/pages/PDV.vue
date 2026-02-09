@@ -2,7 +2,7 @@
     <q-page padding>
         <main class="px-4 max-w">
             <section class="flex flex-col laptop:flex-row items-start gap-4">
-                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white p-4  rounded-lg">
+                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white  rounded-lg p-4">
                     <div class="flex items-center gap-2">
                         <q-btn
                             icon="menu"
@@ -17,7 +17,7 @@
                         />
                     </div>
 
-                    <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin">
+                    <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin border">
                         <q-table
                             :rows="data"
                             :columns="columns"
@@ -68,6 +68,7 @@
                 <!-- Barra da direita-->
                 <div class="bg-white rounded-lg h-auto laptop:h-[75vh] p-4 w-full laptop:w-[25rem] laptop:mr-6 flex flex-col">
                     <div class="flex-1 overflow-y-auto">
+                        {{ Screen.width }}
                         <BaseCustomerSelect
                             v-model="pdvData.customer"
                         />
@@ -128,13 +129,13 @@
 
         <PayMentSale
             v-if="showPayMentForms"
-
+            :sale-id="returningSaleId"
         />
     </q-page>
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn } from 'quasar';
+    import { QTableColumn, Screen } from 'quasar';
     import { computed, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
@@ -192,6 +193,8 @@
             align: 'right'
         },
     ];
+
+    const returningSaleId = ref<number>();
 
     let pagination = ref<TPagination>({
         rowsPerPage: 0
@@ -304,6 +307,7 @@
     };
 
     const finallySale = async (isSave?: boolean) => {
+        isSave ? null : notify('positive', 'Processando dados da venda.');
         const payload: SaleContract = {
             id: 0,
             customer: pdvData.value.customer,
@@ -323,15 +327,26 @@
             isSave ? notify('positive', 'Dados salvos com sucesso!!') : notify('positive', 'Venda finalizada com sucesso!');
             data.value = [];
 
+            if(!res.data.id || res.data.id === 0)
+            {
+                notify(
+                    'negative',
+                    'Identificador inválido!'
+                );  
+            };
+
+            returningSaleId.value = res.data.id;
             showPayMentForms.value = true;
+        } else {
+            isSave ? null : notify('negative', `Erro ao finalizar a venda: ${res.message}`);
         };
     };
 </script>
 
 <style lang="scss">
-    @media (min-width: 1554px) {
+    @media (min-width: 1550px) {
         body {
-            overflow-y: hidden !important;
+            overflow-y: auto !important;
         }
     }
 

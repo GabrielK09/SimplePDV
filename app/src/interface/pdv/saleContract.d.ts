@@ -12,3 +12,9 @@ interface SaleItemContract {
     price: number;
     qtde: number;
 };
+
+interface PaySaleContract {
+    sale_id: number;
+    specie: 'Dinheiro'|'Pix';
+    amount_paid: number
+};

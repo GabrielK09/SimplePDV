@@ -12,10 +12,10 @@ import (
 )
 
 type SaleContract struct {
-	Id        int    `json:"id"`
-	Customer  string `json:"customer"`
-	Specie    string `json:"specie"`
-	SaleValue float64
+	Id        int                       `json:"id"`
+	Customer  string                    `json:"customer"`
+	Specie    string                    `json:"specie"`
+	SaleValue float64                   `json:"sale_value"`
 	Status    string                    `json:"status"`
 	Products  saleitem.SaleItemContract `json:"products"`
 	CreatedAt time.Time                 `json:"created_at"`
@@ -23,6 +23,7 @@ type SaleContract struct {
 }
 type PaySaleContract struct {
 	SaleId     int     `json:"sale_id"`
+	Specie     string  `json:"specie"`
 	AmountPaid float64 `json:"amount_paid"`
 }
 
@@ -39,6 +40,10 @@ func calculateTotalSale(saleValue float64, qtde int) float64 {
 
 func (p PaySaleContract) ValidatePay() map[string]string {
 	errorsField := make(map[string]string)
+
+	if p.Specie != "Dinheiro" && p.Specie != "Pix" {
+		errorsField["specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
+	}
 
 	if p.AmountPaid <= 0 {
 		errorsField["amount_paid"] = "O valor informado precisa ser maior que zero."
@@ -114,11 +119,11 @@ func Show(id int) (*SaleContract, error) {
 	return &s, nil
 }
 
-func (s *SaleContract) Create() error {
+func (s *SaleContract) Create() (int, error) {
 	tx, err := conn.Begin(context.Background())
 
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	defer tx.Rollback(context.Background())
@@ -131,8 +136,7 @@ func (s *SaleContract) Create() error {
 			($1, $2, $3)
 
 		RETURNING 
-			id,
-			status
+			id
 	`
 
 	var saleId int
@@ -145,13 +149,12 @@ func (s *SaleContract) Create() error {
 		s.SaleValue,
 	).Scan(
 		&saleId,
-		&s.Status,
 	)
 
 	s.Id = saleId
 
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	querySaleItem := `
@@ -195,13 +198,13 @@ func (s *SaleContract) Create() error {
 			&p.Name,
 			&p.Qtde,
 		); err != nil {
-			return err
+			return 0, err
 		}
 
 		totalSale := calculateTotalSale(i.Price, i.Qtde)
 
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		err = tx.QueryRow(
@@ -222,21 +225,21 @@ func (s *SaleContract) Create() error {
 		i.SaleId = saleId
 
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		if err = p.DiscountedQtde(context.Background(), tx, i.Qtde); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	err = tx.Commit(context.Background())
 
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return saleId, err
 }
 
 func PaySale(saleId int, amountPaind float64) error {
@@ -269,6 +272,10 @@ func PaySale(saleId int, amountPaind float64) error {
 		&s.SaleValue,
 		&s.Status,
 	)
+
+	if err != nil {
+		return err
+	}
 
 	if s.Status == "Concluída" {
 		return fmt.Errorf("Essa venda já está finalizada.")

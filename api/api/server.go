@@ -6,6 +6,7 @@ import (
 	productController "myApi/api/handle/modules/controller/product"
 	root "myApi/api/handle/modules/controller/root"
 	cashregisterController "myApi/api/handle/modules/controller/sale/cashRegister"
+	payMentController "myApi/api/handle/modules/controller/sale/payMentForms"
 	saleController "myApi/api/handle/modules/controller/sale/sale"
 	"net/http"
 
@@ -36,7 +37,8 @@ func StartServer() {
 	// Sale \\
 	r.HandleFunc("/api/sale/pay", saleController.HandlePutPaySale).Methods(http.MethodPut, http.MethodOptions)
 	r.HandleFunc("/api/sale/create", saleController.HandlePostSale).Methods(http.MethodPost, http.MethodOptions)
-	//r.HandleFunc("/api/sale/pay", )
+	r.HandleFunc("/api/sale/pay-ment-forms", payMentController.HandleGetPayMentForms).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/api/sale/update/pay-ment-forms", payMentController.HandlePutPayMentForms).Methods(http.MethodPut, http.MethodOptions)
 
 	// Shopping \\
 

@@ -3,12 +3,11 @@ package controller
 import (
 	"encoding/json"
 	responsehelper "myApi/helpers/response"
-	"myApi/interface/cashRegister"
-
+	paymentform "myApi/interface/payMentForm"
 	"net/http"
 )
 
-func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
+func HandleGetPayMentForms(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -17,13 +16,13 @@ func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
 
 		json.NewEncoder(w).Encode(resp)
 		return
-	}
+	} // Erro de método da rota
 
-	cashRegisters, err := cashRegister.GetAll()
+	payMentForms, err := paymentform.GetAll()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao retornar todo o caixa.")
+		resp := responsehelper.Response(false, err, "Erro ao retornar todos as formas de pagamento.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
@@ -31,8 +30,7 @@ func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, cashRegisters, "Todo movimento do caixa.")
+	resp := responsehelper.Response(true, payMentForms, "Todas as formas de pagamento.")
 
 	json.NewEncoder(w).Encode(resp)
-
 }

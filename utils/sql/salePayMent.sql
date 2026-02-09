@@ -1,4 +1,4 @@
-CREATE TABLE pay_ment_forms (
+CREATE TABLE sale_pay_ment (
     id SERIAL PRIMARY KEY,
     sale_id bigint NOT NULL,
     specie character varying NOT NULL,
@@ -7,3 +7,5 @@ CREATE TABLE pay_ment_forms (
     updated_at timestamp without time zone,
     CONSTRAINT pay_ment_forms_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id)
 )
+
+--pay_ment_forms

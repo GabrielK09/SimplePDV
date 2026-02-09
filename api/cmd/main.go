@@ -5,6 +5,7 @@ import (
 	"myApi/api"
 	"myApi/db"
 	"myApi/interface/cashRegister"
+	paymentform "myApi/interface/payMentForm"
 	"myApi/interface/product"
 	"myApi/interface/sale"
 )
@@ -21,6 +22,7 @@ func main() {
 	product.SetConnection(db)
 	cashRegister.SetConnection(db)
 	sale.SetConnection(db)
+	paymentform.SetConnection(db)
 
 	api.StartServer()
 }

@@ -39,7 +39,9 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := payload.Create(); err != nil {
+	saleId, err := payload.Create()
+
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Erro no create:", err)
 		resp := responsehelper.Response(false, err, "Erro ao salvar a venda.")
@@ -49,6 +51,8 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
+	payload.Id = saleId
 
 	resp := responsehelper.Response(true, payload, "Dados da venda cadastrado com sucesso.")
 

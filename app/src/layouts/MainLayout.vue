@@ -65,8 +65,10 @@
         { label: 'DashBoard', icon: 'dashboard', name: 'dashboard', path: '' },
         { label: 'Produtos', icon: 'inventory_2', name: 'inventory_2', path: 'products' },
         { label: 'Compras', icon: 'shopping_bag', name: 'shopping_bag', path: 'shopping' },
+        { label: 'Caixa', icon: 'request_quote', name: 'request_quote', path: 'cash-register' },
         { label: 'PDV', icon: 'point_of_sale', name: 'point_of_sale', path: 'pdv' },
         { label: 'Listagem de vendas', icon: 'analytics', name: 'analytics', path: 'pdv/list-pdv' },
+        { label: 'Formas de pagamento', icon: 'payments', name: 'payments', path: 'payments' },
 
     ]);
 </script>
