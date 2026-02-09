@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -214,23 +215,27 @@ func Delete(id int) error {
 			sale_itens
 		WHERE
 			product_id = $1
+		LIMIT
+			1
 	`
 
-	var p ProductContract
+	var saleItemId int
 
 	err := conn.QueryRow(
 		context.Background(),
 		verify,
-		id,
+		saleItemId,
 	).Scan(
-		&p.Id,
+		&saleItemId,
 	)
 
 	if err != nil {
-		return err
-	}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			log.Println("Erro ao conferir se possui cadastro em vendas: ", err)
+			return err
+		}
 
-	if p.Id != 0 {
+	} else {
 		return fmt.Errorf("Produto já cadastradao em uma venda.")
 	}
 
@@ -238,7 +243,8 @@ func Delete(id int) error {
 		DELETE FROM
 			products
 
-		WHERE id = $1
+		WHERE 
+			id = $1
 
 	`
 
@@ -249,6 +255,7 @@ func Delete(id int) error {
 	)
 
 	if err != nil {
+		log.Println("Erro ao deletar: ", err)
 		return err
 	}
 

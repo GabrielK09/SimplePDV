@@ -84,3 +84,17 @@ export async function deleteProduct(id: number): Promise<any>
         );
     };
 };
+
+export async function findById(id: number): Promise<any>
+{
+    try {
+        const res = await api.get(`products/find/${id}`);
+        const data = res.data.data;
+
+        return data;
+
+    } catch (error) {
+        return null;
+
+    };
+};

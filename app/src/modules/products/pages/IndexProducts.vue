@@ -1,8 +1,6 @@
 <template>
     <q-page padding>
-        <div
-            class="m-2"
-        >
+        <div class="m-2 text-3xl" >
             <div class="flex justify-between">
                 <h2 class="text-gray-600 m-2">Produtos</h2>
 
@@ -17,7 +15,7 @@
                 </div>
             </div>
 
-            <div class="">
+            <div>
                 <q-table
                     borded
                     :rows="products"
@@ -133,7 +131,6 @@
     let products = ref<ProductContract[]>([]);
 
     let searchInput = ref<string>('');
-    let productManagement = ref<boolean>(false);
 
     const getAllProducts = async () => {
         const res = await getAll();

@@ -1,8 +1,6 @@
 <template>
     <q-page padding>
-        <div
-            class="m-2"
-        >
+        <div class="m-2 text-3xl" >
             <div class="flex justify-between">
                 <h2 class="text-gray-600 m-2">Compras</h2>
 

@@ -1,14 +1,21 @@
 <template>
     <q-page padding>
-        <div
-            class="m-2"
-        >
+        <div class="m-2 text-3xl" >
             <div class="flex justify-between">
                 <h2 class="text-gray-600 m-2">Listagem PDV</h2>
 
+                <div class="mt-auto mb-auto">
+                    <q-btn
+                        no-caps
+                        color="blue"
+                        to="/admin/pdv"
+                        label="Cadastrar uma venda"
+
+                    />
+                </div>
             </div>
 
-            <div class="">
+            <div>
                 <q-table
                     borded
                     :rows="pdvs"
@@ -58,7 +65,7 @@
                     <template v-slot:no-data>
                         <div class="ml-auto mr-auto">
                             <q-icon name="warning" size="30px"/>
-                            <span class="mt-auto mb-auto ml-2 text-xs">Sem compras cadastrados</span>
+                            <span class="mt-auto mb-auto ml-2 text-xs">Sem vendas cadastrados</span>
 
                         </div>
                     </template>

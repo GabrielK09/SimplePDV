@@ -12,10 +12,10 @@ import (
 )
 
 type SaleContract struct {
-	Id        int                       `json:"id"`
-	Customer  string                    `json:"customer"`
-	Specie    string                    `json:"specie"`
-	SaleValue float64                   `json:"sale_value"`
+	Id        int    `json:"id"`
+	Customer  string `json:"customer"`
+	Specie    string `json:"specie"`
+	SaleValue float64
 	Status    string                    `json:"status"`
 	Products  saleitem.SaleItemContract `json:"products"`
 	CreatedAt time.Time                 `json:"created_at"`
@@ -52,14 +52,27 @@ func (p PaySaleContract) ValidatePay() map[string]string {
 }
 
 func (s SaleContract) Validate() map[string]string {
+	var subTotal float64
+
+	for idx := range s.Products {
+		i := &s.Products[idx]
+
+		log.Println("Produto aqui: ", i)
+
+		subTotal += calculateTotalSale(i.Price, i.Qtde)
+
+	}
+
 	errorsField := make(map[string]string)
 
 	if err := s.Products.Validate(); len(err) > 0 {
 		errorsField["products"] = fmt.Sprintf("%s", err)
 	}
 
-	if s.SaleValue <= 0 {
-		errorsField["sale_value"] = "O valor da venda não pode ser zerado."
+	log.Println("SubTotal aqui: ", subTotal)
+
+	if subTotal <= 0 {
+		errorsField["sub_total"] = "O valor da venda não pode ser zerado."
 	}
 
 	return errorsField
@@ -185,7 +198,7 @@ func (s *SaleContract) Create() error {
 			return err
 		}
 
-		totalSale := calculateTotalSale(i.SaleValue, i.Qtde)
+		totalSale := calculateTotalSale(i.Price, i.Qtde)
 
 		if err != nil {
 			return err

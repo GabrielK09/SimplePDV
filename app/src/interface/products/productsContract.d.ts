@@ -1,6 +1,6 @@
 interface ProductContract {
     readonly id: number;
-    name: string,        
+    name: string,
     price: number,
     qtde: number,
 };

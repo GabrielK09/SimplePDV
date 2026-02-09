@@ -37,6 +37,7 @@ export default boot(({ app }) => {
         (response) => response,
         (error) => {
             if (error.response) {
+                console.error('Eror:', error);
                 console.error('Status:', error.response.status);
                 console.error('Mensagem:', error.response.data.message);
                 console.error('Erro:', error.response.data.data);

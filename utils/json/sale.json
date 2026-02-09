@@ -1,7 +1,6 @@
 {
 	"customer": "Teste",
 	"specie": "Teste",
-	"sale_value": 30,
 	"products": [
 		{
 			"product_id": 1,
