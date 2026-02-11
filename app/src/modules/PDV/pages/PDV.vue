@@ -75,7 +75,7 @@
 
                     <div class="mt-4 border p-2 rounded">
                         Total R$ {{ calculateTotal }}
-
+                        {{ returningSaleId }}
                     </div>
 
                     <div class="mt-4 flex justify-center gap-4">

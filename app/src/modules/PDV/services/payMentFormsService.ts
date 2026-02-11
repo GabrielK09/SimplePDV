@@ -8,7 +8,7 @@ export async function getAllPayMentFormsService(): Promise<any>
         const data = res.data;
 
         return apiResponse(
-            false,
+            true,
             data.message,
             data.data
         );
