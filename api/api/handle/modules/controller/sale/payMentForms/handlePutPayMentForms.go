@@ -18,9 +18,9 @@ func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
-	var pf paymentform.PayMentForms
+	payMent, err := paymentform.Show()
 
-	if err := json.NewDecoder(r.Body).Decode(&pf); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payMent); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
@@ -28,7 +28,7 @@ func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ps.ValidatePay(); len(err) > 0 {
+	if err := payMent.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao validar o pagamento da venda.")
 
@@ -36,9 +36,20 @@ func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	updated, err := payMent.Update()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err.Error(), "Erro ao atualizar o produto não localizado."),
+		)
+
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 
-	//resp := responsehelper.Response(true, payMentForms, "Todas as formas de pagamento.")
+	resp := responsehelper.Response(true, updated, "Forma de pagamento alterada com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
 }

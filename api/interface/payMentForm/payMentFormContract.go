@@ -24,6 +24,22 @@ func SetConnection(db *pgxpool.Pool) {
 	conn = db
 }
 
+func (pf PayMentForms) Validate() map[string]string {
+	errorsField := make(map[string]string)
+
+	if pf.Specie == "Pix" {
+		if pf.PixKey == "" {
+			errorsField["pix_key"] = "Chave PIX ausente"
+		}
+
+		if len(pf.PixKey) > 255 {
+			errorsField["pix_key"] = "A chave do PIX não pode ser superior a 255 caracteres."
+		}
+	}
+
+	return errorsField
+}
+
 func GetAll() ([]PayMentForms, error) {
 	var payMents []PayMentForms
 
@@ -72,10 +88,10 @@ func (p *PayMentForms) Update() (PayMentForms, error) {
 			pay_ment_forms
 
 		SET
-			pix_key = $2
+			pix_key = $1
 
 		WHERE
-			id = $1
+			specie = 'Pix'
 
 		RETURNING
 			id,
@@ -86,8 +102,6 @@ func (p *PayMentForms) Update() (PayMentForms, error) {
 	err := conn.QueryRow(
 		context.Background(),
 		query,
-		p.Id,
-		p.Specie,
 		p.PixKey,
 	).Scan(
 		&p.Id,
@@ -100,4 +114,38 @@ func (p *PayMentForms) Update() (PayMentForms, error) {
 	}
 
 	return *p, nil
+}
+
+func Show() (*PayMentForms, error) {
+	query := `
+		SELECT
+			id,
+			specie, 
+			pix_key
+
+		FROM
+			pay_ment_forms
+
+		WHERE
+			specie = 'Pix'
+	`
+
+	var pf PayMentForms
+
+	err := conn.QueryRow(
+		ctx,
+		query,
+		pf,
+	).Scan(
+		&pf.Id,
+		&pf.Specie,
+		&pf.PixKey,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pf, nil
+
 }

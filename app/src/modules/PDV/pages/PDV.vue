@@ -68,7 +68,6 @@
                 <!-- Barra da direita-->
                 <div class="bg-white rounded-lg h-auto laptop:h-[75vh] p-4 w-full laptop:w-[25rem] laptop:mr-6 flex flex-col">
                     <div class="flex-1 overflow-y-auto">
-                        {{ Screen.width }}
                         <BaseCustomerSelect
                             v-model="pdvData.customer"
                         />
@@ -80,6 +79,12 @@
                     </div>
 
                     <div class="mt-4 flex justify-center gap-4">
+                        <q-btn  
+                            icon="payments"
+                            dense
+                            color="primary"
+                            @click="showConfigPayMentForm = !showConfigPayMentForm"
+                        />
 
                         <q-btn
                             dense
@@ -131,15 +136,21 @@
             v-if="showPayMentForms"
             :sale-id="returningSaleId"
         />
+
+        <PayMentForms
+            v-if="showConfigPayMentForm"
+        />
+
     </q-page>
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn, Screen } from 'quasar';
+    import { QTableColumn } from 'quasar';
     import { computed, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
+    import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import { saveSaleService } from '../services/pdvService';
@@ -195,6 +206,7 @@
     ];
 
     const returningSaleId = ref<number>();
+    const showConfigPayMentForm = ref<boolean>(false);
 
     let pagination = ref<TPagination>({
         rowsPerPage: 0

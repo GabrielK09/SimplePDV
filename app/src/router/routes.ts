@@ -2,6 +2,10 @@ import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
     {
+        path: '/',
+        redirect: '/admin'
+    },
+    {
         path: '/admin',
         component: () => import('src/layouts/MainLayout.vue'),
         children: [
@@ -51,7 +55,7 @@ const routes: RouteRecordRaw[] = [
                         path: '',
                         name: 'pdv.index',
                         component: () => import('src/modules/PDV/pages/PDV.vue')
-                    },
+                    }
                 ]
             }
         ],

@@ -50,15 +50,13 @@ func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("Produto localizado: ", product)
-
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(
 			responsehelper.Response(false, err.Error(), "Erro ao processar dados"),
 		)
-		return
 
+		return
 	}
 
 	product.Id = id

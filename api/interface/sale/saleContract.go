@@ -41,16 +41,16 @@ func calculateTotalSale(saleValue float64, qtde int) float64 {
 func (p PaySaleContract) ValidatePay() map[string]string {
 	errorsField := make(map[string]string)
 
+	if _, err := Show(p.SaleId); err != nil {
+		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
+	}
+
 	if p.Specie != "Dinheiro" && p.Specie != "Pix" {
 		errorsField["specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
 	}
 
 	if p.AmountPaid <= 0 {
 		errorsField["amount_paid"] = "O valor informado precisa ser maior que zero."
-	}
-
-	if _, err := Show(p.SaleId); err != nil {
-		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
 	}
 
 	return errorsField
