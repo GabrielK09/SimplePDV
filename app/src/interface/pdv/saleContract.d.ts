@@ -18,3 +18,12 @@ interface PaySaleContract {
     specie: 'Dinheiro'|'Pix';
     amount_paid: number
 };
+
+type StatusSale = 'Pendente'|'Concluída';
+interface PDVContract {
+    readonly id: number;
+    customer: string;
+    specie: string;
+    sale_value: number;
+    status: StatusSale;
+};

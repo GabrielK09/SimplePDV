@@ -27,5 +27,11 @@
     const model = defineModel<any>();
 
     const options = ref<any[]>([]);
-    let registeredCustomer = ref<boolean>(false);
+    const registeredCustomer = ref<boolean>(false);
+
+    const emits = defineEmits<{
+        (e: 'selected:customer', value: any),
+
+    }>();
+
 </script>

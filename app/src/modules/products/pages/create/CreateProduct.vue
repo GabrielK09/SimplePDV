@@ -1,7 +1,7 @@
 <template>
     <q-page padding>
         <main class="min-h-[60vh] flex flex-center text-xl">
-            <section class="w-[80vh] rounded-lg shadow px-4">
+            <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                 <header class="border-gray-100 flex">
                     <span class="text-black cursor-pointer">
                         <router-link to="/admin/products">

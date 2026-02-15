@@ -22,46 +22,8 @@
                     :columns="columns"
                     row-key="name"
                     class="rounded-xl"
+                    :filter="searchInput"
                 >
-                    <template v-slot:top-right>
-                        <q-input
-                            outlined
-                            v-model="searchInput"
-                            type="text"
-                            label=""
-                            @update:model-value="filterPDV"
-                        >
-                            <template v-slot:append>
-                                <q-icon name="search" />
-                            </template>
-                            <template v-slot:label>
-                                <span class="text-xs">Buscar por uma venda ...</span>
-                            </template>
-                        </q-input>
-                    </template>
-
-                    <template v-slot:body="props">
-                        <q-tr
-                            :props="props"
-                        >
-                            <q-td
-                                v-for="(col, i) in props.cols"
-                            >
-                                <template v-if="col.name === 'actions'">
-                                    <div
-                                        class="text-center"
-                                    >
-
-                                    </div>
-                                </template>
-
-                                <template v-else>
-                                    {{ col.value }}
-                                </template>
-                            </q-td>
-                        </q-tr>
-                    </template>
-
                     <template v-slot:no-data>
                         <div class="ml-auto mr-auto">
                             <q-icon name="warning" size="30px"/>
@@ -69,7 +31,6 @@
 
                         </div>
                     </template>
-
                 </q-table>
             </div>
         </div>
@@ -77,12 +38,12 @@
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn, useQuasar } from 'quasar';
+    import { QTableColumn } from 'quasar';
     import { onMounted, ref } from 'vue';
-    import camelcaseKeys from 'camelcase-keys';
     import { getAll } from '../services/pdvService';
+    import { useNotify } from 'src/helpers/QNotify/useNotify';
 
-    const $q = useQuasar();
+    const { notify } = useNotify();
 
     const columns: QTableColumn[] = [
         {
@@ -92,45 +53,53 @@
             align: 'center'
         },
         {
-            name: 'price',
-            label: 'Preço',
-            field: 'price',
+            name: 'customer',
+            label: 'Cliente',
+            field: 'customer',
+            align: 'center'
+        },
+        {
+            name: 'status',
+            label: 'Status',
+            field: 'status',
+            align: 'center'
+        },
+        {
+            name: 'sale_value',
+            label: 'Valor da venda',
+            field: 'sale_value',
             align: 'center',
             format(val: number) {
                 return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
             }
         },
         {
-            name: 'qtde',
-            label: 'Qtde',
-            field: 'qtde',
-            align: 'center'
-        },
-        {
             name: 'actions',
-            label: '',
+            label: 'Ações',
             field: 'actions',
             align: 'right'
         }
     ];
 
-    let allPDVs = ref<ProductContract[]>([]);
-    let pdvs = ref<ProductContract[]>([]);
+    const allPDVs = ref<PDVContract[]>([]);
+    const pdvs = ref<PDVContract[]>([]);
 
-    let searchInput = ref<string>('');
+    const searchInput = ref<string>('');
 
     const getAllshopping = async () => {
         const res = await getAll();
-        const data = camelcaseKeys(res.data, { deep: true });
+        const data = res.data;
+
+        if(!res.success)
+        {
+            notify(
+                'negative',
+                res.message
+            );
+        };
 
         pdvs.value = data;
         allPDVs.value = [...pdvs.value];
-
-    };
-
-    const filterPDV = () => {
-        pdvs.value = allPDVs.value.filter(shoop => shoop.name.toLowerCase().includes(searchInput.value));
-
     };
 
     onMounted(() => {

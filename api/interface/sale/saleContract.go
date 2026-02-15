@@ -65,7 +65,6 @@ func (s SaleContract) Validate() map[string]string {
 		log.Println("Produto aqui: ", i)
 
 		subTotal += calculateTotalSale(i.Price, i.Qtde)
-
 	}
 
 	errorsField := make(map[string]string)
@@ -81,6 +80,53 @@ func (s SaleContract) Validate() map[string]string {
 	}
 
 	return errorsField
+}
+
+func GetAll() ([]SaleContract, error) {
+	var sales []SaleContract
+
+	query := `
+		SELECT
+			id,
+			customer,
+			specie,
+			sale_value,
+			status
+			
+		FROM
+			sales
+	`
+
+	rows, err := conn.Query(
+		ctx,
+		query,
+	)
+
+	if err != nil {
+		log.Println("Erro: ", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var s SaleContract
+
+		if err := rows.Scan(
+			&s.Id,
+			&s.Customer,
+			&s.Specie,
+			&s.SaleValue,
+			&s.Status,
+		); err != nil {
+			log.Println("Erro: ", err)
+			return nil, err
+		}
+
+		sales = append(sales, s)
+	}
+
+	return sales, nil
 }
 
 func Show(id int) (*SaleContract, error) {

@@ -1,6 +1,6 @@
 <template>
     <q-page padding>
-        <main class="px-4 max-w">
+        <main class="px-4 max-w" id="sale-page">
             <section class="flex flex-col laptop:flex-row items-start gap-4">
                 <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white  rounded-lg p-4">
                     <div class="flex items-center gap-2">
@@ -75,11 +75,10 @@
 
                     <div class="mt-4 border p-2 rounded">
                         Total R$ {{ calculateTotal }}
-                        {{ returningSaleId }}
                     </div>
 
                     <div class="mt-4 flex justify-center gap-4">
-                        <q-btn  
+                        <q-btn
                             icon="payments"
                             dense
                             color="primary"
@@ -99,7 +98,7 @@
                             color="grey"
                             icon="save"
                             :disable="data.length <= 0"
-                            @click="showConfirmSaveDialog"
+                            @click="showConfirmSaveSaleDialog"
                         />
 
                         <q-btn
@@ -130,23 +129,29 @@
             :operation="operation"
             @close="showConfirmDialog = !$event"
             @confirm="handleConfirmDialog(operation, $event)"
+
         />
 
         <PayMentSale
             v-if="showPayMentForms"
             :sale-id="returningSaleId"
+            :total-sale="totalSale"
+            @close="showPayMentForms = $event"
+            @paide="resetSale(!$event)"
+
         />
 
         <PayMentForms
             v-if="showConfigPayMentForm"
+
         />
 
     </q-page>
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn } from 'quasar';
-    import { computed, ref, watch } from 'vue';
+    import { SessionStorage, QTableColumn } from 'quasar';
+    import { computed, onMounted, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
@@ -208,29 +213,35 @@
     const returningSaleId = ref<number>();
     const showConfigPayMentForm = ref<boolean>(false);
 
-    let pagination = ref<TPagination>({
+    const pagination = ref<TPagination>({
         rowsPerPage: 0
     });
 
-    let showBaseSearchAllProducs = ref<boolean>(false);
-    let showConfirmDialog = ref<boolean>(false);
-    let showPayMentForms = ref<boolean>(false);
+    const showBaseSearchAllProducs = ref<boolean>(false);
+    const showConfirmDialog = ref<boolean>(false);
+    const showPayMentForms = ref<boolean>(false);
 
-    let textOperation = ref<string>('');
-    let operation = ref<'save'|'delete'|''>('');
+    const textOperation = ref<string>('');
+    const operation = ref<'save'|'delete'|''>('');
+    const totalSale = ref<number>(0);
 
     const pdvData = ref<SaleContract>({
         id: 0,
-        customer: '',
+        customer: 'Consumidor padrão',
         specie: '',
         products: []
     });
 
+    function removeSessionData(key: string): void {
+        SessionStorage.remove(key);
+    };
+
     watch(
-        () => data.value,
-        () => {
-            pagination.value.rowsPerPage = data.value.length;
-        }
+        data,
+        (newVal) => {
+            pagination.value.rowsPerPage = newVal.length;
+        },
+        { deep: true }
     );
 
     const deleteProduct = (row: SaleItemContract) => {
@@ -248,7 +259,7 @@
             return;
         };
 
-        row.qtde = Math.floor(val);
+        row.qtde = val;
     };
 
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
@@ -267,7 +278,6 @@
                     price: p.price,
                     qtde: 1
                 });
-
             };
         });
     };
@@ -279,6 +289,7 @@
             subTotal += p.price * p.qtde;
         });
 
+        totalSale.value = subTotal;
         return subTotal.toFixed(2).toString().replace('.', ',');
     });
 
@@ -288,7 +299,7 @@
         showConfirmDialog.value = true;
     };
 
-    const showConfirmSaveDialog = () => {
+    const showConfirmSaveSaleDialog = () => {
         textOperation.value = 'Deseja salvar essa venda?'
         operation.value = 'save';
         showConfirmDialog.value = true;
@@ -302,16 +313,31 @@
         };
     };
 
-    const handleConfirmDialog = (operation: 'save'|'delete'|'', val: boolean) => {
-        if(val && operation === 'delete')
+    const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
+        if(confirmed && operation === 'delete')
         {
             notify('positive', 'Venda cancelada com sucesso!');
-            confirmDelete(val);
+            removeSessionData('sale_id');
+            removeSessionData('sale');
+            confirmDelete(confirmed);
 
         };
 
-        if(val && operation === 'save')
+        if(confirmed && operation === 'save')
         {
+            // Isso é gambiarra
+            console.log('Salvando: ', SessionStorage.getItem('sale'));
+
+            if(SessionStorage.getItem('sale'))
+            {
+                notify('positive', 'Dados salvos com sucesso!');
+                removeSessionData('sale_id');
+                removeSessionData('sale');
+                data.value = [];
+                showConfirmDialog.value = false;
+                return;
+            };
+
             finallySale(true);
         };
 
@@ -319,7 +345,6 @@
     };
 
     const finallySale = async (isSave?: boolean) => {
-        isSave ? null : notify('positive', 'Processando dados da venda.');
         const payload: SaleContract = {
             id: 0,
             customer: pdvData.value.customer,
@@ -327,39 +352,90 @@
             products: data.value,
         };
 
-        const res = await saveSaleService(payload);
+        SessionStorage.set('sale', payload);
 
-        console.log('payload: ', {
-            payload: payload,
-            res: res
-        });
+        const existingSale = SessionStorage.getItem('sale_id');
+
+        if(!isSave && existingSale)
+        {
+            returningSaleId.value = existingSale as number;
+            showPayMentForms.value = true;
+            return;
+        };
+
+        //console.log('Não existe uma venda aberta no SessionStorage');
+
+        notify('positive', 'Processando dados da venda.');
+
+        const res = await saveSaleService(payload);
 
         if(res.success)
         {
-            isSave ? notify('positive', 'Dados salvos com sucesso!!') : notify('positive', 'Venda finalizada com sucesso!');
-            data.value = [];
+            returningSaleId.value = res.data.id;
+            SessionStorage.set('sale_id', returningSaleId.value);
 
             if(!res.data.id || res.data.id === 0)
             {
                 notify(
                     'negative',
-                    'Identificador inválido!'
-                );  
+                    'Erro ao finalizar a venda. Identificador inválido!'
+                );
+                return;
             };
 
-            returningSaleId.value = res.data.id;
+            if(isSave)
+            {
+                console.log('Chegou nesse isSave');
+
+                notify('positive', 'Dados salvos com sucesso!');
+                removeSessionData('sale_id');
+                removeSessionData('sale');
+                data.value = [];
+                return;
+
+            };
+
+            notify('positive', 'Venda finalizada com sucesso!');
+
             showPayMentForms.value = true;
+
         } else {
             isSave ? null : notify('negative', `Erro ao finalizar a venda: ${res.message}`);
+
         };
     };
+
+    const resetSale = (event: boolean) => {
+        removeSessionData('sale_id');
+        showPayMentForms.value = event;
+    };
+
+    onMounted(() => {
+        const existingSaleId: number = SessionStorage.getItem('sale_id');
+        const existingSale: SaleContract = SessionStorage.getItem('sale');
+
+        console.log('Dados: ', {
+            sale: existingSale
+
+        });
+
+        if(!existingSaleId && !existingSale) return;
+
+        data.value = existingSale.products;
+
+        pdvData.value = {
+            customer: existingSale.customer,
+            id: existingSaleId,
+            products: data.value,
+            specie: ''
+        };
+    });
 </script>
 
 <style lang="scss">
-    @media (min-width: 1550px) {
+    @media (min-width: 1536px) {
         body {
-            overflow-y: auto !important;
+            overflow-y: hidden !important;
         }
     }
-
 </style>

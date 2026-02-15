@@ -30,6 +30,10 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if payload.Customer == "" {
+		payload.Customer = "Consumidor padrão"
+	}
+
 	if err := payload.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		log.Println("Campos obrigatórios ausentes:", err)

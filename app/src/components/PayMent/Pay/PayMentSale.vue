@@ -1,80 +1,180 @@
 <template>
-    <q-dialog v-model="isValidSale" persistent>
-        <q-card>
-            <q-card-section class="row items-center">
-                <q-avatar icon="signal_wifi_off" color="primary" text-color="white" />
-                <span class="q-ml-sm">You are currently not connected to any network.</span>
-            </q-card-section>
-            <q-card-actions align="right">
-                <q-btn flat label="Cancel" color="primary" v-close-popup />
-                <q-btn flat label="Turn on Wifi" color="primary" v-close-popup />
-            </q-card-actions>
-        </q-card>
-    </q-dialog>
+    <q-dialog v-model="internalDialog" persistent>
+        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center gap-4">
+            <q-form
+                @submit="finallySale"
+            >
+                <q-card class=" border border-black mb-5 p-6 bg-white shadow-md rounded" >
+                    <q-card-section>
+                        <div class="text-h6">Formas de Pagamento - Venda: {{ props.saleId }}</div>
 
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-40 backdrop-blur-sm">
-        <div class="w-[80vh] bg-white">
-            <header class="border-gray-100 flex justify-between">
-                <h2 class="text-gray-600 text-center ml-4">Formas de pagamento - ID da venda: {{ props.saleId }}</h2>
+                    </q-card-section>
 
-                <div v-for="(payMentForm, i) in payMentForms">
-                    <q-input 
-                        v-model="payMentValues[i]" 
-                        type="text" 
-                        label="Label" 
-                    />
-                    
-                </div>
-            </header>
+                    <q-separator />
+
+                    <q-card-section>
+                        <q-form @submit.prevent="finallySale">
+                            <q-list bordered separator class="bg-white text-black rounded-borders">
+                                <q-item v-for="(payment, i) in payMentForms" :key="i">
+                                    <q-item-section>
+                                        {{ payment.specie }}
+                                    </q-item-section>
+
+                                    <q-item-section side>
+                                        <q-input
+                                            v-model="payMentValues[i].amount"
+                                            input-class="text-right"
+                                            class="w-24"
+                                            dense
+                                            outlined
+                                            placeholder="0,00"
+                                            mask="##,##"
+                                            fill-mask="0"
+                                            reverse-fill-mask
+                                        />
+                                    </q-item-section>
+                            </q-item>
+                        </q-list>
+                            <q-card-section class="bg-white text-black rounded-borders">
+                                <div class="row q-gutter-sm mb-2">
+                                    <q-chip color="red-6" text-color="white">
+                                        Valor faltante: R$
+
+                                    </q-chip>
+
+                                    <q-chip color="green-7" text-color="white">
+                                        Valor pago: R$ {{ calculatePayMent.amountPaid }}
+                                    </q-chip>
+
+                                    <q-chip color="blue-6" text-color="white">
+                                        Troco: R$ {{  }}
+                                    </q-chip>
+                                </div>
+
+                                <q-banner class="bg-gray-300 q-mb-sm rounded-xl">
+                                    <div class="text-subtitle2 font-semibold">
+                                        Total da venda: R$ {{ props.totalSale }}
+                                    </div>
+                                </q-banner>
+
+                            </q-card-section>
+
+                            <q-card-actions align="right">
+                                <div class="flex gap-6">
+                                    <q-btn
+                                        label="Cancelar"
+                                        color="negative"
+                                        @click="emits('close', false)"
+
+                                    />
+
+                                    <q-btn
+                                        color="primary"
+                                        label="Finalizar venda"
+                                        type="submit"
+                                    />
+                                </div>
+                            </q-card-actions>
+                        </q-form>
+                    </q-card-section>
+                </q-card>
+            </q-form>
         </div>
-    </div>
+    </q-dialog>
 </template>
 
 <script setup lang="ts">
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { getAllPayMentFormsService } from 'src/modules/PDV/services/payMentFormsService';
-    import { onMounted, ref } from 'vue';
+    import { computed, onMounted, ref } from 'vue';
+
+    type PayMentValue = {
+        id: number;
+        specie: string;
+        amount: string;
+        pix_key: string;
+    };
 
     const { notify } = useNotify();
 
     const props = defineProps<{
-        saleId: number
+        saleId: number,
+        totalSale: number;
 
     }>();
 
-    const isValidSale = ref<boolean>(true);
+    const emits = defineEmits<{
+        (e: 'close', value: boolean),
+        (e: 'paide', value: boolean),
+
+    }>();
 
     const payMentForms = ref<PayMentFormContract[]>([]);
+    const payMentValues = ref<PayMentValue[]>([]);
+    const payMentSale = ref<PaySaleContract[]>([]);
 
-    const payMentValues = ref<any[]>();
+    const internalDialog = ref<boolean>(true);
+
+    const calculatePayMent = computed(() => {
+        let subTotalSale: number;
+        let totalPaid = payMentValues.value.reduce((acc, payment) => {
+            const value = Number(payment.amount.replace(',', '.') || 0);
+            return acc + value;
+
+        }, 0);
+
+        return {
+            subTotal: subTotalSale,
+            amountPaid: 0,
+            totalPaid: totalPaid
+
+        };
+    });
+
+    const syncPayMent = () => {
+        payMentValues.value = payMentForms.value.map((f) => ({
+            id: f.id,
+            specie: f.specie,
+            amount: '0,00',
+            pix_key: f.pix_key
+        }));
+    };
 
     const getPayMentForms = async () => {
         const res = await getAllPayMentFormsService();
 
-        if(res.sucess)
+        if(res.success)
         {
             payMentForms.value = res.data;
+            syncPayMent();
 
-        } else {
-            notify(
-                'negative',
-                res.message
-            );
-
-            isValidSale.value = !isValidSale.value;
+            return;
         };
-    };  
+
+        notify(
+            'negative',
+            res.message
+        );
+    };
+
+    const finallySale = async () => {
+        console.log(payMentValues.value);
+
+        if(calculatePayMent.value.amountPaid < 0) return;
+
+        emits('paide', false);
+    };
 
     onMounted(() => {
-        if(props.saleId === 0 || !props.saleId) 
-        {
-            isValidSale.value = !isValidSale.value;
-            notify(
-                'negative',
-                'Identficador da venda inválido!'
-            );
-        };
-
         getPayMentForms();
     });
 </script>
+
+<style lang="scss">
+    @media (max-width: 1536px) {
+        .pay-ment-form {
+            overflow-y: auto !important;
+        }
+    }
+
+</style>

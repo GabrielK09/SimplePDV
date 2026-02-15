@@ -88,8 +88,10 @@
     import { onMounted, ref } from 'vue';
     import camelcaseKeys from 'camelcase-keys';
     import { getAll, deleteProduct } from '../services/productsService';
+    import { useNotify } from 'src/helpers/QNotify/useNotify';
 
     const $q = useQuasar();
+    const { notify } = useNotify();
 
     const columns: QTableColumn[] = [
         {
@@ -136,6 +138,14 @@
         const res = await getAll();
         const data = camelcaseKeys(res.data, { deep: true });
 
+        if(!res.success)
+        {
+            notify(
+                'negative',
+                res.message
+            );
+        };
+
         products.value = data;
         allProducts.value = [...products.value];
 
@@ -166,27 +176,20 @@
     };
 
     const deleteProductByDialog = async (productId: number) => {
-        const data = await deleteProduct(productId);
+        const res = await deleteProduct(productId);
 
-        console.log(data);
-
-        if(data.success)
+        if(res.success)
         {
-            $q.notify({
-                type: 'positive',
-                message: data.message,
-                position: 'top',
-                timeout: 1200
+            notify(
+                'positive',
+                res.message
+            );
 
-            });
         } else {
-            $q.notify({
-                type: 'negative',
-                message: data.data.data,
-                position: 'top',
-                timeout: 1200
-
-            });
+            notify(
+                'positive',
+                res.message
+            );
         };
 
         getAllProducts();
