@@ -2,7 +2,7 @@
     <q-page padding>
         <main class="px-4 max-w" id="sale-page">
             <section class="flex flex-col laptop:flex-row items-start gap-4">
-                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white  rounded-lg p-4">
+                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white rounded-lg p-4">
                     <div class="flex items-center gap-2">
                         <q-btn
                             icon="menu"
@@ -114,39 +114,38 @@
                 </div>
             </section>
         </main>
-
-        <BaseSearchAllProducts
-            v-if="showBaseSearchAllProducs"
-            :type-search="'multiple'"
-            @close="showBaseSearchAllProducs = !$event"
-            @emit:selected-products="pushProducts($event)"
-        />
-
-        <QDialogConfirm
-            v-if="showConfirmDialog"
-            v-model:show="showConfirmDialog"
-            :text="textOperation"
-            :operation="operation"
-            @close="showConfirmDialog = !$event"
-            @confirm="handleConfirmDialog(operation, $event)"
-
-        />
-
-        <PayMentSale
-            v-if="showPayMentForms"
-            :sale-id="returningSaleId"
-            :total-sale="totalSale"
-            @close="showPayMentForms = $event"
-            @paide="resetSale(!$event)"
-
-        />
-
-        <PayMentForms
-            v-if="showConfigPayMentForm"
-
-        />
-
     </q-page>
+
+    <BaseSearchAllProducts
+        v-if="showBaseSearchAllProducs"
+        :type-search="'multiple'"
+        @close="showBaseSearchAllProducs = !$event"
+        @emit:selected-products="pushProducts($event)"
+    />
+
+    <QDialogConfirm
+        v-if="showConfirmDialog"
+        v-model:show="showConfirmDialog"
+        :text="textOperation"
+        :operation="operation"
+        @close="showConfirmDialog = !$event"
+        @confirm="handleConfirmDialog(operation, $event)"
+
+    />
+
+    <PayMentSale
+        v-if="showPayMentForms"
+        :sale-id="returningSaleId"
+        :total-sale="totalSale"
+        @close="showPayMentForms = $event"
+        @paide="resetSale(!$event)"
+
+    />
+
+    <PayMentForms
+        v-if="showConfigPayMentForm"
+
+    />
 </template>
 
 <script setup lang="ts">
