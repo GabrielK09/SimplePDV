@@ -839,7 +839,7 @@ module.exports = {
       150: "1.5",
     },
     screens: {
-        'phone': '480px',
+      'phone': '548px',
 
       'tablet': '640px',
       // => @media (min-width: 640px) { ... }

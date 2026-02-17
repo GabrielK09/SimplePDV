@@ -1,8 +1,8 @@
 import { QrCodePix } from 'qrcode-pix';
 import apiResponse from "src/helpers/response/apiResponse";
 
-export async function generateQRCode(
-    totalSale: number, 
+export async function generateQRCodeBuilder(
+    totalSale: number,
     pixKey: string
 ): Promise<any>
 {
@@ -25,12 +25,12 @@ export async function generateQRCode(
             base64: qrCode,
             payLoad: payLoad
         };
-        
+
     } catch (error) {
         return apiResponse(
             false,
             'Erro ao gerar QR Code do pagamento.',
             error
-        );      
+        );
     };
 };
