@@ -406,6 +406,17 @@
 
     const resetSale = (event: boolean) => {
         removeSessionData('sale_id');
+        removeSessionData('sale');
+
+        data.value = [];
+        pdvData.value = {
+            customer: 'Consumidor padrão',
+            id: 0,
+            products: [],
+            specie: ''
+
+        };
+
         showPayMentForms.value = event;
     };
 

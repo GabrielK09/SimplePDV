@@ -1,7 +1,33 @@
 <template>
     <q-dialog v-model="internalDialog" persistent>
-        <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
+        <div class="flex flex-col bg-white phone:bg-black shadow-lg px-4">
+            <h2 class="text-gray-600 text-center">
+                Pagamento via PIX
+            </h2>
 
+            <div>
+                <img :src=imgBase64Pix />
+
+            </div>
+
+            <div class="my-4 flex flex-center">
+                <q-btn
+                    color="red"
+                    flat
+                    label="Cancelar"
+                    no-caps
+                    class="mr-2"
+                    @click="emits('close', true)"
+                />
+
+                <q-btn
+                    color="primary"
+                    label="Finalizar"
+                    no-caps
+                    class="ml-2"
+                    @click="emits('confirm', true)"
+                />
+            </div>
         </div>
     </q-dialog>
 </template>
@@ -20,16 +46,23 @@
         pixKey: string
     }>();
 
+    const emits = defineEmits<{
+        (e: 'close', value: boolean),
+        (e: 'confirm', value: boolean)
+    }>();
+
     const generateQrCodePix = async () => {
-        const base64 = await generateQRCodeBuilder(props.totalSale, props.pixKey);
+        const res = await generateQRCodeBuilder(props.totalSale, props.pixKey);
+        const base64 = res.base64;
+
         if(!base64)
         {
             notify(
                 'negative',
                 'Erro ao gerar o QR code, tente novamente.'
             );
-            internalDialog.value = false;
 
+            internalDialog.value = false;
             return;
 
         };
@@ -38,15 +71,17 @@
     };
 
     onMounted(() => {
-        const errorSaleNotify = notify(
-            'negative',
-            'Erro ao processar a venda, tente novamente.'
-        );
         if(props.totalSale < 0)
         {
-            errorSaleNotify;
+            notify(
+                'negative',
+                'Erro ao processar a venda, tente novamente.'
+            );
         } else if(props.pixKey === ''){
-            errorSaleNotify;
+            notify(
+                'negative',
+                'Erro ao processar a venda, tente novamente.'
+            );
         } else {
             generateQrCodePix();
         };

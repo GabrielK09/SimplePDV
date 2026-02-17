@@ -12,19 +12,33 @@
                                 </q-item-section>
 
                                 <q-item-section side>
-                                    <q-input
-                                        v-model="payMentValues[i].amount"
-                                        input-class="text-right"
-                                        class="w-24"
-                                        dense
-                                        outlined
-                                        placeholder="0,00"
-                                        mask="##,##"
-                                        fill-mask="0"
-                                        :disable="calculatePayMent.totalPaid >= props.totalSale"
-                                        reverse-fill-mask
-                                    />
+                                    <div class="flex">
+                                        <span
+                                            v-if="calculatePayMent.totalPaid > 0"
+                                            class="mt-auto mb-auto mr-2"
+                                            @click="resetValues"
+                                        >
+                                            <q-btn
+                                                color="red"
+                                                icon="delete"
+                                                dense
+                                                size="7px"
+                                            />
+                                        </span>
 
+                                        <q-input
+                                            v-model="payMentValues[i].amount"
+                                            input-class="text-right"
+                                            class="w-24"
+                                            dense
+                                            outlined
+                                            placeholder="0,00"
+                                            mask="##,##"
+                                            fill-mask="0"
+                                            :disable="calculatePayMent.totalPaid >= props.totalSale"
+                                            reverse-fill-mask
+                                        />
+                                    </div>
                                 </q-item-section>
                             </q-item>
                         </q-list>
@@ -35,7 +49,14 @@
             <div class="px-8">
                 <div class="flex flex-col gap-2 mb-6">
                     <q-chip color="red-6" text-color="white">
-                        Valor faltante: R$ {{ totalPaid_.toFixed(2).toString().replace('.', ',') }}
+                        Valor faltante: R$ {{
+                            ((props.totalSale - calculatePayMent.totalPaid > 0)
+                                ? props.totalSale - calculatePayMent.totalPaid
+                                : 0
+                                ).toFixed(2)
+                                .toString()
+                                .replace('.', ',')
+                        }}
 
                     </q-chip>
 
@@ -44,7 +65,7 @@
                     </q-chip>
 
                     <q-chip color="blue-6" text-color="white">
-                        Troco: R$ {{ totalChange.toFixed(2).toString().replace('.', ',') }}
+                        Troco: R$ {{ calculateChange.toFixed(2).toString().replace('.', ',') }}
                     </q-chip>
                 </div>
 
@@ -79,13 +100,15 @@
         v-if="showQrCodePix"
         :pix-key="getPixKey"
         :total-sale="props.totalSale"
+        @close="showQrCodePix = !$event"
+        @confirm="confirmByPix($event)"
     />
 </template>
 
 <script setup lang="ts">
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { getAllPayMentFormsService } from 'src/modules/PDV/services/payMentFormsService';
-    import { computed, onMounted, ref } from 'vue';
+    import { computed, onMounted, ref, watch } from 'vue';
     import QRCodePix from '../PIX/QRCodePix.vue';
 
     type PayMentValue = {
@@ -119,37 +142,10 @@
     const showQrCodePix = ref<boolean>(false);
     const getPixKey = ref<string>('');
 
-    function calculateTotalPaid(): number
+    const calculateChange = computed((): number =>
     {
-        let totalPaid = payMentValues.value.reduce((acc, payment) => {
-            console.log('Forma usada: ', payment);
-
-            if(payment.pix_key !== '' && Number(payment.amount) > 0 && payment.id === 2)
-            {
-                showQrCodePix.value = true;
-                getPixKey.value = payment.pix_key;
-                // Pensar em fazer lógica separada para PIX
-                return;
-
-            };
-
-            console.log(payment.pix_key !== '' && Number(payment.amount) > 0 && payment.id === 2);
-
-            const value = Number(payment.amount.replace(',', '.') || 0);
-
-            return acc + value;
-
-        }, 0);
-
-        return totalPaid;
-    };
-
-    function calculateChange(totalPaid: number): void
-    {
-        console.log(`totalPaid: ${totalPaid}: - props.totalSale ${props.totalSale}: `, Math.abs(props.totalSale - totalPaid));
-
-        totalChange.value = Math.abs(totalPaid - props.totalSale) > 0 ? Math.abs(totalPaid - props.totalSale) : 0;
-    };
+        return Math.abs(calculatePayMent.value.totalPaid - props.totalSale) > 0 ? Math.abs(calculatePayMent.value.totalPaid - props.totalSale) : 0;
+    });
 
     const syncPayMent = () => {
         payMentValues.value = payMentForms.value.map((f) => ({
@@ -161,19 +157,27 @@
     };
 
     const calculatePayMent = computed(() => {
+        let totalPaid = payMentValues.value.reduce((acc, payment) => {
+            const value = Number(payment.amount.replace(',', '.') || 0);
+
+            return acc + value;
+
+        }, 0);
+
         return {
-            totalPaid: calculateTotalPaid()
+            totalPaid: totalPaid
 
         };
     });
 
-    const totalPaid_ = computed((): number => {
-        const result = props.totalSale - calculateTotalPaid();
-        if(props.totalSale <= result) return result;
-
-        calculateChange(calculateTotalPaid());
-        return 0;
-    });
+    const resetValues = () => {
+        payMentValues.value = payMentForms.value.map((f) => ({
+            id: f.id,
+            specie: f.specie,
+            amount: '0,00',
+            pix_key: f.pix_key
+        }));
+    };
 
     const getPayMentForms = async () => {
         const res = await getAllPayMentFormsService();
@@ -200,8 +204,42 @@
         emits('paide', false);
     };
 
+    const confirmByPix = (val: boolean): void => {
+        console.log('confirmByPix');
+
+        if(val)
+        {
+            notify(
+                'positive',
+                'Pagamento confirmado com sucesso!'
+            );
+
+            internalDialog.value = false;
+            showQrCodePix.value = false;
+            emits('paide', false);
+            return;
+        };
+    };
+
+    watch(payMentValues, (values) => {
+        const pixPayment = values.find(p =>
+            p.id === 2 && parseFloat(p.amount) > 0
+        );
+
+        if(pixPayment)
+        {
+            showQrCodePix.value = true;
+            getPixKey.value = pixPayment.pix_key;
+
+        } else {
+            showQrCodePix.value = false;
+
+        };
+    }, { deep: true });
+
     onMounted(() => {
         getPayMentForms();
+
     });
 </script>
 
