@@ -51,8 +51,6 @@ export async function paySaleService(payMent: PayMentValue[], saleId: number): P
         for (let i = 0; i < payMent.length; i++) {
             const p = payMent[i];
 
-            console.log('P: ', p);
-
             const payLoad: PayMentPayLoadContract = {
                 amount_paid: formatValueToNumber(p.amount),
                 sale_id: saleId,
@@ -67,7 +65,6 @@ export async function paySaleService(payMent: PayMentValue[], saleId: number): P
                 res: res,
 
             });
-
         };
 
         /*return apiResponse(
@@ -81,7 +78,7 @@ export async function paySaleService(payMent: PayMentValue[], saleId: number): P
         return apiResponse(
             false,
             error.response?.data?.message,
-            error.response?.data
+            error.response?.data?.data
         );
     };
 };

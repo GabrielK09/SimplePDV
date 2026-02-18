@@ -15,17 +15,22 @@ import (
 type SaleContract struct {
 	Id        int                       `json:"id"`
 	Customer  string                    `json:"customer"`
-	Specie    string                    `json:"specie"`
 	SaleValue float64                   `json:"sale_value"`
 	Status    string                    `json:"status"`
 	Products  saleitem.SaleItemContract `json:"products"`
 	CreatedAt time.Time                 `json:"created_at"`
 	UpdatedAt time.Time                 `json:"updated_at"`
 }
-type PaySaleContract struct {
-	SaleId     int     `json:"sale_id"`
+
+type PayMentBody struct {
+	SpecieId   int     `json:"specie_id"`
 	Specie     string  `json:"specie"`
 	AmountPaid float64 `json:"amount_paid"`
+}
+
+type PaySaleContract struct {
+	SaleId  int           `json:"sale_id"`
+	Species []PayMentBody `json:"species"`
 }
 
 var conn *pgxpool.Pool
@@ -36,7 +41,44 @@ func SetConnection(db *pgxpool.Pool) {
 }
 
 func (p PaySaleContract) ValidatePay() map[string]string {
+	var totalPaide float64
+	var payMent PayMentBody
+
 	errorsField := make(map[string]string)
+
+	if _, err := Show(p.SaleId); err != nil {
+		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
+	}
+
+	if len(p.Species) <= 0 {
+		errorsField["species"] = "Pagamento ausente."
+	}
+
+	for idx := range p.Species {
+		payMent = p.Species[idx]
+
+		totalPaide += payMent.AmountPaid
+	}
+
+	if payMent.Specie != "Dinheiro" && payMent.Specie != "Pix" {
+		errorsField["species.specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
+	}
+
+	if totalPaide <= 0 {
+		errorsField["amount_paid"] = "O pagamento não pode ser menor que zero."
+	}
+
+	return errorsField
+}
+
+/*func (p PaySaleContract) ValidatePay() map[string]string {
+	var totalPaide float64
+	errorsField := make(map[string]string)
+
+	for i := range p {
+		payMent := p[i]
+
+	}
 
 	if _, err := Show(p.SaleId); err != nil {
 		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
@@ -51,7 +93,7 @@ func (p PaySaleContract) ValidatePay() map[string]string {
 	}
 
 	return errorsField
-}
+}*/
 
 func (s SaleContract) Validate() map[string]string {
 	var subTotal float64
@@ -85,8 +127,7 @@ func GetAll() ([]SaleContract, error) {
 	query := `
 		SELECT
 			id,
-			customer,
-			specie,
+			customer
 			sale_value,
 			status
 			
@@ -112,7 +153,6 @@ func GetAll() ([]SaleContract, error) {
 		if err := rows.Scan(
 			&s.Id,
 			&s.Customer,
-			&s.Specie,
 			&s.SaleValue,
 			&s.Status,
 		); err != nil {
@@ -131,7 +171,6 @@ func Show(id int) (*SaleContract, error) {
 		SELECT
 			id,
 			customer,
-			specie,
 			sale_value,
 			status
 		FROM
@@ -150,7 +189,6 @@ func Show(id int) (*SaleContract, error) {
 	).Scan(
 		&s.Id,
 		&s.Customer,
-		&s.Specie,
 		&s.SaleValue,
 		&s.Status,
 	)
@@ -173,10 +211,10 @@ func (s *SaleContract) Create() (int, error) {
 
 	querySale := `
 		INSERT INTO sales
-			(customer, specie, sale_value)
+			(customer, sale_value)
 
 		VALUES
-			($1, $2, $3)
+			($1, $2)
 
 		RETURNING 
 			id
@@ -188,7 +226,6 @@ func (s *SaleContract) Create() (int, error) {
 		context.Background(),
 		querySale,
 		s.Customer,
-		s.Specie,
 		s.SaleValue,
 	).Scan(
 		&saleId,
@@ -285,7 +322,8 @@ func (s *SaleContract) Create() (int, error) {
 	return saleId, err
 }
 
-func PaySale(saleId int, amountPaind float64) error {
+func PaySale(saleId int, payMent PaySaleContract) error {
+	var totalPaide float64
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
@@ -323,8 +361,42 @@ func PaySale(saleId int, amountPaind float64) error {
 		return fmt.Errorf("Essa venda já está finalizada.")
 	}
 
-	if amountPaind < s.SaleValue {
+	for idx := range payMent.Species {
+		p := payMent.Species[idx]
+
+		totalPaide += p.AmountPaid
+	}
+
+	if totalPaide < s.SaleValue {
 		return fmt.Errorf("Valor informado menor do que da venda.")
+	}
+
+	log.Println("Vai fazer o insert no sale_pay_ment pelo for")
+
+	for idx := range payMent.Species {
+		p := payMent.Species[idx]
+
+		queryForPayMent := `
+			INSERT INTO sale_pay_ment
+				(sale_id, specie, amount_paid)
+
+			VALUES
+				($1, $2, $3)
+			
+			RETURNING
+				id
+		`
+
+		_, err = tx.Exec(
+			ctx,
+			queryForPayMent,
+			saleId,
+			p.AmountPaid,
+		)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Println("Venda está pendente, vai finalizar a venda e os itens.")
@@ -360,31 +432,6 @@ func PaySale(saleId int, amountPaind float64) error {
 		ctx,
 		queryForSaleItem,
 		saleId,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	log.Println("Vai fazer o insert no sale_pay_ment")
-
-	queryForPayMent := `
-		INSERT INTO sale_pay_ment
-			(sale_id, specie, amount_paid)
-
-		VALUES
-			($1, $2, $3)
-		
-		RETURNING
-			id			
-	`
-
-	_, err = tx.Exec(
-		ctx,
-		queryForPayMent,
-		saleId,
-		s.Specie,
-		amountPaind,
 	)
 
 	if err != nil {

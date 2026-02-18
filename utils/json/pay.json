@@ -1,5 +1,10 @@
 {
     "sale_id": 1,
-    "specie": "Pix",
-    "amount_paid": 30
+    "species": [
+        {
+            "specie_id": 2,
+            "specie": "Pix",
+            "amount_paid": 30
+        }
+    ]   
 }

@@ -22,9 +22,9 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
-	var ps sale.PaySaleContract
+	var payMents sale.PaySaleContract
 
-	if err := json.NewDecoder(r.Body).Decode(&ps); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payMents); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
@@ -32,7 +32,7 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ps.ValidatePay(); len(err) > 0 {
+	if err := payMents.ValidatePay(); len(err) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao validar o pagamento da venda.")
 
@@ -40,7 +40,7 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sale.PaySale(ps.SaleId, ps.AmountPaid); err != nil {
+	if err := sale.PaySale(payMents.SaleId, payMents); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao processar o pagamento da venda.")
 
@@ -50,7 +50,7 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, ps, "Venda concluída com sucesso!")
+	resp := responsehelper.Response(true, payMents, "Venda concluída com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
 }
