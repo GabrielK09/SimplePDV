@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"log"
+	calchelper "myApi/helpers/calc"
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/sale"
 
@@ -43,11 +44,24 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var subTotal float64
+
+	for idx := range payload.Products {
+		i := &payload.Products[idx]
+
+		log.Println("Produto aqui: ", i)
+
+		subTotal += calchelper.CalculateTotalSale(i.Price, i.Qtde)
+	}
+
+	payload.SaleValue = subTotal
+
 	saleId, err := payload.Create()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Erro no create:", err)
+
 		resp := responsehelper.Response(false, err, "Erro ao salvar a venda.")
 
 		json.NewEncoder(w).Encode(resp)

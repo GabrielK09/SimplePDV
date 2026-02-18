@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	calchelper "myApi/helpers/calc"
 	"myApi/interface/product"
 	saleitem "myApi/interface/saleItem"
 	"time"
@@ -34,10 +35,6 @@ func SetConnection(db *pgxpool.Pool) {
 	conn = db
 }
 
-func calculateTotalSale(saleValue float64, qtde int) float64 {
-	return saleValue * float64(qtde)
-}
-
 func (p PaySaleContract) ValidatePay() map[string]string {
 	errorsField := make(map[string]string)
 
@@ -64,7 +61,7 @@ func (s SaleContract) Validate() map[string]string {
 
 		log.Println("Produto aqui: ", i)
 
-		subTotal += calculateTotalSale(i.Price, i.Qtde)
+		subTotal += calchelper.CalculateTotalSale(i.Price, i.Qtde)
 	}
 
 	errorsField := make(map[string]string)
@@ -247,7 +244,7 @@ func (s *SaleContract) Create() (int, error) {
 			return 0, err
 		}
 
-		totalSale := calculateTotalSale(i.Price, i.Qtde)
+		totalSale := calchelper.CalculateTotalSale(i.Price, i.Qtde)
 
 		if err != nil {
 			return 0, err
@@ -289,7 +286,6 @@ func (s *SaleContract) Create() (int, error) {
 }
 
 func PaySale(saleId int, amountPaind float64) error {
-	ctx := context.Background()
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
@@ -336,10 +332,8 @@ func PaySale(saleId int, amountPaind float64) error {
 	queryForUpdateSale := `
 		UPDATE 
 			sales
-
 		SET
-			status = 'Concluída'
-		
+			status = 'Concluída'		
 		WHERE 
 			id = $1
 	`
@@ -352,7 +346,7 @@ func PaySale(saleId int, amountPaind float64) error {
 		WHERE 
 			sale_id = $1
 	`
-	_, err = tx.Query(
+	_, err = tx.Exec(
 		ctx,
 		queryForUpdateSale,
 		saleId,
@@ -362,7 +356,7 @@ func PaySale(saleId int, amountPaind float64) error {
 		return err
 	}
 
-	_, err = tx.Query(
+	_, err = tx.Exec(
 		ctx,
 		queryForSaleItem,
 		saleId,
@@ -372,10 +366,10 @@ func PaySale(saleId int, amountPaind float64) error {
 		return err
 	}
 
-	log.Println("Vai fazer o insert no pay_ment_forms")
+	log.Println("Vai fazer o insert no sale_pay_ment")
 
 	queryForPayMent := `
-		INSERT INTO pay_ment_forms
+		INSERT INTO sale_pay_ment
 			(sale_id, specie, amount_paid)
 
 		VALUES
@@ -385,7 +379,7 @@ func PaySale(saleId int, amountPaind float64) error {
 			id			
 	`
 
-	_, err = tx.Query(
+	_, err = tx.Exec(
 		ctx,
 		queryForPayMent,
 		saleId,

@@ -5,6 +5,10 @@
                 Pagamento via PIX
             </h2>
 
+            <span class="text-gray-600 text-center">
+                R$ {{ props.totalSale.toFixed(2).toString().replace('.', ',') }}
+            </span>
+
             <div>
                 <img :src=imgBase64Pix />
 
@@ -55,6 +59,8 @@
         const res = await generateQRCodeBuilder(props.totalSale, props.pixKey);
         const base64 = res.base64;
 
+        console.log(res);
+
         if(!base64)
         {
             notify(
@@ -77,16 +83,16 @@
                 'negative',
                 'Erro ao processar a venda, tente novamente.'
             );
+
         } else if(props.pixKey === ''){
             notify(
                 'negative',
                 'Erro ao processar a venda, tente novamente.'
             );
+
         } else {
             generateQrCodePix();
+
         };
-
-        console.log('Oie');
-
     });
 </script>

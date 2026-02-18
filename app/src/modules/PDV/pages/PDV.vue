@@ -108,7 +108,7 @@
                             class="mt-auto text-lg font-semibold"
                             label="Finalizar venda"
                             :disable="data.length <= 0"
-                            @click="finallySale(false)"
+                            @click="saveSaleForPay(false)"
                         />
                     </div>
                 </div>
@@ -149,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-    import { SessionStorage, QTableColumn } from 'quasar';
+    import { SessionStorage, QTableColumn, event } from 'quasar';
     import { computed, onMounted, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
@@ -337,13 +337,13 @@
                 return;
             };
 
-            finallySale(true);
+            saveSaleForPay(true);
         };
 
         showConfirmDialog.value = false;
     };
 
-    const finallySale = async (isSave?: boolean) => {
+    const saveSaleForPay = async (isSave?: boolean) => {
         const payload: SaleContract = {
             id: 0,
             customer: pdvData.value.customer,
@@ -394,8 +394,6 @@
 
             };
 
-            notify('positive', 'Venda finalizada com sucesso!');
-
             showPayMentForms.value = true;
 
         } else {
@@ -404,18 +402,16 @@
         };
     };
 
+    /**
+     * @param event please report false if using in emits or final saveSaleForPay
+     */
     const resetSale = (event: boolean) => {
+        console.log('Finalizo a venda, go next');
+
         removeSessionData('sale_id');
         removeSessionData('sale');
 
         data.value = [];
-        pdvData.value = {
-            customer: 'Consumidor padrão',
-            id: 0,
-            products: [],
-            specie: ''
-
-        };
 
         showPayMentForms.value = event;
     };
@@ -423,11 +419,6 @@
     onMounted(() => {
         const existingSaleId: number = SessionStorage.getItem('sale_id');
         const existingSale: SaleContract = SessionStorage.getItem('sale');
-
-        console.log('Dados: ', {
-            sale: existingSale
-
-        });
 
         if(!existingSaleId && !existingSale) return;
 
