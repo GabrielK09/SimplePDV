@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	calchelper "myApi/helpers/calc"
+	"myApi/interface/cashRegister"
 	"myApi/interface/product"
 	saleitem "myApi/interface/saleItem"
 	"time"
@@ -23,9 +24,9 @@ type SaleContract struct {
 }
 
 type PayMentBody struct {
-	SpecieId   int     `json:"specie_id"`
+	SpecieId   int     `json:"id"`
 	Specie     string  `json:"specie"`
-	AmountPaid float64 `json:"amount_paid"`
+	AmountPaid float64 `json:"amount"`
 }
 
 type PaySaleContract struct {
@@ -57,8 +58,12 @@ func (p PaySaleContract) ValidatePay() map[string]string {
 	for idx := range p.Species {
 		payMent = p.Species[idx]
 
+		log.Println("Forma de pagamento aqui: ", payMent)
+
 		totalPaide += payMent.AmountPaid
 	}
+
+	log.Println("totalPaide aqui: ", totalPaide)
 
 	if payMent.Specie != "Dinheiro" && payMent.Specie != "Pix" {
 		errorsField["species.specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
@@ -70,30 +75,6 @@ func (p PaySaleContract) ValidatePay() map[string]string {
 
 	return errorsField
 }
-
-/*func (p PaySaleContract) ValidatePay() map[string]string {
-	var totalPaide float64
-	errorsField := make(map[string]string)
-
-	for i := range p {
-		payMent := p[i]
-
-	}
-
-	if _, err := Show(p.SaleId); err != nil {
-		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
-	}
-
-	if p.Specie != "Dinheiro" && p.Specie != "Pix" {
-		errorsField["specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
-	}
-
-	if p.AmountPaid <= 0 {
-		errorsField["amount_paid"] = "O valor informado precisa ser maior que zero."
-	}
-
-	return errorsField
-}*/
 
 func (s SaleContract) Validate() map[string]string {
 	var subTotal float64
@@ -127,7 +108,7 @@ func GetAll() ([]SaleContract, error) {
 	query := `
 		SELECT
 			id,
-			customer
+			customer,
 			sale_value,
 			status
 			
@@ -322,7 +303,8 @@ func (s *SaleContract) Create() (int, error) {
 	return saleId, err
 }
 
-func PaySale(saleId int, payMent PaySaleContract) error {
+func PaySale(payMent PaySaleContract) error {
+
 	var totalPaide float64
 	tx, err := conn.Begin(ctx)
 
@@ -336,6 +318,7 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 
 	queryForSale := `
 		SELECT
+			customer,
 			sale_value,
 			status
 		FROM
@@ -347,8 +330,9 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 	err = tx.QueryRow(
 		ctx,
 		queryForSale,
-		saleId,
+		payMent.SaleId,
 	).Scan(
+		&s.Customer,
 		&s.SaleValue,
 		&s.Status,
 	)
@@ -361,9 +345,7 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 		return fmt.Errorf("Essa venda já está finalizada.")
 	}
 
-	for idx := range payMent.Species {
-		p := payMent.Species[idx]
-
+	for _, p := range payMent.Species {
 		totalPaide += p.AmountPaid
 	}
 
@@ -373,15 +355,17 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 
 	log.Println("Vai fazer o insert no sale_pay_ment pelo for")
 
-	for idx := range payMent.Species {
-		p := payMent.Species[idx]
+	for _, p := range payMent.Species {
+		if p.AmountPaid <= 0 {
+			continue
+		}
 
 		queryForPayMent := `
 			INSERT INTO sale_pay_ment
-				(sale_id, specie, amount_paid)
+				(sale_id, specie_id, specie, amount_paid)
 
 			VALUES
-				($1, $2, $3)
+				($1, $2, $3, $4)
 			
 			RETURNING
 				id
@@ -390,12 +374,18 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 		_, err = tx.Exec(
 			ctx,
 			queryForPayMent,
-			saleId,
+			payMent.SaleId,
+			p.SpecieId,
+			p.Specie,
 			p.AmountPaid,
 		)
 
 		if err != nil {
 			return err
+		}
+
+		if err := createInCashRegister(totalPaide, payMent.SaleId, s.Customer); len(err) > 0 {
+			return fmt.Errorf("Erros: %s", err)
 		}
 	}
 
@@ -421,7 +411,7 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 	_, err = tx.Exec(
 		ctx,
 		queryForUpdateSale,
-		saleId,
+		payMent.SaleId,
 	)
 
 	if err != nil {
@@ -431,7 +421,7 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 	_, err = tx.Exec(
 		ctx,
 		queryForSaleItem,
-		saleId,
+		payMent.SaleId,
 	)
 
 	if err != nil {
@@ -443,6 +433,22 @@ func PaySale(saleId int, payMent PaySaleContract) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func createInCashRegister(inputValue float64, saleId int, customer string) map[string]string {
+	log.Println("Vai inserir no caixa")
+	var c cashRegister.CashRegisterContract
+
+	if err := c.Create(inputValue, 0.0, 0, saleId, customer); len(err) > 0 {
+		return err
+	}
+
+	return nil
+}
+
+func (s SaleContract) CancelSale() error {
 
 	return nil
 }

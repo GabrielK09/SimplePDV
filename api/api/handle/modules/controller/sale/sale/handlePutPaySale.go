@@ -40,7 +40,7 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sale.PaySale(payMents.SaleId, payMents); err != nil {
+	if err := sale.PaySale(payMents); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		resp := responsehelper.Response(false, err, "Erro ao processar o pagamento da venda.")
 

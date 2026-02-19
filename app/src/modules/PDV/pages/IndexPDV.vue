@@ -81,8 +81,8 @@
         }
     ];
 
-    const allPDVs = ref<PDVContract[]>([]);
-    const pdvs = ref<PDVContract[]>([]);
+    let allPDVs = ref<PDVContract[]>([]);
+    let pdvs = ref<PDVContract[]>([]);
 
     const searchInput = ref<string>('');
 

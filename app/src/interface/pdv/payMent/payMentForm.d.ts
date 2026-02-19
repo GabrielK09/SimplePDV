@@ -7,17 +7,12 @@ interface PayMentFormContract {
     pix_key: string;
 };
 
-type Species = {
-    specie: string;
-    amount_paid: number;
-};
-
 /**
- * Para o pagamento
+ * Para o pagamento na api
  */
 interface PayMentPayLoadContract {
     sale_id: number;
-    species: Species;
+    species: any[];
 
 };
 

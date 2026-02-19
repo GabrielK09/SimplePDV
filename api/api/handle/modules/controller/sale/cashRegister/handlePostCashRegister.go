@@ -38,14 +38,14 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Valida os dados
 
-	if err := c.Create(c.InputValue, c.OutputValue); err != nil {
+	if err := c.Create(c.InputValue, c.OutputValue, 0, 0, c.Customer); len(err) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Erro ao salvar o registro no caixa:", err)
 		resp := responsehelper.Response(false, err, "Erro ao salvar o registro no caixa.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
-	}
+	} // Cria
 
 	w.WriteHeader(http.StatusCreated)
 

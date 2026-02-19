@@ -127,7 +127,7 @@
 
     const payMentForms = ref<PayMentFormContract[]>([]);
     const payMentValues = ref<PayMentValue[]>([]);
-    const payMentPayLoad = ref<any[]>([]);
+    const payMentPayLoad = ref<any>();
 
     const internalDialog = ref<boolean>(true);
 
@@ -250,10 +250,10 @@
 
         payMentPayLoad.value = payMentValues.value;
 
-        const res = await paySaleService(payMentPayLoad.value, props.saleId);
+        const res = await paySaleService(payMentValues.value, props.saleId);
         console.log(res);
 
-        //emits('paide', true);
+        if(res.success) emits('paide', true);
     };
 
     onMounted(() => {

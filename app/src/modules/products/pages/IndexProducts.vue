@@ -136,7 +136,7 @@
 
     const getAllProducts = async () => {
         const res = await getAll();
-        const data = camelcaseKeys(res.data, { deep: true });
+        const data = res.data;
 
         if(!res.success)
         {

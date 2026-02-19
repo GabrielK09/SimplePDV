@@ -23,7 +23,7 @@ func HandleGetSale(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao retornar todos os produtos.")
+		resp := responsehelper.Response(false, err, "Erro ao retornar todos as vendas.")
 
 		json.NewEncoder(w).Encode(resp)
 		return

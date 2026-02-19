@@ -2,6 +2,7 @@ package cashRegister
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -152,21 +153,78 @@ func GetAll() ([]CashRegisterContract, error) {
 	return cashRegisters, nil
 }
 
-func (c *CashRegisterContract) Create(input_value, output_value float64) error {
+func (c *CashRegisterContract) Create(input_value, output_value float64, shoppingId, saleId int, customer string) map[string]string {
+	errorsField := make(map[string]string)
+
+	c.InputValue = input_value
+	c.OutputValue = output_value
+	c.Customer = customer
+
+	if shoppingId > 0 && saleId > 0 {
+		errorsField["shopping_id"] = "Uma venda e uma compra não pode ser gravadas no mesmo registro do caixa."
+	}
+
 	lastBalance, err := getLastBalance()
 
 	if err != nil {
-		return err
+		errorsField["error"] = fmt.Sprintf("%s", err)
 	}
 
 	c.TotalBalance = lastBalance + c.InputValue - c.OutputValue
 
+	var sale interface{} = nil
+	var shopping interface{} = nil
+	var description interface{} = ""
+
+	if saleId > 0 {
+		sale = saleId
+		description = fmt.Sprintf("Venda N° %d", saleId)
+	}
+
+	if shoppingId > 0 {
+		shopping = shoppingId
+		description = fmt.Sprintf("Compra N° %d", shoppingId)
+	}
+
+	if shoppingId <= 0 && saleId <= 0 {
+		description = "Registro manual do caixa"
+	}
+
+	args := []interface{}{
+		description,
+		c.Customer,
+		c.Specie,
+		c.InputValue,
+		c.OutputValue,
+		c.TotalBalance,
+		sale,
+		shopping,
+	}
+
 	query := `
 		INSERT INTO cash_registers
-			(description, customer, specie, input_value, output_value, total_balance)
+			(
+				description, 
+				customer, 
+				specie, 
+				input_value, 
+				output_value, 
+				total_balance,
+				sale_id,
+				shopping_id
+			)
 
 		VALUES
-			($1, $2, $3, $4, $5, $6)
+			(
+				$1, 
+				$2, 
+				$3, 
+				$4, 
+				$5, 
+				$6,
+				$7,
+				$8
+			)
 
 		RETURNING id
 	`
@@ -174,13 +232,12 @@ func (c *CashRegisterContract) Create(input_value, output_value float64) error {
 	err = conn.QueryRow(
 		context.Background(),
 		query,
-		c.Description,
-		c.Customer,
-		c.Specie,
-		c.InputValue,
-		c.OutputValue,
-		c.TotalBalance,
+		args...,
 	).Scan(&c.Id)
 
-	return err
+	if err != nil {
+		errorsField["database"] = err.Error()
+	}
+
+	return errorsField
 }
