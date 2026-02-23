@@ -10,7 +10,7 @@ export async function getAll(): Promise<any>
         return apiResponse(
             true,
             data.message,
-            data.data
+            data.data || []
         );
     } catch (error) {
         return apiResponse(
@@ -30,7 +30,7 @@ export async function createshopping(payLoad: any): Promise<any>
         return apiResponse(
             true,
             data.message,
-            data.data
+            data.data || []
         );
     } catch (error) {
         return apiResponse(
@@ -50,7 +50,7 @@ export async function deleteshopping(shoppingId: number): Promise<any>
         return apiResponse(
             true,
             data.message,
-            data.data
+            data.data || []
         );
     } catch (error) {
         return apiResponse(

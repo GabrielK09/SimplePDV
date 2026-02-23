@@ -8,10 +8,26 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/admin',
         component: () => import('src/layouts/MainLayout.vue'),
+        props: true,
         children: [
             {
                 path: '',
                 component: () => import('src/pages/IndexPage.vue')
+            },
+            {
+                path: 'cash-register',
+                children: [
+                    {
+                        path: '',
+                        name: 'cash-register.index',
+                        component: () => import('src/modules/cashRegister/pages/IndexCashRegister.vue')
+                    },
+                    {
+                        path: 'create',
+                        name: 'cash-register.create',
+                        component: () => import('src/modules/cashRegister/pages/create/CreateCashRegister.vue')
+                    }
+                ]
             },
             {
                 path: 'products',
@@ -28,21 +44,21 @@ const routes: RouteRecordRaw[] = [
                     }
                 ]
             },
-            {
-                path: 'shopping',
-                children: [
-                    {
-                        path: '',
-                        name: 'shopping.index',
-                        component: () => import('src/modules/shopping/pages/IndexShopping.vue')
-                    },
-                    {
-                        path: 'create',
-                        name: 'shopping.create',
-                        component: () => import('src/modules/shopping/pages/create/CreateShopping.vue')
-                    }
-                ]
-            },
+            // {
+            //     path: 'shopping',
+            //     children: [
+            //         {
+            //             path: '',
+            //             name: 'shopping.index',
+            //             component: () => import('src/modules/shopping/pages/IndexShopping.vue')
+            //         },
+            //         {
+            //             path: 'create',
+            //             name: 'shopping.create',
+            //             component: () => import('src/modules/shopping/pages/create/CreateShopping.vue')
+            //         }
+            //     ]
+            // },
             {
                 path: 'pdv',
                 children: [

@@ -155,13 +155,11 @@
             getPixKey.value = pixPayment.pix_key;
             valueForPix.value = Number(pixPayment.amount.replace(',', '.'));
 
-            console.log('Payment 163', pixPayment);
         } else {
             showQrCodePix.value = false;
             havePix.value = false;
             valueForPix.value = 0;
 
-            console.log('Payment 169', pixPayment);
         };
 
     }, { deep: true });
@@ -253,7 +251,15 @@
         const res = await paySaleService(payMentValues.value, props.saleId);
         console.log(res);
 
-        if(res.success) emits('paide', true);
+        if(res.success)
+        {
+            notify(
+                'positive',
+                res.message
+            );
+
+            emits('paide', true);
+        };
     };
 
     onMounted(() => {

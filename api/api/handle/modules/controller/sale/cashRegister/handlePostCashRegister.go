@@ -2,7 +2,7 @@ package controller
 
 import (
 	"encoding/json"
-	"log"
+	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/cashRegister"
 
@@ -38,9 +38,9 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Valida os dados
 
-	if err := c.Create(c.InputValue, c.OutputValue, 0, 0, c.Customer); len(err) > 0 {
+	if err := c.Create(nil, c.InputValue, c.OutputValue, 0, 0, c.CustomerId, c.Customer); len(err) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("Erro ao salvar o registro no caixa:", err)
+		u.ErrorLogger.Println("Erro ao salvar o registro no caixa:", err)
 		resp := responsehelper.Response(false, err, "Erro ao salvar o registro no caixa.")
 
 		json.NewEncoder(w).Encode(resp)

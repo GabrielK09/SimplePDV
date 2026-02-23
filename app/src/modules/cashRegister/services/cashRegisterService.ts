@@ -1,10 +1,10 @@
 import { api } from "src/boot/axios";
 import apiResponse from "src/helpers/response/apiResponse";
 
-export async function getAllPayMentFormsService(): Promise<any>
+export async function getAll(): Promise<any>
 {
     try {
-        const res = await api.get('/sale/pay-ment-forms');
+        const res = await api.get('/cash-register/all');
         const data = res.data;
 
         return apiResponse(
@@ -22,13 +22,10 @@ export async function getAllPayMentFormsService(): Promise<any>
     };
 };
 
-export async function updatePayMentFormService(payLoad: string): Promise<any>
+export async function createManualCashRegister(payLoad: CashRegisterContract): Promise<any>
 {
     try {
-        const res = await api.put('/sale/update/pay-ment-forms/pix-key', {
-            pix_key: payLoad
-        });
-
+        const res = await api.post('/cash-register/create', payLoad);
         const data = res.data;
 
         return apiResponse(

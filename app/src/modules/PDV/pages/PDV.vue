@@ -1,6 +1,6 @@
 <template>
     <q-page padding>
-        <main class="px-4 max-w" id="sale-page">
+        <main class="px-4" id="sale-page">
             <section class="flex flex-col laptop:flex-row items-start gap-4">
                 <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white rounded-lg p-4">
                     <div class="flex items-center gap-2">
@@ -17,7 +17,7 @@
                         />
                     </div>
 
-                    <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin border">
+                    <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin border w-[100%]">
                         <q-table
                             :rows="data"
                             :columns="columns"
@@ -69,7 +69,8 @@
                 <div class="bg-white rounded-lg h-auto laptop:h-[75vh] p-4 w-full laptop:w-[25rem] laptop:mr-6 flex flex-col">
                     <div class="flex-1 overflow-y-auto">
                         <BaseCustomerSelect
-                            v-model="pdvData.customer"
+                            v-model="pdvData.customer_id"
+                            @selected:customer="(c) => pdvData.customer = c.name"
                         />
                     </div>
 
@@ -82,6 +83,7 @@
                             icon="payments"
                             dense
                             color="primary"
+                            :disable="disableButtons.editPayMentsForms"
                             @click="showConfigPayMentForm = !showConfigPayMentForm"
                         />
 
@@ -89,7 +91,7 @@
                             dense
                             color="red"
                             icon="delete"
-                            :disable="data.length <= 0"
+                            :disable="disableButtons.deleteSale"
                             @click="deleteSale"
                         />
 
@@ -97,7 +99,7 @@
                             dense
                             color="grey"
                             icon="save"
-                            :disable="data.length <= 0"
+                            :disable="disableButtons.saveSale"
                             @click="showConfirmSaveSaleDialog"
                         />
 
@@ -107,7 +109,7 @@
                             no-caps
                             class="mt-auto text-lg font-semibold"
                             label="Finalizar venda"
-                            :disable="data.length <= 0"
+                            :disable="disableButtons.finallySale"
                             @click="saveSaleForPay(false)"
                         />
                     </div>
@@ -144,28 +146,46 @@
 
     <PayMentForms
         v-if="showConfigPayMentForm"
-
+        @close="showConfigPayMentForm = !$event"
     />
 </template>
 
 <script setup lang="ts">
-    import { SessionStorage, QTableColumn, event } from 'quasar';
-    import { computed, onMounted, ref, watch } from 'vue';
+    import { SessionStorage, QTableColumn } from 'quasar';
+    import { computed, onMounted, reactive, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
-    import { saveSaleService } from '../services/pdvService';
+    import { getSaleDetails, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import { useRoute, useRouter } from 'vue-router';
 
     type TPagination = {
         rowsPerPage: number;
     };
 
+    type DisableButtons = {
+        editPayMentsForms: boolean;
+        deleteSale: boolean;
+        saveSale: boolean;
+        finallySale: boolean;
+    };
+
     const { notify } = useNotify();
+
+    const disableButtons = reactive<DisableButtons>({
+        editPayMentsForms: false,
+        deleteSale: true,
+        saveSale: true,
+        finallySale: true
+    });
+
     const data = ref<SaleItemContract[]>([]);
+    const route = useRoute();
+    const router = useRouter();
 
     const columns: QTableColumn[] = [
         {
@@ -219,13 +239,13 @@
     const showBaseSearchAllProducs = ref<boolean>(false);
     const showConfirmDialog = ref<boolean>(false);
     const showPayMentForms = ref<boolean>(false);
-
     const textOperation = ref<string>('');
     const operation = ref<'save'|'delete'|''>('');
     const totalSale = ref<number>(0);
 
     const pdvData = ref<SaleContract>({
         id: 0,
+        customer_id: 1,
         customer: 'Consumidor padrão',
         specie: '',
         products: []
@@ -250,6 +270,15 @@
         {
             data.value.splice(index, 1);
         };
+
+        if (data.value.length <= 0)
+        {
+            disableButtons.editPayMentsForms = false;
+            disableButtons.deleteSale = true;
+            disableButtons.saveSale = true;
+            disableButtons.finallySale = true;
+
+        };
     };
 
     const validateQtde = (val: number, row: SaleItemContract) => {
@@ -263,7 +292,7 @@
 
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
         selectedProducts.forEach(p => {
-            const exisit = data.value.find(i => i.id === p.id);
+            const exisit = data.value.find(i => i.product_id === p.id);
 
             if(exisit)
             {
@@ -279,6 +308,11 @@
                 });
             };
         });
+
+        disableButtons.editPayMentsForms = true;
+        disableButtons.deleteSale = false;
+        disableButtons.saveSale = false;
+        disableButtons.finallySale = false;
     };
 
     const calculateTotal = computed(() => {
@@ -304,29 +338,22 @@
         showConfirmDialog.value = true;
     };
 
-    const confirmDelete = (val: boolean) => {
-        if(val)
-        {
-            data.value = [];
-            showConfirmDialog.value = false;
-        };
-    };
-
     const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
         if(confirmed && operation === 'delete')
         {
             notify('positive', 'Venda cancelada com sucesso!');
             removeSessionData('sale_id');
             removeSessionData('sale');
-            confirmDelete(confirmed);
+
+            router.replace({query: {}});
+
+            data.value = [];
+            showConfirmDialog.value = false;
 
         };
 
         if(confirmed && operation === 'save')
         {
-            // Isso é gambiarra
-            console.log('Salvando: ', SessionStorage.getItem('sale'));
-
             if(SessionStorage.getItem('sale'))
             {
                 notify('positive', 'Dados salvos com sucesso!');
@@ -334,6 +361,12 @@
                 removeSessionData('sale');
                 data.value = [];
                 showConfirmDialog.value = false;
+
+                disableButtons.editPayMentsForms = false;
+                disableButtons.deleteSale = true;
+                disableButtons.saveSale = true;
+                disableButtons.finallySale = true;
+
                 return;
             };
 
@@ -341,11 +374,29 @@
         };
 
         showConfirmDialog.value = false;
+
+        disableButtons.editPayMentsForms = false;
+        disableButtons.deleteSale = true;
+        disableButtons.saveSale = true;
+        disableButtons.finallySale = true;
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
+        // Confirma se a venda não foi reaberta
+        if(route.query.id !== null && route.query.id !== undefined && route.query.id !== '')
+        {
+            console.log('É uma venda importada');
+
+            showPayMentForms.value = true;
+            returningSaleId.value = Number(route.query.id);
+            return;
+        };
+
+        console.log('Não é uma venda importada');
+
         const payload: SaleContract = {
             id: 0,
+            customer_id: pdvData.value.customer_id,
             customer: pdvData.value.customer,
             specie: pdvData.value.specie,
             products: data.value,
@@ -362,15 +413,14 @@
             return;
         };
 
-        //console.log('Não existe uma venda aberta no SessionStorage');
-
         notify('positive', 'Processando dados da venda.');
 
         const res = await saveSaleService(payload);
 
         if(res.success)
         {
-            returningSaleId.value = res.data.id;
+            returningSaleId.value = !(route.query.id === null && route.query.id === undefined && route.query.id === '') ? res.data.id : Number(route.query.id);
+
             SessionStorage.set('sale_id', returningSaleId.value);
 
             if(!res.data.id || res.data.id === 0)
@@ -384,8 +434,6 @@
 
             if(isSave)
             {
-                console.log('Chegou nesse isSave');
-
                 notify('positive', 'Dados salvos com sucesso!');
                 removeSessionData('sale_id');
                 removeSessionData('sale');
@@ -406,17 +454,57 @@
      * @param event please report false if using in emits or final saveSaleForPay
      */
     const resetSale = (event: boolean) => {
-        console.log('Finalizo a venda, go next');
+        console.log('Chamou resetSale');
 
+        showPayMentForms.value = event;
         removeSessionData('sale_id');
         removeSessionData('sale');
 
         data.value = [];
+        pdvData.value.products = data.value;
 
-        showPayMentForms.value = event;
+        disableButtons.editPayMentsForms = false;
+        disableButtons.deleteSale = true;
+        disableButtons.saveSale = true;
+        disableButtons.finallySale = true;
+
+        router.replace({query: {}});
     };
 
-    onMounted(() => {
+    onMounted(async () => {
+        if(route.query.id !== null && route.query.id !== undefined && route.query.id !== '')
+        {
+            notify(
+                'positive',
+                'Carregando dados da venda ...'
+            );
+
+            const res = await getSaleDetails(Number(route.query.id));
+            const resData: SaleContract = res.data;
+
+            if(!res.success)
+            {
+                notify(
+                    'negative',
+                    res.message
+                );
+            };
+
+            data.value = resData.products;
+            pdvData.value = {
+                customer: resData.customer,
+                id: resData.id,
+                customer_id: resData.customer_id,
+                products: data.value,
+                specie: ''
+            };
+
+            disableButtons.editPayMentsForms = true;
+            disableButtons.deleteSale = false;
+            disableButtons.saveSale = false;
+            disableButtons.finallySale = false;
+        };
+
         const existingSaleId: number = SessionStorage.getItem('sale_id');
         const existingSale: SaleContract = SessionStorage.getItem('sale');
 
@@ -425,8 +513,9 @@
         data.value = existingSale.products;
 
         pdvData.value = {
-            customer: existingSale.customer,
             id: existingSaleId,
+            customer: existingSale.customer,
+            customer_id: existingSale.customer_id,
             products: data.value,
             specie: ''
         };

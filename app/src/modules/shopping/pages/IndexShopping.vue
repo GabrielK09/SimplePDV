@@ -80,7 +80,6 @@
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
     import { onMounted, ref } from 'vue';
-    import camelcaseKeys from 'camelcase-keys';
     import { getAll, deleteshopping } from '../services/shoppingService';
 
     const $q = useQuasar();
@@ -122,11 +121,10 @@
 
     const getAllshopping = async () => {
         const res = await getAll();
-        const data = camelcaseKeys(res.data, { deep: true });
+        const data = res.data;
 
         shopping.value = data;
         allshopping.value = [...shopping.value];
-
     };
 
     const showDialogDeleteshopping = (shoppingId: number) => {

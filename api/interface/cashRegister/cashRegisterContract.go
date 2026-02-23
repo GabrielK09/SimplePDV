@@ -3,15 +3,19 @@ package cashRegister
 import (
 	"context"
 	"fmt"
+	u "myApi/helpers/logger"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CashRegisterContract struct {
 	Id           int       `json:"id"`
 	Description  string    `json:"description"`
+	CustomerId   int       `json:"customer_id"`
 	Customer     string    `json:"customer"`
+	SpecieId     int       `json:"specie_id"`
 	Specie       string    `json:"specie"`
 	InputValue   float64   `json:"input_value"`
 	OutputValue  float64   `json:"output_value"`
@@ -69,7 +73,7 @@ func GetLastId() (id int, err error) {
 	return id, nil
 }
 
-func getLastBalance() (float64, error) {
+func getLastBalance(tx pgx.Tx) (float64, error) {
 	query := `
 		SELECT
 			COALESCE(total_balance, 0)
@@ -77,13 +81,14 @@ func getLastBalance() (float64, error) {
 		FROM
 			cash_registers
 
-		ORDER BY id DESC
+		ORDER BY 
+			id DESC
 		LIMIT 1
 	`
 
 	var balance float64
 
-	err := conn.QueryRow(
+	err := tx.QueryRow(
 		context.Background(),
 		query,
 	).Scan(
@@ -108,13 +113,13 @@ func GetAll() ([]CashRegisterContract, error) {
 		SELECT
 			id,
 			description,
+			customer_id,
 			customer,
+			specie_id,
 			specie,
 			input_value,
 			output_value,
-			total_balance,
-			created_at,
-			updated_at 
+			total_balance
 		FROM
 			cash_registers
 	`
@@ -136,13 +141,13 @@ func GetAll() ([]CashRegisterContract, error) {
 		if err := rows.Scan(
 			&c.Id,
 			&c.Description,
+			&c.CustomerId,
 			&c.Customer,
+			&c.SpecieId,
 			&c.Specie,
 			&c.InputValue,
 			&c.OutputValue,
 			&c.TotalBalance,
-			&c.CreatedAt,
-			&c.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -153,22 +158,39 @@ func GetAll() ([]CashRegisterContract, error) {
 	return cashRegisters, nil
 }
 
-func (c *CashRegisterContract) Create(input_value, output_value float64, shoppingId, saleId int, customer string) map[string]string {
+func (c *CashRegisterContract) Create(
+	tx pgx.Tx,
+	input_value,
+	output_value float64,
+	shoppingId,
+	saleId,
+	cusotmerId int,
+	customer string,
+) map[string]string {
 	errorsField := make(map[string]string)
 
 	c.InputValue = input_value
 	c.OutputValue = output_value
+	c.CustomerId = cusotmerId
 	c.Customer = customer
 
-	if shoppingId > 0 && saleId > 0 {
-		errorsField["shopping_id"] = "Uma venda e uma compra não pode ser gravadas no mesmo registro do caixa."
+	if c.InputValue > 0 && c.OutputValue > 0 {
+		errorsField["input_value"] = "Um registro no caixa não pode ter um valor de entrada no mesmo registro de uma saída."
+		errorsField["output_value"] = "Um registro no caixa não pode ter um valor de saída no mesmo registro de uma entrada."
 	}
 
-	lastBalance, err := getLastBalance()
+	if shoppingId > 0 && saleId > 0 {
+		errorsField["shopping_id"] = "Uma venda e uma compra não podem ser gravadas no mesmo registro do caixa."
+	}
+
+	lastBalance, err := getLastBalance(tx)
 
 	if err != nil {
+		u.ErrorLogger.Println("Erro no getLastBalance (cash-register-contract): ", err)
 		errorsField["error"] = fmt.Sprintf("%s", err)
 	}
+
+	u.GeneralLogger.Printf("Dados: lastBalance - %f|InputValue - %f|OutputValue - %f", lastBalance, c.InputValue, c.OutputValue)
 
 	c.TotalBalance = lastBalance + c.InputValue - c.OutputValue
 
@@ -178,21 +200,37 @@ func (c *CashRegisterContract) Create(input_value, output_value float64, shoppin
 
 	if saleId > 0 {
 		sale = saleId
-		description = fmt.Sprintf("Venda N° %d", saleId)
+
+		if input_value > 0 {
+			description = fmt.Sprintf("Venda n° %d", saleId)
+		} else {
+			description = fmt.Sprintf("Estorno de venda n° %d", saleId)
+		}
 	}
 
 	if shoppingId > 0 {
 		shopping = shoppingId
-		description = fmt.Sprintf("Compra N° %d", shoppingId)
+
+		if input_value > 0 {
+			description = fmt.Sprintf("Compra n° %d", saleId)
+		} else {
+			description = fmt.Sprintf("Estorno de compra n° %d", saleId)
+		}
 	}
 
 	if shoppingId <= 0 && saleId <= 0 {
 		description = "Registro manual do caixa"
 	}
 
+	if len(errorsField) > 0 {
+		return errorsField
+	}
+
 	args := []interface{}{
 		description,
+		c.CustomerId,
 		c.Customer,
+		c.SpecieId,
 		c.Specie,
 		c.InputValue,
 		c.OutputValue,
@@ -201,11 +239,15 @@ func (c *CashRegisterContract) Create(input_value, output_value float64, shoppin
 		shopping,
 	}
 
+	u.GeneralLogger.Println("Dados do insert: ", args)
+
 	query := `
 		INSERT INTO cash_registers
 			(
 				description, 
+				customer_id, 
 				customer, 
+				specie_id, 
 				specie, 
 				input_value, 
 				output_value, 
@@ -223,20 +265,24 @@ func (c *CashRegisterContract) Create(input_value, output_value float64, shoppin
 				$5, 
 				$6,
 				$7,
-				$8
+				$8,
+				$9,
+				$10
 			)
 
 		RETURNING id
 	`
 
-	err = conn.QueryRow(
+	err = tx.QueryRow(
 		context.Background(),
 		query,
 		args...,
 	).Scan(&c.Id)
 
 	if err != nil {
+		u.ErrorLogger.Println("Erro no create (cash-register-contract): ", err)
 		errorsField["database"] = err.Error()
+		return errorsField
 	}
 
 	return errorsField

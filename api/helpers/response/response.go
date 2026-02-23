@@ -1,12 +1,13 @@
 package responsehelper
 
 import (
-	"log"
+	u "myApi/helpers/logger"
 	"myApi/interface/response"
 )
 
 func Response(status bool, data any, message string) response.ResponseContract {
-	log.Println("Data recebido:", data)
+	u.GeneralLogger.Println("Data recebido:", data)
+
 	return response.ResponseContract{
 		Status:  status,
 		Data:    data,

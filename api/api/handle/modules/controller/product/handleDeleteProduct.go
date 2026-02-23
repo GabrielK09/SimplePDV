@@ -2,7 +2,7 @@ package controller
 
 import (
 	"encoding/json"
-	"log"
+	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/product"
 	"net/http"
@@ -29,7 +29,7 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
-		log.Println("Id inválido: ", err)
+		u.ErrorLogger.Println("Id inválido: ", err)
 		json.NewEncoder(w).Encode(
 			responsehelper.Response(false, err, "Id inválido."),
 		)

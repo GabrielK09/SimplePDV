@@ -14,10 +14,9 @@
 
         <q-btn
             type="submit"
-            v-if="false"
+            v-show="false"
         />
     </q-form>
-
 </template>
 
 <script setup lang="ts">
@@ -32,13 +31,18 @@
         (e: 'emit:selected-product', value: SaleItemContract): void
     }>();
 
-    const searchProduct = async () => {
+    const searchProduct = async (): Promise<void> => {
         if(!id.value) return;
 
         const product = await findById(id.value);
+
         id.value = null;
 
-        if(!product) notify('warning', 'Produto não localizado');
+        if(!product)
+        {
+            notify('warning', 'Produto não localizado');
+            return;
+        };
 
         emits('emit:selected-product', product);
     };

@@ -36,7 +36,7 @@
     const props = defineProps<{
         show: boolean;
         text: string;
-        operation: string;
+        operation?: string;
     }>();
 
     const emits = defineEmits<{

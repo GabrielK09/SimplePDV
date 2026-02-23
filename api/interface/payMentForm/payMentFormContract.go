@@ -2,7 +2,7 @@ package paymentform
 
 import (
 	"context"
-	"log"
+	u "myApi/helpers/logger"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,17 +24,12 @@ func SetConnection(db *pgxpool.Pool) {
 	conn = db
 }
 
-func (pf PayMentForms) Validate() map[string]string {
+func (p PayMentForms) Validate() map[string]string {
 	errorsField := make(map[string]string)
 
-	if pf.Specie == "Pix" {
-		if pf.PixKey == "" {
-			errorsField["pix_key"] = "Chave PIX ausente"
-		}
-
-		if len(pf.PixKey) > 255 {
-			errorsField["pix_key"] = "A chave do PIX não pode ser superior a 255 caracteres."
-		}
+	if len(p.PixKey) > 255 {
+		u.ErrorLogger.Println("A chave do PIX não pode ser superior a 255 caracteres.")
+		errorsField["pix_key"] = "A chave do PIX não pode ser superior a 255 caracteres."
 	}
 
 	return errorsField
@@ -58,7 +53,7 @@ func GetAll() ([]PayMentForms, error) {
 	)
 
 	if err != nil {
-		log.Println("Erro: ", err)
+		u.ErrorLogger.Println("Erro: ", err)
 		return nil, err
 	}
 
@@ -72,7 +67,7 @@ func GetAll() ([]PayMentForms, error) {
 			&p.Specie,
 			&p.PixKey,
 		); err != nil {
-			log.Println("Erro ao ler a consulta: ", err)
+			u.ErrorLogger.Println("Erro ao ler a consulta: ", err)
 			return nil, err
 		}
 

@@ -11,7 +11,7 @@ export async function getAll(): Promise<any>
         return apiResponse(
             true,
             data.message,
-            data.data
+            data.data || []
         );
 
     } catch (error) {
@@ -32,7 +32,7 @@ export async function saveSaleService(payLoad: SaleContract): Promise<any>
         return apiResponse(
             true,
             data.message,
-            data.data
+            data.data || []
         );
     } catch (error) {
         return apiResponse(
@@ -61,7 +61,7 @@ export async function paySaleService(payMentValues: PayMentValue[], saleId: numb
         return apiResponse(
             true,
             data.message,
-            data.data
+            data.data || []
         );
     } catch (error) {
         console.error('Erro: ', error);
@@ -70,6 +70,49 @@ export async function paySaleService(payMentValues: PayMentValue[], saleId: numb
             false,
             error.response?.data?.message,
             error.response?.data?.data
+        );
+    };
+};
+
+export async function cancelSale(saleId: number): Promise<any>
+{
+    try {
+        const res = await api.put(`sale/cancel/${saleId}`);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+    } catch (error) {
+        console.error('Erro: ', error);
+
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data?.data
+        );
+    };
+};
+
+export async function getSaleDetailsById(saleId: number): Promise<any>
+{
+    try {
+        const res = await api.get(`/sale/details/${saleId}`);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
         );
     };
 };

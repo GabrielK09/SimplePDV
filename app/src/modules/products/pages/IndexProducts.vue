@@ -45,7 +45,7 @@
                             :props="props"
                         >
                             <q-td
-                                v-for="(col, i) in props.cols"
+                                v-for="col in props.cols"
                             >
                                 <template v-if="col.name === 'actions'">
                                     <div

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	u "myApi/helpers/logger"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -180,7 +180,7 @@ func GetAll() ([]ProductContract, error) {
 	)
 
 	if err != nil {
-		log.Println("Erro: ", err)
+		u.ErrorLogger.Println("Erro: ", err)
 		return nil, err
 	}
 
@@ -197,7 +197,7 @@ func GetAll() ([]ProductContract, error) {
 			&p.Returned,
 			&p.Saled,
 		); err != nil {
-			log.Println("Erro: ", err)
+			u.ErrorLogger.Println("Erro: ", err)
 			return nil, err
 		}
 
@@ -231,7 +231,7 @@ func Delete(id int) error {
 
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			log.Println("Erro ao conferir se possui cadastro em vendas: ", err)
+			u.ErrorLogger.Println("Erro ao conferir se possui cadastro em vendas: ", err)
 			return err
 		}
 
@@ -255,7 +255,7 @@ func Delete(id int) error {
 	)
 
 	if err != nil {
-		log.Println("Erro ao deletar: ", err)
+		u.ErrorLogger.Println("Erro ao deletar: ", err)
 		return err
 	}
 

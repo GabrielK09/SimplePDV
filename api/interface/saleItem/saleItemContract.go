@@ -12,17 +12,17 @@ type SaleItemContract []struct {
 	ProductId int       `json:"product_id"`
 	Name      string    `json:"name"`
 	Qtde      int       `json:"qtde"`
-	Price     float64   `json:"price"`
+	SaleValue float64   `json:"price"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt time.Time `json:"cpdated_at"`
 }
 
 func (i SaleItemContract) Validate() map[string]string {
 	errorsField := make(map[string]string)
 
 	for _, p := range i {
-		if p.Price <= 0 {
+		if p.SaleValue <= 0 {
 			errorsField["sale_value"] = "O valor da venda não pode ser zerado."
 		}
 

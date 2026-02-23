@@ -2,8 +2,8 @@ package controller
 
 import (
 	"encoding/json"
-	"log"
 	calchelper "myApi/helpers/calc"
+	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/sale"
 
@@ -25,6 +25,7 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao validar os dados.", err)
 		resp := responsehelper.Response(false, err, "Erro ao validar os dados.")
 
 		json.NewEncoder(w).Encode(resp)
@@ -37,7 +38,7 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	if err := payload.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		log.Println("Campos obrigatórios ausentes:", err)
+		u.ErrorLogger.Println("Campos obrigatórios ausentes:", err)
 		resp := responsehelper.Response(false, err, "Campos obrigatórios ausentes.")
 
 		json.NewEncoder(w).Encode(resp)
@@ -49,9 +50,9 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 	for idx := range payload.Products {
 		i := &payload.Products[idx]
 
-		log.Println("Produto aqui: ", i)
+		u.GeneralLogger.Println("Produto aqui: ", i)
 
-		subTotal += calchelper.CalculateTotalSale(i.Price, i.Qtde)
+		subTotal += calchelper.CalculateTotalSale(i.SaleValue, i.Qtde)
 	}
 
 	payload.SaleValue = subTotal
@@ -60,7 +61,7 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("Erro no create:", err)
+		u.ErrorLogger.Println("Erro no create:", err)
 
 		resp := responsehelper.Response(false, err, "Erro ao salvar a venda.")
 
