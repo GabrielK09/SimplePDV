@@ -10,7 +10,6 @@
                         color="blue"
                         to="/admin/pdv"
                         label="Cadastrar uma venda"
-
                     />
                 </div>
             </div>
@@ -213,6 +212,9 @@
         );
 
         showConfirmDialog.value = false;
+        
+        await getAllPdv();
+
         return;
     };
 

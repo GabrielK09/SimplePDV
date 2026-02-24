@@ -73,7 +73,22 @@ const routes: RouteRecordRaw[] = [
                         component: () => import('src/modules/PDV/pages/PDV.vue')
                     }
                 ]
-            }
+            },
+            {
+                path: 'customers',
+                children: [
+                    {
+                        path: '',
+                        name: 'customers.index',
+                        component: () => import('src/modules/customer/pages/IndexCustomer.vue')
+                    },
+                    {
+                        path: 'create',
+                        name: 'customers.create',
+                        component: () => import('src/modules/customer/pages/create/CreateCustomer.vue')
+                    }
+                ]
+            },
         ],
     },
 

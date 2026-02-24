@@ -88,6 +88,7 @@
                             color="primary"
                             label="Finalizar venda"
                             type="submit"
+                            id="finallySale-btn"
                             @click="confirmValues"
                             :disable="calculatePayMent.totalPaid < props.totalSale"
                         />
@@ -109,7 +110,7 @@
 <script setup lang="ts">
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { getAllPayMentFormsService } from 'src/modules/PDV/services/payMentFormsService';
-    import { computed, onMounted, ref, watch } from 'vue';
+    import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
     import QRCodePix from '../PIX/QRCodePix.vue';
     import { paySaleService } from 'src/modules/PDV/services/pdvService';
 
@@ -262,9 +263,20 @@
         };
     };
 
+    const onKeyDownEnter = (e: KeyboardEvent) => {
+        if(e.key.toLocaleLowerCase() !== 'enter') return;
+        if(!internalDialog.value) return;
+
+        confirmValues();
+    };        
+
     onMounted(() => {
         getPayMentForms();
+        document.addEventListener('keydown', onKeyDownEnter);
+    });    
 
+    onUnmounted(() => {
+        document.removeEventListener('keydown', onKeyDownEnter);
     });
 </script>
 

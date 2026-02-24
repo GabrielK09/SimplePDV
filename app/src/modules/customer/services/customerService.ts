@@ -21,3 +21,24 @@ export async function getAll(): Promise<any>
         );
     };
 };
+
+export async function deleteCustomer(customerId: number): Promise<any>
+{
+    try {
+        const res = await api.delete(`/customer/delete/${customerId}`);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
+        );
+    };
+};

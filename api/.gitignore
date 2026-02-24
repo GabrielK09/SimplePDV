@@ -1,4 +1,2 @@
 .env
-/db/dbSchema
-/db/dbSchema/*
 /test

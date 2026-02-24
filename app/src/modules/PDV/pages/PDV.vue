@@ -159,7 +159,7 @@
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
-    import { getSaleDetails, saveSaleService } from '../services/pdvService';
+    import { getSaleDetailsById, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { useRoute, useRouter } from 'vue-router';
 
@@ -479,7 +479,7 @@
                 'Carregando dados da venda ...'
             );
 
-            const res = await getSaleDetails(Number(route.query.id));
+            const res = await getSaleDetailsById(Number(route.query.id));
             const resData: SaleContract = res.data;
 
             if(!res.success)
@@ -519,6 +519,11 @@
             products: data.value,
             specie: ''
         };
+
+        disableButtons.editPayMentsForms = true;
+        disableButtons.deleteSale = false;
+        disableButtons.saveSale = false;
+        disableButtons.finallySale = false;
     });
 </script>
 

@@ -1,6 +1,6 @@
 interface SaleContract {
     readonly id: number;
-    readonly id: number;
+    readonly customer_id: number;
     customer: string;
     specie: string;
     products: SaleItemContract[]
