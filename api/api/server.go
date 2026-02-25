@@ -49,6 +49,8 @@ func StartServer() {
 	r.HandleFunc("/api/customer/all", customerController.HandleGetCustomer).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/customer/find/{id}", customerController.HandleGetCustomerById).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/customer/create", customerController.HandlePostCustomer).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/customer/update/{id}", customerController.HandlePutCustomer).Methods(http.MethodPut, http.MethodOptions)
+	r.HandleFunc("/api/customer/delete/{id}", customerController.HandleDeleteCustomer).Methods(http.MethodDelete, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	log.Println("Servidor rodando em http://localhost:8000/api")

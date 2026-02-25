@@ -2,9 +2,12 @@ package customer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	u "myApi/helpers/logger"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -147,4 +150,94 @@ func (c *CustomerContract) Create() error {
 	}
 
 	return nil
+}
+
+func Delete(id int) error {
+	verify := `
+		SELECT
+			id
+		FROM
+			sale_itens
+		WHERE
+			customer_id = $1
+		LIMIT
+			1
+	`
+
+	var saleCustomerId int
+
+	err := conn.QueryRow(
+		ctx,
+		verify,
+		saleCustomerId,
+	).Scan(
+		&saleCustomerId,
+	)
+
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se possui cadastro em vendas: ", err)
+			return err
+		}
+
+	} else {
+		return fmt.Errorf("Cliente já cadastradao em uma venda.")
+	}
+
+	query := `
+		DELETE FROM
+			customers
+
+		WHERE 
+			id = $1
+	`
+
+	_, err = conn.Exec(
+		ctx,
+		query,
+		id,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao deletar: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *CustomerContract) Update() (CustomerContract, error) {
+	quey := `
+		UPDATE
+			customers
+		SET
+			name = $2, 
+			cpf_cnpj = $3
+
+		WHERE
+			id = $1
+		
+		RETURNING
+			id,
+			name,
+			cpf_cnpj
+	`
+
+	err := conn.QueryRow(
+		context.Background(),
+		quey,
+		c.Id,
+		c.Name,
+		c.CpfCnpj,
+	).Scan(
+		&c.Id,
+		&c.Name,
+		&c.CpfCnpj,
+	)
+
+	if err != nil {
+		return CustomerContract{}, err
+	}
+
+	return *c, nil
 }

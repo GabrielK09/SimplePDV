@@ -35,7 +35,7 @@
                                 <q-icon name="search" />
                             </template>
                             <template v-slot:label>
-                                <span class="text-xs">Buscar por um produto ...</span>
+                                <span class="text-xs">Buscar por um cliente ...</span>
                             </template>
                         </q-input>
                     </template>
@@ -49,20 +49,39 @@
                             >
                                 <template v-if="col.name === 'actions'">
                                     <div
-                                        class="text-center"
+                                        class="text-center flex flex-center"
                                     >
-                                        <q-btn size="10px" no-caps color="red" icon="delete" flat @click="showDialogDeleteProduct(props.row.id)"/>
+                                        <div>
+                                            <q-btn 
+                                                size="10px" 
+                                                no-caps 
+                                                color="black" 
+                                                icon="edit" 
+                                                flat 
+                                                :disable="props.row.id === 1"
+                                            />
 
+                                        </div>
+
+                                        <div>
+                                            <q-btn 
+                                                size="10px" 
+                                                no-caps 
+                                                color="red" 
+                                                icon="delete" 
+                                                flat 
+                                                @click="showDialogDeleteProduct(props.row.id)"
+                                                :disable="props.row.id === 1"
+                                            />
+                                        </div>
                                     </div>
                                 </template>
 
                                 <template v-else>
                                     <div
                                         class="text-center"
-                                        :title="props.row.active !== 1 ? 'Produto desativado!' : ''"
                                     >
                                         {{ col.value }}
-
                                     </div>
                                 </template>
                             </q-td>
@@ -113,9 +132,9 @@
         },
         {
             name: 'actions',
-            label: '',
+            label: 'Ações',
             field: 'actions',
-            align: 'right'
+            align: 'center'
         }
     ];
 
@@ -142,9 +161,18 @@
     };
 
     const showDialogDeleteProduct = (customerId: number) => {
+        if(customerId === 1)
+        {
+            notify(
+                'negative',
+                'O cliente padrão não pode ser desativado.'
+            )
+            return;  
+        };
+
         $q.dialog({
-            title: 'Excluir produto',
-            message: `Deseja realmente remover esse produto (${customerId})?`,
+            title: 'Excluir cliente',
+            message: `Deseja realmente remover esse cliente (${customerId})?`,
             cancel: {
                 push: true,
                 label: 'Não',

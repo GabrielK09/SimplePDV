@@ -17,7 +17,25 @@ declare module 'vue' {
 // "export default () => {}" function below (which runs individually
 // for each client)
 const api = axios.create({
-    baseURL: process.env.API_URL
+    baseURL: process.env.API_URL,
+    headers: {
+        Accept: 'application/json'
+    }
+});
+
+const apiCep = axios.create({
+    baseURL: process.env.API_CEP,
+    headers: {
+        Accept: 'application/json'
+    }
+
+});
+
+const apiCnpj = axios.create({
+    baseURL: process.env.API_CNPJ,
+    headers: {
+        Accept: 'application/json'
+    }
 
 });
 
@@ -60,4 +78,4 @@ export default boot(({ app }) => {
     //       so you can easily perform requests against your app's API
 });
 
-export { api };
+export { api, apiCnpj, apiCep };

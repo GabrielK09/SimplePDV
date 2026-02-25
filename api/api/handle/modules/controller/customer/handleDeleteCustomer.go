@@ -4,18 +4,17 @@ import (
 	"encoding/json"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
-	"myApi/interface/product"
+	"myApi/interface/customer"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
-	_ "github.com/jackc/pgx/v5"
 )
 
-func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
+func HandleDeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if r.Method != http.MethodPut {
+	if r.Method != http.MethodDelete {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
@@ -37,45 +36,42 @@ func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := product.Show(id)
-
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-
-		u.ErrorLogger.Println("Produto não localizado:", err)
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err, "Produto não localizado."),
-		)
-
-		return
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+	if id <= 1 {
+		//O cliente padrão não pode ser desativado.
 		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("O Id precisa ser maior que 1")
 		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err.Error(), "Erro ao processar dados"),
+			responsehelper.Response(false, err, "Id inválido."),
 		)
 
 		return
 	}
 
-	product.Id = id
+	if id == 1 {
+		//O cliente padrão não pode ser desativado.
+		w.WriteHeader(http.StatusBadRequest)
 
-	updated, err := product.Update()
+		u.ErrorLogger.Println("O cliente padrão não pode ser desativado.")
 
-	if err != nil {
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, nil, "O cliente padrão não pode ser desativado."),
+		)
+
+		return
+	}
+
+	if err := customer.Delete(id); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		u.ErrorLogger.Println("Erro ao alterar o produto: ", err)
+		u.ErrorLogger.Println("Erro ao deletar o cliente: ", err)
 		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err.Error(), "Erro ao atualizar o produto não localizado."),
+			responsehelper.Response(false, err.Error(), "Erro ao deletar o Cliente."),
 		)
 
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	resp := responsehelper.Response(true, nil, "Cliente deletado com sucesso!")
 
-	json.NewEncoder(w).Encode(
-		responsehelper.Response(true, updated, "Produto alterado com sucesso!"),
-	)
+	json.NewEncoder(w).Encode(resp)
 }

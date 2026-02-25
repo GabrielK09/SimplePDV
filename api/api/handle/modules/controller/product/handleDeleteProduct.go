@@ -20,6 +20,7 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
 		json.NewEncoder(w).Encode(resp)
+
 		return
 	}
 
@@ -45,6 +46,8 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 
 	resp := responsehelper.Response(true, nil, "Produto deletado com sucesso!")
 

@@ -49,10 +49,29 @@
                             >
                                 <template v-if="col.name === 'actions'">
                                     <div
-                                        class="text-center"
+                                        class="text-center flex flex-center"
                                     >
-                                        <q-btn size="10px" no-caps color="red" icon="delete" flat @click="showDialogDeleteProduct(props.row.id)"/>
+                                        <div>
+                                            <q-btn 
+                                                size="10px" 
+                                                no-caps 
+                                                color="black" 
+                                                icon="edit" 
+                                                flat 
+    
+                                            />
+                                        </div>
 
+                                        <div>
+                                            <q-btn 
+                                                size="10px" 
+                                                no-caps 
+                                                color="red" 
+                                                icon="delete" 
+                                                flat 
+                                                @click="showDialogDeleteProduct(props.row.id)"
+                                            />
+                                        </div>
                                     </div>
                                 </template>
 
@@ -123,9 +142,9 @@
         },
         {
             name: 'actions',
-            label: '',
+            label: 'Ações',
             field: 'actions',
-            align: 'right'
+            align: 'center'
         }
     ];
 
