@@ -101,7 +101,7 @@ export async function getSaleDetailsById(saleId: number): Promise<any>
     try {
         const res = await api.get(`/sale/details/${saleId}`);
         const data = res.data;
-
+        
         return apiResponse(
             true,
             data.message,

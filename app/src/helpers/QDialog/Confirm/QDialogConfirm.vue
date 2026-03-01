@@ -23,7 +23,8 @@
                     dense
                     no-caps
                     color="primary"
-                    @click="emits('confirm', true)"
+                    type="submit"
+                    @click="emits('close', true)"
                 />
             </q-card-actions>
         </q-card>

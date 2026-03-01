@@ -3,4 +3,5 @@ interface ProductContract {
     name: string,
     price: number,
     qtde: number,
+    commission: number,
 };

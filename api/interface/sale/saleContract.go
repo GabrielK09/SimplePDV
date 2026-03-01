@@ -2,6 +2,7 @@ package sale
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
@@ -14,6 +15,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+//go:embed sql/commissionByProduct.sql
+var reportSQL string
 
 type SaleContract struct {
 	Id         int                       `json:"id"`
@@ -37,6 +41,13 @@ type PaySaleContract struct {
 	Species []PayMentBody `json:"species"`
 }
 
+type SaleItensContract struct {
+	Name                string  `json:"name"`
+	SaleValue           float64 `json:"sale_value"`
+	Commission          float64 `json:"commission_by_produtc"`
+	CommissionGenerated float64 `json:"commission_generated"`
+}
+
 var conn *pgxpool.Pool
 var ctx = context.Background()
 
@@ -52,14 +63,21 @@ func (p PaySaleContract) ValidatePay() map[string]string {
 
 	if _, err := Show(p.SaleId); err != nil {
 		errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
+		return errorsField
 	}
 
 	if len(p.Species) <= 0 {
 		errorsField["species"] = "Pagamento ausente."
+		return errorsField
 	}
 
-	for idx := range p.Species {
-		payMent = p.Species[idx]
+	u.InfoLogger.Println("Formas de pagamento: ", p.Species)
+
+	for _, payMent = range p.Species {
+		if payMent.Specie != "Dinheiro" && payMent.Specie != "Pix" {
+			errorsField["species.specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
+			return errorsField
+		}
 
 		u.GeneralLogger.Println("Forma de pagamento aqui: ", payMent)
 
@@ -68,12 +86,9 @@ func (p PaySaleContract) ValidatePay() map[string]string {
 
 	u.GeneralLogger.Println("totalPaide aqui: ", totalPaide)
 
-	if payMent.Specie != "Dinheiro" && payMent.Specie != "Pix" {
-		errorsField["species.specie"] = "A espécie de pagamento precisa ser Dinheiro ou Pix."
-	}
-
 	if totalPaide <= 0 {
 		errorsField["amount_paid"] = "O pagamento não pode ser menor que zero."
+		return errorsField
 	}
 
 	return errorsField
@@ -248,6 +263,41 @@ func Show(id int) (*SaleContract, error) {
 	}
 
 	return &s, nil
+}
+
+func ShowTotalCommission(id int) (*[]SaleItensContract, error) {
+	var saleItens []SaleItensContract
+
+	rows, err := conn.Query(
+		ctx,
+		string(reportSQL),
+		id,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao executar a query:", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var sl SaleItensContract
+
+		if err := rows.Scan(
+			&sl.Name,
+			&sl.SaleValue,
+			&sl.Commission,
+			&sl.CommissionGenerated,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao ler os dados da query:", err)
+			return nil, err
+		}
+
+		saleItens = append(saleItens, sl)
+	}
+
+	return &saleItens, nil
 }
 
 func (s *SaleContract) Create() (int, error) {

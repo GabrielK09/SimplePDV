@@ -12,14 +12,15 @@ import (
 )
 
 type ProductContract struct {
-	Id        int       `json:"id"`
-	Name      string    `json:"name"`
-	Price     float64   `json:"price"`
-	Qtde      int       `json:"qtde"`
-	Returned  int       `json:"returned"`
-	Saled     int       `json:"saled"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id         int       `json:"id"`
+	Name       string    `json:"name"`
+	Price      float64   `json:"price"`
+	Qtde       int       `json:"qtde"`
+	Commission float64   `json:"commission"`
+	Returned   int       `json:"returned"`
+	Saled      int       `json:"saled"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 var conn *pgxpool.Pool
@@ -43,16 +44,24 @@ func (p ProductContract) Validate() map[string]string {
 		errorsField["price"] = "O valor do produto é obrigatório!"
 	}
 
+	if p.Commission < 0 {
+		errorsField["commission"] = "O valor de comissão não pode ser menor que zero."
+	}
+
+	if p.Commission > 100 {
+		errorsField["commission"] = "O valor de comissão não pode ser maior que 100%."
+	}
+
 	return errorsField
 }
 
 func (p *ProductContract) Create() error {
 	query := `	
 		INSERT INTO products
-			(name, price, qtde, returned, saled)
+			(name, price, qtde, commission, returned, saled)
 
 		VALUES
-			($1, $2, $3, $4, $5)
+			($1, $2, $3, $4, $5, $6)
 		
 		RETURNING 
 			id
@@ -64,6 +73,7 @@ func (p *ProductContract) Create() error {
 		p.Name,
 		p.Price,
 		p.Qtde,
+		p.Commission,
 		p.Returned,
 		p.Saled,
 	).Scan(&p.Id)
@@ -79,9 +89,10 @@ func (p *ProductContract) Update() (ProductContract, error) {
 			name = $2, 
 			price = $3, 
 			qtde = $4, 
-			returned = $5, 
-			saled = $6, 
-			date_of_purchase = $7
+			commission = $5, 
+			returned = $6, 
+			saled = $7, 
+			date_of_purchase = $8
 
 		WHERE
 			id = $1
@@ -89,10 +100,11 @@ func (p *ProductContract) Update() (ProductContract, error) {
 		RETURNING
 			id,
 			name,
-			price, 
-			qtde, 
-			returned, 
-			saled, 
+			price,
+			qtde,
+			commission,
+			returned,
+			saled,
 			date_of_purchase
 	`
 
@@ -103,6 +115,7 @@ func (p *ProductContract) Update() (ProductContract, error) {
 		p.Name,
 		p.Price,
 		p.Qtde,
+		p.Commission,
 		p.Returned,
 		p.Saled,
 	).Scan(
@@ -110,6 +123,7 @@ func (p *ProductContract) Update() (ProductContract, error) {
 		&p.Name,
 		&p.Price,
 		&p.Qtde,
+		&p.Commission,
 		&p.Returned,
 		&p.Saled,
 	)
@@ -128,6 +142,7 @@ func Show(id int) (*ProductContract, error) {
 			name, 
 			price, 
 			qtde, 
+			commission, 
 			returned, 
 			saled
 		FROM
@@ -148,6 +163,7 @@ func Show(id int) (*ProductContract, error) {
 		&p.Name,
 		&p.Price,
 		&p.Qtde,
+		&p.Commission,
 		&p.Returned,
 		&p.Saled,
 	)
@@ -168,6 +184,7 @@ func GetAll() ([]ProductContract, error) {
 			name,
 			price,
 			qtde,           
+			commission,
 			returned,
 			saled
 		FROM
@@ -194,6 +211,7 @@ func GetAll() ([]ProductContract, error) {
 			&p.Name,
 			&p.Price,
 			&p.Qtde,
+			&p.Commission,
 			&p.Returned,
 			&p.Saled,
 		); err != nil {

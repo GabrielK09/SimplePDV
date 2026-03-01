@@ -9,7 +9,7 @@
 
                         </router-link>
                     </span>
-                    <h2 class="text-gray-600 text-center">Cadastrar um(a) novo(a) cliente</h2>
+                    <h2 class="text-gray-600 text-center">Edição cliente</h2>
 
                 </header>
 
@@ -71,11 +71,11 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { computed, onMounted, ref } from 'vue';
+    import { useRoute, useRouter } from 'vue-router';
     import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { createCustomer } from '../../services/customerService';
+    import { createCustomer, findCustomerById } from '../../services/customerService';
     import { getCnpjDataService } from 'src/services/CNPJ/getCnpjData';
 
     const customerSchema = computed(() =>
@@ -93,6 +93,7 @@
     const formErrors = ref<Record<string, string>>({});
 
     const router = useRouter();
+    const route = useRoute();
     const { notify } = useNotify();
 
     let loadingLogin = ref<boolean>(false);
@@ -114,7 +115,7 @@
             {
                 notify(
                     'positive',
-                    'Cliente cadastrado com sucesso!'
+                    'Cliente alterado com sucesso!'
 
                 );
 
@@ -149,7 +150,7 @@
             } else {
                 notify(
                     'negative',
-                    error.response?.data?.message || 'Erro na criação do cliente!'
+                    error.response?.data?.message || 'Erro na edição do cliente!'
                 );
             };
         };
@@ -187,7 +188,32 @@
 
         if(!res.success) return;
 
-        customer.value.name = res.data.alias;
-    
+        customer.value.name = res.data.alias;    
     };
+
+    onMounted(async() => {
+        const customerId = Number(route.params.id);
+        if(!customerId) return;
+        
+        if(customerId === 1)
+        {
+            notify(
+                'negative',
+                'O cliente padrão não pode ser alterado'
+            );
+            router.replace({
+                name: 'customers.index'
+            });
+        };
+    
+        const res = await findCustomerById(customerId);
+
+        if(!res.success) return;
+
+        customer.value = {
+            id: res.data.id,
+            name: res.data.name,
+            cpf_cnpj: res.data.cpf_cnpj,
+        };
+    });
 </script>

@@ -35,8 +35,8 @@
                                         placeholder="0,00"
                                         mask="##,##"
                                         fill-mask="0"
-                                        :disable="calculatePayMent.totalPaid >= props.totalSale || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
                                         reverse-fill-mask
+                                        :disable="calculatePayMent.totalPaid >= props.totalSale || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
                                     />
                                 </div>
                             </q-item-section>

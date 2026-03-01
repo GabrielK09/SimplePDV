@@ -47,9 +47,25 @@ func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	saleCommissionDetails, err := sale.ShowTotalCommission(id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao procurar a comissão venda: ", err)
+		resp := responsehelper.Response(false, err, "Erro ao procurar a comissão venda.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, saleDetail, "Detalhes das vendas!")
+	responseData := map[string]any{
+		"sale":       saleDetail,
+		"commission": saleCommissionDetails,
+	}
+
+	resp := responsehelper.Response(true, responseData, "Detalhes das vendas!")
 
 	json.NewEncoder(w).Encode(resp)
 }

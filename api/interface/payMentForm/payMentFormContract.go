@@ -2,9 +2,11 @@ package paymentform
 
 import (
 	"context"
+	"errors"
 	u "myApi/helpers/logger"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,7 +19,6 @@ type PayMentForms struct {
 }
 
 var conn *pgxpool.Pool
-
 var ctx = context.Background()
 
 func SetConnection(db *pgxpool.Pool) {
@@ -143,4 +144,68 @@ func Show() (*PayMentForms, error) {
 
 	return &pf, nil
 
+}
+
+func CreateDefaultPayMents() error {
+	u.InfoLogger.Println("CreateDefaultPayMents started")
+	var p PayMentForms
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)
+		return err
+	}
+
+	selectQuery := `
+		SELECT
+			id
+		FROM
+			pay_ment_forms
+
+		LIMIT 1
+
+	`
+
+	if err = tx.QueryRow(
+		ctx,
+		selectQuery,
+	).Scan(&p.Id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao conferir se os pagamentos existem: ", err)
+		return err
+	}
+
+	if p.Id > 0 {
+		u.InfoLogger.Println("Os pagamentos existem")
+		return nil
+	}
+
+	u.GeneralLogger.Println("Não possui valores: ", p.Id)
+
+	query := `
+		INSERT INTO pay_ment_forms 
+			(id, specie, pix_key)
+
+		VALUES
+			(1, 'Dinheiro', ''),
+			(2, 'PIX', '')
+	`
+
+	if _, err = tx.Exec(
+		ctx,
+		query,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o insert: ", err)
+		return err
+	}
+
+	err = tx.Commit(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o commit: ", err)
+		return err
+	}
+
+	u.GeneralLogger.Println("Espécies padrões cadastradas com sucesso!")
+
+	return nil
 }

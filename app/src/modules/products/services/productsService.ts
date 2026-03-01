@@ -41,7 +41,7 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
     };
 };
 
-export async function update(payLoad: ProductContract): Promise<any>
+export async function updateProduct(payLoad: ProductContract): Promise<any>
 {
     try {
         const res = await api.put(`products/update/${payLoad.id}`)
@@ -91,7 +91,13 @@ export async function findById(id: number): Promise<any>
         const res = await api.get(`products/find/${id}`);
         const data = res.data.data;
 
-        return data;
+        console.log(data);
+
+        return apiResponse(
+            true,
+            data.message || 'Dados do produto',
+            data
+        );
 
     } catch (error) {
         return null;

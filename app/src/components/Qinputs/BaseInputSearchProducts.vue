@@ -24,7 +24,7 @@
     import { findById } from 'src/modules/products/services/productsService';
     import { ref } from 'vue';
 
-    const id = ref<number|any>(null);
+    const id = ref<number | any>(null);
     const { notify } = useNotify();
 
     const emits = defineEmits<{
@@ -44,6 +44,6 @@
             return;
         };
 
-        emits('emit:selected-product', product);
+        emits('emit:selected-product', product.data);
     };
 </script>

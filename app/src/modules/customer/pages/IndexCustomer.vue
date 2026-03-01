@@ -59,6 +59,7 @@
                                                 icon="edit" 
                                                 flat 
                                                 :disable="props.row.id === 1"
+                                                :to="`customers/edit/${props.row.id}`"
                                             />
 
                                         </div>

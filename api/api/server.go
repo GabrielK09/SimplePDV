@@ -4,6 +4,7 @@ import (
 	"log"
 	"myApi/api/cors"
 	customerController "myApi/api/handle/modules/controller/customer"
+	dashBoardController "myApi/api/handle/modules/controller/dashBoard"
 	productController "myApi/api/handle/modules/controller/product"
 	root "myApi/api/handle/modules/controller/root"
 	cashregisterController "myApi/api/handle/modules/controller/sale/cashRegister"
@@ -51,6 +52,10 @@ func StartServer() {
 	r.HandleFunc("/api/customer/create", customerController.HandlePostCustomer).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/customer/update/{id}", customerController.HandlePutCustomer).Methods(http.MethodPut, http.MethodOptions)
 	r.HandleFunc("/api/customer/delete/{id}", customerController.HandleDeleteCustomer).Methods(http.MethodDelete, http.MethodOptions)
+	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
+
+	// DashBoard \\
+	r.HandleFunc("/api/dash-board/totales", dashBoardController.HandleProcessGetDashBoard).Methods(http.MethodPost, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	log.Println("Servidor rodando em http://localhost:8000/api")

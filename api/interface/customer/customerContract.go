@@ -241,3 +241,66 @@ func (c *CustomerContract) Update() (CustomerContract, error) {
 
 	return *c, nil
 }
+
+func CreateDefaultCustomer() error {
+	u.InfoLogger.Println("CreateDefaultCustomer started")
+
+	var c CustomerContract
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)
+		return err
+	}
+
+	selectQuery := `
+		SELECT
+			id
+
+		FROM
+			customers
+
+		LIMIT 1
+	`
+
+	if err := tx.QueryRow(
+		ctx,
+		selectQuery,
+	).Scan(&c.Id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao conferir se o cliente padrão existe: ", err)
+		return err
+	}
+
+	if c.Id > 0 {
+		u.InfoLogger.Println("O cliente existe")
+		return nil
+	}
+
+	u.GeneralLogger.Println("Não possui valores: ", c.Id)
+
+	query := `
+		INSERT INTO customers 
+			(id, name, cpf_cnpj)
+		VALUES
+			(1, 'Consumidor padrão', '')
+	`
+
+	if _, err = tx.Exec(
+		ctx,
+		query,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o insert: ", err)
+		return err
+	}
+
+	err = tx.Commit(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o commit: ", err)
+		return err
+	}
+
+	u.GeneralLogger.Println("Cliente padrão cadastrado com sucesso!")
+
+	return nil
+}

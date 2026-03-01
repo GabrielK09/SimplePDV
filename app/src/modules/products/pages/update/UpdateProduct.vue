@@ -9,7 +9,7 @@
 
                         </router-link>
                     </span>
-                    <h2 class="text-gray-600 text-center">Cadastrar um novo produto</h2>
+                    <h2 class="text-gray-600 text-center">Edição do produto</h2>
 
                 </header>
 
@@ -60,10 +60,15 @@
 
                         <q-input
                             v-model.number="product.qtde"
+                            type="number"
                             label-slot
                             stack-label
                             outlined
                             dense
+                            placeholder="0"
+                            mask="#.###"
+                            fill-mask="0"
+                            reverse-fill-mask
                             class="mb-4"
                             :error="!!formErrors.qtde"
                             :error-message="formErrors.qtde"
@@ -74,7 +79,7 @@
                                 </div>
                             </template>
                         </q-input>
-                        
+
                         <div class="flex flex-col mb-4">
                             <q-input
                                 v-model.number="product.commission"
@@ -83,6 +88,10 @@
                                 stack-label
                                 outlined
                                 dense
+                                placeholder="0,00"
+                                mask="##,##"
+                                fill-mask="0"
+                                reverse-fill-mask
                                 :error="!!formErrors.commission"
                                 :error-message="formErrors.commission"
                             >
@@ -121,7 +130,7 @@
                             <q-btn
                                 color="primary"
                                 type="submit"
-                                label="Cadastrar produto"
+                                label="Editar produto"
                                 no-caps
                                 :loading="loadingLogin"
                             />
@@ -134,32 +143,29 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { computed, onMounted, ref } from 'vue';
+    import { useRoute, useRouter } from 'vue-router';
     import * as Yup from 'yup';
-    import { createProduct } from '../../services/productsService';
+    import { findById, updateProduct } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
 
     const productSchema = computed(() =>
         Yup.object({
             name: Yup.string().required('O nome do produto é obrigatório!'),
             price: Yup.number().required('O valor do produto é obrigatório!'),
-            qtde: Yup
-                    .number()
-                    .min(1, 'A qtde do produto não pode ser menor que zero.')
-                    .required('A quantia do produto é obrigatório!'),
+            qtde: Yup.number().required('A quantia do produto é obrigatório!'),
             commission: Yup
-                    .number()
-                    .min(0, 'O valor de comissão não pode ser menor que zero.')
-                    .max(100, 'O valor de comissão não pode ser maior que 100%.')
-                    .required('A quantia do produto é obrigatório!'),
+                            .number()
+                            .min(0, 'O valor de comissão não pode ser menor que zero.')
+                            .max(100, 'O valor de comissão não pode ser maior que 100%.')
+                            .required('A quantia do produto é obrigatório!'),
         })
     );
-
+    
     const product = ref<ProductContract>({
         id: 0,
         name: '',
-        price: 0,
+        price: null,
         qtde: 0,
         commission: 0
     });
@@ -167,6 +173,7 @@
     const formErrors = ref<Record<string, string>>({});
 
     const router = useRouter();
+    const route = useRoute();
     const { notify } = useNotify();
 
     let loadingLogin = ref<boolean>(false);
@@ -182,7 +189,7 @@
         try {
             await productSchema.value.validate(product.value, { abortEarly: false });
 
-            const res = await createProduct(product.value);
+            const res = await updateProduct(product.value);
 
             if(res.success)
             {
@@ -215,7 +222,6 @@
                 error.inner.forEach((err: any) => {
                     formErrors.value[err.path] = err.message;
 
-
                     notify(
                         'negative',
                         err.message
@@ -225,9 +231,26 @@
             } else {
                 notify(
                     'negative',
-                    error.response?.data?.message || 'Erro na criação do produto!'
+                    error.response?.data?.message || 'Erro na edição do produto!'
                 );
             };
         };
     };
+
+    onMounted(async() => {
+        const productId = Number(route.params.id);
+        if(!productId) return;
+        
+        const res = await findById(productId);
+
+        if(!res.success) return;
+        
+        product.value = {
+            id: res.data.id,
+            name: res.data.name,
+            price: res.data.price,
+            qtde: res.data.qtde,
+            commission: res.data.commission
+        };
+    });
 </script>

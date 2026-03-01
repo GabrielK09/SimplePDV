@@ -15,6 +15,11 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('src/pages/IndexPage.vue')
             },
             {
+                path: 'api',
+                name: 'api',
+                component: () => import('src/modules/api/APiTest.vue')
+            },
+            {
                 path: 'cash-register',
                 children: [
                     {
@@ -41,24 +46,15 @@ const routes: RouteRecordRaw[] = [
                         path: 'create',
                         name: 'products.create',
                         component: () => import('src/modules/products/pages/create/CreateProduct.vue')
+                    },
+                    {
+                        path: 'edit/:id',
+                        name: 'products.edit',
+                        props: true,
+                        component: () => import('src/modules/products/pages/update/UpdateProduct.vue')
                     }
                 ]
             },
-            // {
-            //     path: 'shopping',
-            //     children: [
-            //         {
-            //             path: '',
-            //             name: 'shopping.index',
-            //             component: () => import('src/modules/shopping/pages/IndexShopping.vue')
-            //         },
-            //         {
-            //             path: 'create',
-            //             name: 'shopping.create',
-            //             component: () => import('src/modules/shopping/pages/create/CreateShopping.vue')
-            //         }
-            //     ]
-            // },
             {
                 path: 'pdv',
                 children: [
@@ -86,6 +82,12 @@ const routes: RouteRecordRaw[] = [
                         path: 'create',
                         name: 'customers.create',
                         component: () => import('src/modules/customer/pages/create/CreateCustomer.vue')
+                    },
+                    {
+                        path: 'edit/:id',
+                        name: 'customers.edit',
+                        props: true,
+                        component: () => import('src/modules/customer/pages/update/UpdateCustomer.vue')
                     }
                 ]
             },

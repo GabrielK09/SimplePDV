@@ -63,3 +63,24 @@ export async function deleteCustomer(customerId: number): Promise<any>
         );
     };
 };
+
+export async function findCustomerById(customerId: number): Promise<any> 
+{
+    try {
+        const res = await api.get(`/customer/find/${customerId}`);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
+        );
+    };    
+};

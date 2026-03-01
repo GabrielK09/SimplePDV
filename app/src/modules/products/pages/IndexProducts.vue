@@ -58,7 +58,7 @@
                                                 color="black" 
                                                 icon="edit" 
                                                 flat 
-    
+                                                :to="`products/edit/${props.row.id}`"
                                             />
                                         </div>
 
@@ -138,6 +138,12 @@
             name: 'qtde',
             label: 'Qtde',
             field: 'qtde',
+            align: 'center'
+        },
+        {
+            name: 'commission',
+            label: 'Comissão',
+            field: 'commission',
             align: 'center'
         },
         {

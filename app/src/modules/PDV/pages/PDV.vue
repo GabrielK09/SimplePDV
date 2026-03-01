@@ -291,6 +291,8 @@
     };
 
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
+        console.log(selectedProducts);
+
         selectedProducts.forEach(p => {
             const exisit = data.value.find(i => i.product_id === p.id);
 
