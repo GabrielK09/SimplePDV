@@ -12,12 +12,12 @@ const routes: RouteRecordRaw[] = [
         children: [
             {
                 path: '',
-                component: () => import('src/pages/IndexPage.vue')
+                component: () => import('src/modules/dashBoard/pages/IndexPage.vue')
             },
             {
                 path: 'api',
                 name: 'api',
-                component: () => import('src/modules/api/APiTest.vue')
+                component: () => import('src/modules/api/ApiTest.vue')
             },
             {
                 path: 'cash-register',

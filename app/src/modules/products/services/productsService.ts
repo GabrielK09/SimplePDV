@@ -44,7 +44,7 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
 export async function updateProduct(payLoad: ProductContract): Promise<any>
 {
     try {
-        const res = await api.put(`products/update/${payLoad.id}`)
+        const res = await api.put(`products/update/${payLoad.id}`, payLoad);
         const data = res.data;
 
         return apiResponse(

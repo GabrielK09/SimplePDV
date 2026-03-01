@@ -52,23 +52,23 @@
                                         class="text-center flex flex-center"
                                     >
                                         <div>
-                                            <q-btn 
-                                                size="10px" 
-                                                no-caps 
-                                                color="black" 
-                                                icon="edit" 
-                                                flat 
+                                            <q-btn
+                                                size="10px"
+                                                no-caps
+                                                color="black"
+                                                icon="edit"
+                                                flat
                                                 :to="`products/edit/${props.row.id}`"
                                             />
                                         </div>
 
                                         <div>
-                                            <q-btn 
-                                                size="10px" 
-                                                no-caps 
-                                                color="red" 
-                                                icon="delete" 
-                                                flat 
+                                            <q-btn
+                                                size="10px"
+                                                no-caps
+                                                color="red"
+                                                icon="delete"
+                                                flat
                                                 @click="showDialogDeleteProduct(props.row.id)"
                                             />
                                         </div>
@@ -76,10 +76,7 @@
                                 </template>
 
                                 <template v-else>
-                                    <div
-                                        class="text-center"
-                                        :title="props.row.active !== 1 ? 'Produto desativado!' : ''"
-                                    >
+                                    <div class="text-center">
                                         {{ col.value }}
 
                                     </div>
@@ -138,12 +135,6 @@
             name: 'qtde',
             label: 'Qtde',
             field: 'qtde',
-            align: 'center'
-        },
-        {
-            name: 'commission',
-            label: 'Comissão',
-            field: 'commission',
             align: 'center'
         },
         {

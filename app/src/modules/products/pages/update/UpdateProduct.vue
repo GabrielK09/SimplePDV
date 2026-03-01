@@ -103,25 +103,28 @@
                             </q-input>
 
                             <div class="mx-auto flex gap-4">
-                                <q-btn 
-                                    color="primary" 
-                                    no-caps 
+                                <q-btn
+                                    color="primary"
+                                    no-caps
                                     @click="product.commission = 15"
                                     label="15%"
+                                    :flat="product.commission === 15"
                                 />
 
-                                <q-btn 
-                                    color="primary" 
-                                    no-caps 
+                                <q-btn
+                                    color="primary"
+                                    no-caps
                                     @click="product.commission = 25"
                                     label="25%"
+                                    :flat="product.commission === 25"
                                 />
 
-                                <q-btn 
-                                    color="primary" 
-                                    no-caps 
+                                <q-btn
+                                    color="primary"
+                                    no-caps
                                     @click="product.commission = 35"
                                     label="35%"
+                                    :flat="product.commission === 35"
                                 />
                             </div>
                         </div>
@@ -130,7 +133,7 @@
                             <q-btn
                                 color="primary"
                                 type="submit"
-                                label="Editar produto"
+                                label="Salvar dados do produto"
                                 no-caps
                                 :loading="loadingLogin"
                             />
@@ -161,7 +164,7 @@
                             .required('A quantia do produto é obrigatório!'),
         })
     );
-    
+
     const product = ref<ProductContract>({
         id: 0,
         name: '',
@@ -195,7 +198,7 @@
             {
                 notify(
                     'positive',
-                    res.data.message
+                    res.message
 
                 );
 
@@ -213,8 +216,6 @@
             };
 
         } catch (error: any) {
-            console.error('Erro:', error.inner);
-
             if(error.inner)
             {
                 formErrors.value = {};
@@ -240,11 +241,11 @@
     onMounted(async() => {
         const productId = Number(route.params.id);
         if(!productId) return;
-        
+
         const res = await findById(productId);
 
         if(!res.success) return;
-        
+
         product.value = {
             id: res.data.id,
             name: res.data.name,
