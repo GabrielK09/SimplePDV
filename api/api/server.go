@@ -6,6 +6,7 @@ import (
 	customerController "myApi/api/handle/modules/controller/customer"
 	dashBoardController "myApi/api/handle/modules/controller/dashBoard"
 	productController "myApi/api/handle/modules/controller/product"
+	reportController "myApi/api/handle/modules/controller/report"
 	root "myApi/api/handle/modules/controller/root"
 	cashregisterController "myApi/api/handle/modules/controller/sale/cashRegister"
 	payMentController "myApi/api/handle/modules/controller/sale/payMentForms"
@@ -56,6 +57,10 @@ func StartServer() {
 
 	// DashBoard \\
 	r.HandleFunc("/api/dash-board/totales", dashBoardController.HandleProcessGetDashBoard).Methods(http.MethodPost, http.MethodOptions)
+	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
+
+	// Relatórios \\
+	r.HandleFunc("/api/report", reportController.HandlePostReports).Methods(http.MethodPost, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	log.Println("Servidor rodando em http://localhost:8000/api")

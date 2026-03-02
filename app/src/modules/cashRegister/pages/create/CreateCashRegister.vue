@@ -31,7 +31,7 @@
                         >
                             <template v-slot:label>
                                 <div class="text-sm">
-                                    Nome <span class="text-red-500">*</span>
+                                    Descrição <span class="text-red-500">*</span>
                                 </div>
                             </template>
                         </q-input>
@@ -44,9 +44,6 @@
                             outlined
                             dense
                             placeholder="0,00"
-                            mask="##,##"
-                            fill-mask="0"
-                            reverse-fill-mask
                             class="mb-4"
                             :error="!!formErrors.input_value"
                             :error-message="formErrors.input_value"
@@ -66,10 +63,6 @@
                             stack-label
                             outlined
                             dense
-                            placeholder="0,00"
-                            mask="##,##"
-                            fill-mask="0"
-                            reverse-fill-mask
                             class="mb-4"
                             :error="!!formErrors.output_value"
                             :error-message="formErrors.output_value"

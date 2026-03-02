@@ -68,12 +68,17 @@
                 <!-- Barra da direita-->
                 <div class="bg-white rounded-lg h-auto laptop:h-[75vh] p-4 w-full laptop:w-[25rem] laptop:mr-6 flex flex-col">
                     <div class="flex-1 overflow-y-auto">
+                        <q-checkbox
+                            right-label
+                            v-model="registeredCustomer"
+                            label="Cliente cadastrado"
+                        />
 
                         <BaseCustomerSelect
                             v-model="pdvData.customer_id"
                             @selected:customer="(c) => pdvData.customer = c.name"
                             :is-registered-customer="registeredCustomer"
-                        />
+                        />                        
 
                     </div>
 
@@ -295,8 +300,6 @@
     };
 
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
-        console.log(selectedProducts);
-
         selectedProducts.forEach(p => {
             const exisit = data.value.find(i => i.product_id === p.id);
 
@@ -391,14 +394,10 @@
         // Confirma se a venda não foi reaberta
         if(route.query.id !== null && route.query.id !== undefined && route.query.id !== '')
         {
-            console.log('É uma venda importada');
-
             showPayMentForms.value = true;
             returningSaleId.value = Number(route.query.id);
             return;
         };
-
-        console.log('Não é uma venda importada');
 
         const payload: SaleContract = {
             id: 0,

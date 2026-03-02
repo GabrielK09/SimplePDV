@@ -67,7 +67,7 @@
         //{ label: 'Compras', icon: 'shopping_bag', name: 'shopping_bag', path: 'shopping' },
         { label: 'Clientes', icon: 'group', name: 'group', path: 'customers' },
         { label: 'Caixa', icon: 'request_quote', name: 'request_quote', path: 'cash-register' },
-        { label: 'PDV', icon: 'point_of_sale', name: 'point_of_sale', path: 'pdv' },
+        { label: 'Ponto de venda', icon: 'point_of_sale', name: 'point_of_sale', path: 'pdv' },
         { label: 'Listagem de vendas', icon: 'analytics', name: 'analytics', path: 'pdv/list-pdv' },
         { label: 'Test api', icon: 'api', name: 'dashboard', path: 'api' }
 

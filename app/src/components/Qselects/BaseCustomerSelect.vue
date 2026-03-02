@@ -1,11 +1,5 @@
 <template>
-    <q-checkbox
-        right-label
-        v-model="internalRegisteredCustomer"
-        label="Cliente cadastrado"
-    />
-
-    <div v-if="internalRegisteredCustomer">
+    <div v-if="props.isRegisteredCustomer">
         <q-select
             outlined
             v-model="customerId"
@@ -44,9 +38,7 @@
 
     const customerId = defineModel<number | null>()
     const customerName = ref<string>('Consumidor padrão');
-    const registeredCustomerByProps = ref<boolean>(props.isRegisteredCustomer);
-    const internalRegisteredCustomer = registeredCustomerByProps;
-
+    
     const selectedCustomer = ref<CustomerContract | null>(null);
 
     watch(
@@ -69,10 +61,7 @@
             );
             return;
         };
-
         customers.value = data;
-        console.log(customers.value);
 
     });
-
 </script>
