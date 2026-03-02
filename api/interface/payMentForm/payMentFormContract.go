@@ -148,13 +148,17 @@ func Show() (*PayMentForms, error) {
 
 func CreateDefaultPayMents() error {
 	u.InfoLogger.Println("CreateDefaultPayMents started")
+
 	var p PayMentForms
+
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)
 		return err
 	}
+
+	defer tx.Rollback(ctx)
 
 	selectQuery := `
 		SELECT
@@ -187,7 +191,7 @@ func CreateDefaultPayMents() error {
 
 		VALUES
 			(1, 'Dinheiro', ''),
-			(2, 'PIX', '')
+			(2, 'Pix', '')
 	`
 
 	if _, err = tx.Exec(

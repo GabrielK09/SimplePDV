@@ -1,6 +1,6 @@
 interface DashBoardContract {
     commission: number;
-	total_sales: number;
+	total_saled: number;
 	best_customer: string;
 	amount_saled: number;
 };

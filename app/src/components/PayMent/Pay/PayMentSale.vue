@@ -148,8 +148,6 @@
             p.id === 2 && parseFloat(p.amount) > 0
         );
 
-        console.log(pixPayment);
-
         if(pixPayment)
         {
             havePix.value = true;
@@ -268,12 +266,13 @@
         if(!internalDialog.value) return;
 
         confirmValues();
-    };        
+    };
 
-    onMounted(() => {
-        getPayMentForms();
+    onMounted(async () => {
+        await getPayMentForms();
+
         document.addEventListener('keydown', onKeyDownEnter);
-    });    
+    });
 
     onUnmounted(() => {
         document.removeEventListener('keydown', onKeyDownEnter);

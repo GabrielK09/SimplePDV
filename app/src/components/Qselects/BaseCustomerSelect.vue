@@ -1,11 +1,11 @@
 <template>
     <q-checkbox
         right-label
-        v-model="registeredCustomer"
+        v-model="internalRegisteredCustomer"
         label="Cliente cadastrado"
     />
 
-    <div v-if="registeredCustomer">
+    <div v-if="internalRegisteredCustomer">
         <q-select
             outlined
             v-model="customerId"
@@ -30,18 +30,22 @@
     import { getAll } from 'src/modules/customer/services/customerService';
     import { onMounted, ref, watch } from 'vue';
 
-    const { notify } = useNotify();
-    const customers = ref<CustomerContract[]>([]);
-    const registeredCustomer = ref<boolean>(false);
-
-    const customerId = defineModel<number | null>()
-    const customerName = ref<string>('Consumidor padrão');
+    const props = defineProps<{
+        isRegisteredCustomer: boolean
+    }>();
 
     const emits = defineEmits<{
         (e: 'selected:customer', value: any),
-        (e: 'update:customer', value: any),
-
+        (e: 'update:customer', value: any)
     }>();
+
+    const { notify } = useNotify();
+    const customers = ref<CustomerContract[]>([]);
+
+    const customerId = defineModel<number | null>()
+    const customerName = ref<string>('Consumidor padrão');
+    const registeredCustomerByProps = ref<boolean>(props.isRegisteredCustomer);
+    const internalRegisteredCustomer = registeredCustomerByProps;
 
     const selectedCustomer = ref<CustomerContract | null>(null);
 

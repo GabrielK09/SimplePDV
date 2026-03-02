@@ -18,6 +18,7 @@ type DashBoardContract struct {
 	Commission   float64 `json:"commission"`
 	TotalSales   float64 `json:"total_saled"`
 	BestCustomer string  `json:"best_customer"`
+	AmountSaled  float64 `json:"amount_saled"`
 	StartDateStr string  `json:"start_date"`
 	EndDateStr   string  `json:"end_date"`
 
@@ -46,6 +47,7 @@ func ShowDashBoard(startEnd, endDate time.Time) (DashBoardContract, error) {
 		&d.TotalSales,
 		&d.Commission,
 		&d.BestCustomer,
+		&d.AmountSaled,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao ler os dados da query: ", err)
 
@@ -54,6 +56,7 @@ func ShowDashBoard(startEnd, endDate time.Time) (DashBoardContract, error) {
 				TotalSales:   0,
 				Commission:   0,
 				BestCustomer: "",
+				AmountSaled:  0,
 			}, nil
 		}
 

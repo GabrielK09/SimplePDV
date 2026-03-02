@@ -1,7 +1,7 @@
 WITH resumo AS (
     SELECT
-        COALESCE(SUM(s.sale_value), 0.0) as total_saled,
-        COALESCE(SUM(s.sale_value * COALESCE(p.commission / 100, 1)), 0.0) as commission
+        COALESCE(SUM(s.sale_value), 0.0) AS total_saled,
+        COALESCE(SUM(s.sale_value * COALESCE(p.commission / 100, 1)), 0.0) AS commission
 
     FROM 
         sales s
@@ -19,10 +19,14 @@ WITH resumo AS (
 
 ), best_customers AS (
     SELECT
-        s.customer as best_customer
+        s.customer AS best_customer,
+        COUNT(si.product_id) AS amount_saled
 
     FROM    
         sales s
+
+    INNER JOIN
+        sale_itens si ON si.sale_id = s.id
 
     WHERE
         s.status = 'Concluída' 
@@ -40,7 +44,9 @@ WITH resumo AS (
 SELECT
     r.total_saled,
     r.commission,
-    COALESCE(mc.best_customer, '') AS best_customer
+    COALESCE(mc.best_customer, '') AS best_customer,
+    COALESCE(mc.amount_saled, 0) AS amount_saled
+
 
 FROM
     resumo r

@@ -47,12 +47,10 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	var subTotal float64
 
-	for idx := range payload.Products {
-		i := &payload.Products[idx]
+	for _, p := range payload.Products {
+		u.GeneralLogger.Println("Produto aqui: ", p)
 
-		u.GeneralLogger.Println("Produto aqui: ", i)
-
-		subTotal += calchelper.CalculateTotalSale(i.SaleValue, i.Qtde)
+		subTotal += calchelper.CalculateTotalSale(p.SaleValue, p.Qtde)
 	}
 
 	payload.SaleValue = subTotal

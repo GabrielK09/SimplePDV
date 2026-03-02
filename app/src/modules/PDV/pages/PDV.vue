@@ -68,10 +68,13 @@
                 <!-- Barra da direita-->
                 <div class="bg-white rounded-lg h-auto laptop:h-[75vh] p-4 w-full laptop:w-[25rem] laptop:mr-6 flex flex-col">
                     <div class="flex-1 overflow-y-auto">
+
                         <BaseCustomerSelect
                             v-model="pdvData.customer_id"
                             @selected:customer="(c) => pdvData.customer = c.name"
+                            :is-registered-customer="registeredCustomer"
                         />
+
                     </div>
 
                     <div class="mt-4 border p-2 rounded">
@@ -175,6 +178,7 @@
     };
 
     const { notify } = useNotify();
+    const registeredCustomer = ref<boolean>(false);
 
     const disableButtons = reactive<DisableButtons>({
         editPayMentsForms: false,
@@ -456,14 +460,14 @@
      * @param event please report false if using in emits or final saveSaleForPay
      */
     const resetSale = (event: boolean) => {
-        console.log('Chamou resetSale');
-
         showPayMentForms.value = event;
         removeSessionData('sale_id');
         removeSessionData('sale');
 
         data.value = [];
         pdvData.value.products = data.value;
+
+        registeredCustomer.value = false;
 
         disableButtons.editPayMentsForms = false;
         disableButtons.deleteSale = true;

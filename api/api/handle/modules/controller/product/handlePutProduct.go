@@ -12,7 +12,9 @@ import (
 	_ "github.com/jackc/pgx/v5"
 )
 
-func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
+func HandlePutProduct(w http.ResponseWriter, r *http.Request) {
+	var productData *product.ProductContract
+
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
@@ -37,7 +39,7 @@ func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := product.Show(id)
+	productData, err = product.Show(id)
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -50,8 +52,13 @@ func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+	u.InfoLogger.Println("Produto:", productData)
+
+	if err := json.NewDecoder(r.Body).Decode(&productData); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Erro ao processar dados: ", err)
+
 		json.NewEncoder(w).Encode(
 			responsehelper.Response(false, err.Error(), "Erro ao processar dados"),
 		)
@@ -59,15 +66,16 @@ func HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product.Id = id
+	productData.Id = id
 
-	updated, err := product.Update()
+	updated, err := productData.Update()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+
 		u.ErrorLogger.Println("Erro ao alterar o produto: ", err)
 		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err.Error(), "Erro ao atualizar o produto não localizado."),
+			responsehelper.Response(false, err.Error(), "Erro ao atualizar"),
 		)
 
 		return

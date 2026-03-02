@@ -1,77 +1,61 @@
-General Logger: 	2026/02/28 10:26:42 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 10:27:05 response.go:9: Data recebido: map[commission:0xc000008a08 sale:0xc0000d7b00]
-General Logger: 	2026/02/28 10:29:33 response.go:9: Data recebido: map[commission:0xc00038e570 sale:0xc0000d7d80]
-General Logger: 	2026/02/28 10:29:39 response.go:9: Data recebido: map[commission:0xc00038e5e8 sale:0xc0003a6580]
-General Logger: 	2026/02/28 10:29:52 response.go:9: Data recebido: map[commission:0xc00010a420 sale:0xc00014a080]
-General Logger: 	2026/02/28 10:30:01 response.go:9: Data recebido: map[commission:0xc000008b88 sale:0xc0000d7e00]
-General Logger: 	2026/02/28 10:31:22 response.go:9: Data recebido: map[commission:0xc00038e678 sale:0xc0003a6700]
-General Logger: 	2026/02/28 10:31:23 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 10:32:59 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 10:33:01 response.go:9: Data recebido: map[commission:0xc00038e6f0 sale:0xc0003a6880]
-General Logger: 	2026/02/28 10:33:05 response.go:9: Data recebido: map[commission:0xc000008c18 sale:0xc0002cc000]
-General Logger: 	2026/02/28 10:34:22 response.go:9: Data recebido: map[commission:0xc00038e798 sale:0xc0003a6a00]
-General Logger: 	2026/02/28 10:36:17 response.go:9: Data recebido: map[commission:0xc00010a6c0 sale:0xc00014a700]
-General Logger: 	2026/02/28 10:36:28 response.go:9: Data recebido: map[commission:0xc00038e828 sale:0xc0003a6b80]
-General Logger: 	2026/02/28 10:36:52 response.go:9: Data recebido: map[commission:0xc00038e8a0 sale:0xc0003a6d00]
-General Logger: 	2026/02/28 10:36:57 response.go:9: Data recebido: map[commission:0xc00038e918 sale:0xc0003a6e80]
-General Logger: 	2026/02/28 10:37:39 response.go:9: Data recebido: map[commission:0xc000008c60 sale:0xc0003a7000]
-General Logger: 	2026/02/28 10:37:41 response.go:9: Data recebido: map[commission:0xc00038e990 sale:0xc0002cc300]
-General Logger: 	2026/02/28 10:38:09 response.go:9: Data recebido: map[commission:0xc000008cf0 sale:0xc0002cc380]
-General Logger: 	2026/02/28 10:38:26 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 10:38:28 response.go:9: Data recebido: map[commission:0xc000008d68 sale:0xc0002cc500]
-General Logger: 	2026/02/28 10:38:41 response.go:9: Data recebido: map[commission:0xc00010a780 sale:0xc00014a900]
-General Logger: 	2026/02/28 10:41:03 response.go:9: Data recebido: map[commission:0xc000008e28 sale:0xc0002cc700]
-General Logger: 	2026/02/28 10:41:13 response.go:9: Data recebido: map[commission:0xc000008ea0 sale:0xc0002cc880]
-General Logger: 	2026/02/28 10:41:18 response.go:9: Data recebido: map[commission:0xc00038eae0 sale:0xc0003a7400]
-General Logger: 	2026/02/28 10:45:12 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 10:45:15 response.go:9: Data recebido: map[commission:0xc00010a7f8 sale:0xc00014aa80]
-General Logger: 	2026/02/28 10:45:49 response.go:9: Data recebido: map[commission:0xc000009050 sale:0xc0002ccc80]
-General Logger: 	2026/02/28 10:45:56 response.go:9: Data recebido: map[commission:0xc0000090c8 sale:0xc0002cce00]
-General Logger: 	2026/02/28 10:46:14 response.go:9: Data recebido: map[commission:0xc000009140 sale:0xc0002ccf80]
-General Logger: 	2026/02/28 10:46:25 response.go:9: Data recebido: map[commission:0xc000009188 sale:0xc0003a7580]
-General Logger: 	2026/02/28 11:01:02 response.go:9: Data recebido: map[commission:0xc00038ec48 sale:0xc0002cd200]
-General Logger: 	2026/02/28 11:04:04 response.go:9: Data recebido: map[commission:0xc000009338 sale:0xc0002cd280]
-General Logger: 	2026/02/28 11:04:43 response.go:9: Data recebido: map[commission:0xc0000093c8 sale:0xc0002cd400]
-General Logger: 	2026/02/28 11:06:43 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:06:45 response.go:9: Data recebido: map[commission:0xc00038ecd8 sale:0xc0003a7700]
-General Logger: 	2026/02/28 11:06:49 response.go:9: Data recebido: map[commission:0xc00038ed50 sale:0xc0003a7880]
-General Logger: 	2026/02/28 11:07:40 response.go:9: Data recebido: map[commission:0xc00038ede0 sale:0xc0003a7a00]
-General Logger: 	2026/02/28 11:09:42 response.go:9: Data recebido: map[commission:0xc000009578 sale:0xc0002cd800]
-General Logger: 	2026/02/28 11:09:50 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:09:52 response.go:9: Data recebido: map[commission:0xc00010a960 sale:0xc00014ae80]
-General Logger: 	2026/02/28 11:10:25 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:10:27 response.go:9: Data recebido: map[commission:0xc0000095f0 sale:0xc0002cd980]
-General Logger: 	2026/02/28 11:11:36 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:11:39 response.go:9: Data recebido: map[commission:0xc000009758 sale:0xc0002cdd80]
-General Logger: 	2026/02/28 11:14:04 response.go:9: Data recebido: map[commission:0xc00038efa8 sale:0xc0003a7e00]
-General Logger: 	2026/02/28 11:17:46 response.go:9: Data recebido: map[commission:0xc00038f050 sale:0xc00043c000]
-General Logger: 	2026/02/28 11:17:48 response.go:9: Data recebido: map[commission:0xc00038f0c8 sale:0xc00043c180]
-General Logger: 	2026/02/28 11:19:02 response.go:9: Data recebido: map[commission:0xc00010aa08 sale:0xc0002cdf00]
-General Logger: 	2026/02/28 11:23:49 response.go:9: Data recebido: map[commission:0xc000009890 sale:0xc0002f8000]
-General Logger: 	2026/02/28 11:25:59 response.go:9: Data recebido: map[commission:0xc00038f170 sale:0xc00043c300]
-General Logger: 	2026/02/28 11:26:02 response.go:9: Data recebido: map[commission:0xc00038f1e8 sale:0xc00043c480]
-General Logger: 	2026/02/28 11:26:05 response.go:9: Data recebido: map[commission:0xc000009920 sale:0xc0002f8180]
-General Logger: 	2026/02/28 11:48:34 response.go:9: Data recebido: [{1 Venda n° 1 1 Consumidor padrão 1 Dinheiro 13.3 0 13.3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda n° 2 1 Consumidor padrão 1 Dinheiro 12 0 25.3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:48:36 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:48:38 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:08 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:10 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:11 response.go:9: Data recebido: [{1 Venda n° 1 1 Consumidor padrão 1 Dinheiro 13.3 0 13.3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda n° 2 1 Consumidor padrão 1 Dinheiro 12 0 25.3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:12 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:15 response.go:9: Data recebido: map[commission:0xc0002084c8 sale:0xc00025c300]
-General Logger: 	2026/02/28 11:49:40 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:51 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:49:52 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:50:13 response.go:9: Data recebido: &{2 PRODUTO COM COMISSÃO 15% 12 0 15 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
-General Logger: 	2026/02/28 11:50:16 response.go:9: Data recebido: &{2 PRODUTO COM COMISSÃO 15% 12 0 15 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
-General Logger: 	2026/02/28 11:50:26 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:14 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:16 response.go:9: Data recebido: [{1 Venda n° 1 1 Consumidor padrão 1 Dinheiro 13.3 0 13.3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda n° 2 1 Consumidor padrão 1 Dinheiro 12 0 25.3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:19 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:21 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:24 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:25 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:26 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:28 response.go:9: Data recebido: [{1 1 Consumidor padrão 13.3 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 1 Consumidor padrão 12 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:51:37 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/02/28 11:59:23 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:33:49 main.go:25: Banco de dados conectado com sucesso!
+Info Logger: 	2026/03/01 17:33:49 payMentFormContract.go:150: CreateDefaultPayMents started
+Info Logger: 	2026/03/01 17:33:49 payMentFormContract.go:182: Os pagamentos existem
+Info Logger: 	2026/03/01 17:33:49 customerContract.go:248: CreateDefaultCustomer started
+Info Logger: 	2026/03/01 17:33:50 customerContract.go:279: O cliente existe
+General Logger: 	2026/03/01 17:34:34 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:37:34 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:38:35 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:40:21 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:40:38 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:40:39 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:40:40 response.go:9: Data recebido: &{1 TESTE 1 -1 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:41:37 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:41:46 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:43:47 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:44:09 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:45:04 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:45:32 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:45:54 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:46:35 response.go:9: Data recebido: &{1 TESTE 1 -1 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:46:36 saleContract.go:102: Produto aqui:  {0 0 1 TESTE 1 1  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:46:37 saleContract.go:122: SubTotal da venda aqui:  1
+General Logger: 	2026/03/01 17:46:37 handlePostSale.go:51: Produto aqui:  {0 0 1 TESTE 1 1  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+Info Logger: 	2026/03/01 17:46:37 saleContract.go:313: Cliente diferente do padrão
+General Logger: 	2026/03/01 17:46:39 response.go:9: Data recebido: {3 2 GABRIEL 1  [{3 3 1 TESTE 1 1 Pendente 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:46:39 response.go:9: Data recebido: [{1 Dinheiro  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Pix  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+Info Logger: 	2026/03/01 17:46:42 saleContract.go:74: Formas de pagamento:  [{1 Dinheiro 1} {2 Pix 0}]
+General Logger: 	2026/03/01 17:46:42 saleContract.go:82: Forma de pagamento aqui:  {1 Dinheiro 1}
+General Logger: 	2026/03/01 17:46:42 saleContract.go:82: Forma de pagamento aqui:  {2 Pix 0}
+General Logger: 	2026/03/01 17:46:42 saleContract.go:87: totalPaide aqui:  1
+General Logger: 	2026/03/01 17:46:42 saleContract.go:493: Vai fazer o insert no sale_pay_ment pelo for
+General Logger: 	2026/03/01 17:46:42 cashRegisterContract.go:193: Dados: lastBalance - 2.000000|InputValue - 1.000000|OutputValue - 0.000000
+General Logger: 	2026/03/01 17:46:42 cashRegisterContract.go:242: Dados do insert:  [Venda N° 3 2 GABRIEL 1 Dinheiro 1 0 3 3 <nil>]
+General Logger: 	2026/03/01 17:46:43 saleContract.go:548: Venda está pendente, vai finalizar a venda e os itens.
+General Logger: 	2026/03/01 17:46:43 response.go:9: Data recebido: {3 [{1 Dinheiro 1} {2 Pix 0}]}
+General Logger: 	2026/03/01 17:57:15 response.go:9: Data recebido: [{1 Venda N° 1 1 Consumidor padrão 1 Dinheiro 1 0 1 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda N° 2 2 Consumidor padrão 1 Dinheiro 1 0 2 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {3 Venda N° 3 2 GABRIEL 1 Dinheiro 1 0 3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:57:27 response.go:9: Data recebido: [{1 TESTE 1 -2 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:57:31 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:57:33 response.go:9: Data recebido: [{1 Venda N° 1 1 Consumidor padrão 1 Dinheiro 1 0 1 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda N° 2 2 Consumidor padrão 1 Dinheiro 1 0 2 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {3 Venda N° 3 2 GABRIEL 1 Dinheiro 1 0 3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:57:58 response.go:9: Data recebido: [{1 Venda N° 1 1 Consumidor padrão 1 Dinheiro 1 0 1 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda N° 2 2 Consumidor padrão 1 Dinheiro 1 0 2 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {3 Venda N° 3 2 GABRIEL 1 Dinheiro 1 0 3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:58:05 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:58:14 response.go:9: Data recebido: [{1 TESTE 1 -2 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:58:30 response.go:9: Data recebido: [{1 TESTE 1 -2 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:58:34 saleContract.go:102: Produto aqui:  {0 0 1 TESTE 1 1  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:58:35 saleContract.go:122: SubTotal da venda aqui:  1
+General Logger: 	2026/03/01 17:58:35 handlePostSale.go:51: Produto aqui:  {0 0 1 TESTE 1 1  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:58:36 response.go:9: Data recebido: {4 1 Consumidor padrão 1  [{4 4 1 TESTE 1 1 Pendente 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}
+General Logger: 	2026/03/01 17:58:36 response.go:9: Data recebido: [{1 Dinheiro  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Pix  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+Info Logger: 	2026/03/01 17:58:45 saleContract.go:74: Formas de pagamento:  [{1 Dinheiro 500} {2 Pix 0}]
+General Logger: 	2026/03/01 17:58:45 saleContract.go:82: Forma de pagamento aqui:  {1 Dinheiro 500}
+General Logger: 	2026/03/01 17:58:45 saleContract.go:82: Forma de pagamento aqui:  {2 Pix 0}
+General Logger: 	2026/03/01 17:58:45 saleContract.go:87: totalPaide aqui:  500
+General Logger: 	2026/03/01 17:58:45 saleContract.go:493: Vai fazer o insert no sale_pay_ment pelo for
+General Logger: 	2026/03/01 17:58:45 cashRegisterContract.go:193: Dados: lastBalance - 3.000000|InputValue - 500.000000|OutputValue - 0.000000
+General Logger: 	2026/03/01 17:58:45 cashRegisterContract.go:242: Dados do insert:  [Venda N° 4 1 Consumidor padrão 1 Dinheiro 500 0 503 4 <nil>]
+General Logger: 	2026/03/01 17:58:46 saleContract.go:548: Venda está pendente, vai finalizar a venda e os itens.
+General Logger: 	2026/03/01 17:58:46 response.go:9: Data recebido: {4 [{1 Dinheiro 500} {2 Pix 0}]}
+General Logger: 	2026/03/01 17:58:49 response.go:9: Data recebido: [{1 1 Consumidor padrão 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 2 Consumidor padrão 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {3 2 GABRIEL 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {4 1 Consumidor padrão 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:58:58 response.go:9: Data recebido: [{1 1 Consumidor padrão 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 2 Consumidor padrão 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {3 2 GABRIEL 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {4 1 Consumidor padrão 1 Concluída [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:59:00 response.go:9: Data recebido: [{1 Consumidor padrão  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 GABRIEL 088.051.669-01 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/01 17:59:02 response.go:9: Data recebido: [{1 Venda N° 1 1 Consumidor padrão 1 Dinheiro 1 0 1 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 Venda N° 2 2 Consumidor padrão 1 Dinheiro 1 0 2 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {3 Venda N° 3 2 GABRIEL 1 Dinheiro 1 0 3 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {4 Venda N° 4 1 Consumidor padrão 1 Dinheiro 500 0 503 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]

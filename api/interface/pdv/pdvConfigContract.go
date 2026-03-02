@@ -76,6 +76,8 @@ func (c *PDVConfig) Update() (PDVConfig, error) {
 		return PDVConfig{}, err
 	}
 
+	defer tx.Rollback(ctx)
+
 	query := `
 		UPDATE 	
 			config_pdv

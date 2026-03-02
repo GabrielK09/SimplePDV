@@ -309,6 +309,19 @@ func (s *SaleContract) Create() (int, error) {
 
 	defer tx.Rollback(ctx)
 
+	if s.CustomerId > 1 {
+		u.InfoLogger.Println("Cliente diferente do padrão")
+		otherCustomer, err := customer.Show(s.CustomerId)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao localizar o cliente:", err)
+			return 0, err
+		}
+
+		s.Customer = otherCustomer.Name
+		s.CustomerId = otherCustomer.Id
+	}
+
 	querySale := `
 		INSERT INTO sales
 			(customer_id, customer, sale_value)

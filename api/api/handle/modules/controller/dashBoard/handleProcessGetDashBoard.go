@@ -42,6 +42,7 @@ func HandleProcessGetDashBoard(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&dashBoardData); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao processar os dados:", err)
+
 		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
 		json.NewEncoder(w).Encode(resp)

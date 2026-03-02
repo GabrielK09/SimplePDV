@@ -123,6 +123,8 @@ func (c *CustomerContract) Create() error {
 		return err
 	}
 
+	defer tx.Rollback(ctx)
+
 	query := `
 		INSERT INTO customers 
 			(name, cpf_cnpj)
@@ -252,6 +254,8 @@ func CreateDefaultCustomer() error {
 		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)
 		return err
 	}
+
+	defer tx.Rollback(ctx)
 
 	selectQuery := `
 		SELECT

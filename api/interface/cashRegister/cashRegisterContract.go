@@ -202,9 +202,9 @@ func (c *CashRegisterContract) Create(
 		sale = saleId
 
 		if input_value > 0 {
-			description = fmt.Sprintf("Venda n° %d", saleId)
+			description = fmt.Sprintf("Venda N° %d", saleId)
 		} else {
-			description = fmt.Sprintf("Estorno de venda n° %d", saleId)
+			description = fmt.Sprintf("Estorno de venda N° %d", saleId)
 		}
 	}
 
@@ -212,9 +212,9 @@ func (c *CashRegisterContract) Create(
 		shopping = shoppingId
 
 		if input_value > 0 {
-			description = fmt.Sprintf("Compra n° %d", saleId)
+			description = fmt.Sprintf("Compra N° %d", saleId)
 		} else {
-			description = fmt.Sprintf("Estorno de compra n° %d", saleId)
+			description = fmt.Sprintf("Estorno de compra N° %d", saleId)
 		}
 	}
 

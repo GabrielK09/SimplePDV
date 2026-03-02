@@ -91,8 +91,7 @@ func (p *ProductContract) Update() (ProductContract, error) {
 			qtde = $4, 
 			commission = $5, 
 			returned = $6, 
-			saled = $7, 
-			date_of_purchase = $8
+			saled = $7
 
 		WHERE
 			id = $1
@@ -104,8 +103,7 @@ func (p *ProductContract) Update() (ProductContract, error) {
 			qtde,
 			commission,
 			returned,
-			saled,
-			date_of_purchase
+			saled
 	`
 
 	err := conn.QueryRow(
