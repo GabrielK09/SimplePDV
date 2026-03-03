@@ -2,25 +2,18 @@ package controller
 
 import (
 	"encoding/json"
-	reports "myApi/api/handle/modules/controller/report/internal"
+
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
+	"myApi/interface/reports"
 	"net/http"
 	"time"
 )
 
-type ReportBody struct {
-	ReportType   string `json:"report_type"`
-	StartDateStr string `json:"start_date"`
-	EndDateStr   string `json:"end_date"`
-
-	StartDate time.Time `json:"-"`
-	EndDate   time.Time `json:"-"`
-}
-
 const (
 	cashRegister = "cash-register"
-	payMentForms = "pay-ment-f orms"
+	payMentForms = "pay-ment-forms"
+	saledItens   = "saled-itens"
 	layout       = "2006-01-02"
 )
 
@@ -46,7 +39,7 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
-	var report ReportBody
+	var report reports.ReportBody
 
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -85,8 +78,11 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 	report.StartDate = startDate
 	report.EndDate = endDate
 
-	if report.ReportType != cashRegister && report.ReportType != payMentForms {
+	if report.ReportType != cashRegister && report.ReportType != payMentForms && report.ReportType != saledItens {
 		u.ErrorLogger.Println("Tipo de relatório incorreto.")
+		u.ErrorLogger.Println("Tipo recebido: ", report.ReportType)
+		u.ErrorLogger.Printf("Tipos esperados: %s, %s, %s", cashRegister, payMentForms, saledItens)
+
 		w.WriteHeader(http.StatusNotFound)
 
 		resp := responsehelper.Response(false, nil, "Tipo de relatório incorreto.")
@@ -95,11 +91,21 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 
 	} else {
-		_ = reports.BuildReport(report.ReportType)
+		data, err := report.BuildReport()
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao processar o relatório: ", err)
+			w.WriteHeader(http.StatusNotFound)
+
+			resp := responsehelper.Response(false, err, "Erro ao processar o relatório.")
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
 
 		w.WriteHeader(http.StatusOK)
 
-		resp := responsehelper.Response(true, report, "Dados do relatório.")
+		resp := responsehelper.Response(true, data, "Dados do relatório.")
 
 		json.NewEncoder(w).Encode(resp)
 		return

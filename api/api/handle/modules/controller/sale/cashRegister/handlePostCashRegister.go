@@ -7,7 +7,11 @@ import (
 	"myApi/interface/cashRegister"
 
 	"net/http"
+
+	"github.com/jackc/pgx/v5"
 )
+
+var tx pgx.Tx
 
 func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -24,6 +28,7 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao processaro os dados:", err)
 		resp := responsehelper.Response(false, err, "Erro ao processaro os dados.")
 
 		json.NewEncoder(w).Encode(resp)
@@ -32,13 +37,14 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 
 	if err := c.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		u.ErrorLogger.Println("Erro ao validar o registro no caixa:", err)
 		resp := responsehelper.Response(false, err, "Campos incorretos.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
 	} // Valida os dados
 
-	if err := c.Create(nil, c.InputValue, c.OutputValue, 0, 0, c.CustomerId, c.Customer); len(err) > 0 {
+	if err := c.Create(tx, c.InputValue, c.OutputValue, 0, 0, c.CustomerId, c.Customer); len(err) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao salvar o registro no caixa:", err)
 		resp := responsehelper.Response(false, err, "Erro ao salvar o registro no caixa.")

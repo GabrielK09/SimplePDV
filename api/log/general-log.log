@@ -1,0 +1,5 @@
+General Logger: 	2026/03/03 20:10:12 main.go:26: Banco de dados conectado com sucesso!
+Info Logger: 	2026/03/03 20:10:12 payMentFormContract.go:150: CreateDefaultPayMents started
+Info Logger: 	2026/03/03 20:10:12 payMentFormContract.go:182: Os pagamentos existem
+Info Logger: 	2026/03/03 20:10:13 customerContract.go:248: CreateDefaultCustomer started
+Info Logger: 	2026/03/03 20:10:13 customerContract.go:279: O cliente existe

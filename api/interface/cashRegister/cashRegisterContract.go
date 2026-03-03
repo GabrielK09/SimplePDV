@@ -95,12 +95,13 @@ func getLastBalance(tx pgx.Tx) (float64, error) {
 		&balance,
 	)
 
-	if balance == 0 {
-		return 0, nil
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao fazer a consulta do balanço: ", err)
+		return 0, err
 	}
 
-	if err != nil {
-		return 0, err
+	if balance == 0 {
+		return 0, nil
 	}
 
 	return balance, nil

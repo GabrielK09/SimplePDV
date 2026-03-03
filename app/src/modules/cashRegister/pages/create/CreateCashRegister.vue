@@ -97,14 +97,11 @@
     import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { createManualCashRegister } from '../../services/cashRegisterService';
-
-    const cashRegisterSchema = computed(() =>
-        Yup.object({
-            name: Yup.string().required('O nome do produto é obrigatório!'),
-            price: Yup.number().required('O valor do produto é obrigatório!'),
-            qtde: Yup.number().required('A quantia do produto é obrigatório!'),
-        })
-    );
+    
+    /**
+        input_value: Yup.number().test(),
+        output_value: Yup.number().required('A quantia do produto é obrigatório!'),
+    */
 
     const cashRegisterData = ref<CashRegisterContract>({
         id: 0,
@@ -118,6 +115,27 @@
         specie_id: 0,
         total_balance: 0
     });
+
+    const cashRegisterSchema = computed(() =>
+        Yup.object({
+            description: Yup.string().required('A descrição do movimento financeiro é obrigatória!'),
+            input_value: Yup.number().min(0, 'O valor de entrada não pode ser menor que zero.'),
+            output_value: Yup.number().min(0, 'O valor de saída não pode ser menor que zero.')
+        })
+        .test(
+            'input-or-output',
+            'Informe apenas um dos valores, entrada ou saída',
+            (obj) => {
+                const inputValue = Number(obj.input_value ?? 0);
+                const outputValue = Number(obj.output_value ?? 0);
+
+                const haveInput = inputValue > 0;
+                const haveOutput = outputValue > 0;
+
+                return (!haveInput && haveOutput) || (haveInput && !haveOutput);
+            }
+        )
+    );
 
     const formErrors = ref<Record<string, string>>({});
 

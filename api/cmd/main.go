@@ -11,6 +11,7 @@ import (
 	paymentform "myApi/interface/payMentForm"
 	"myApi/interface/pdv"
 	"myApi/interface/product"
+	"myApi/interface/reports"
 	"myApi/interface/sale"
 )
 
@@ -31,6 +32,7 @@ func main() {
 	dashBoard.SetConnection(db)
 	paymentform.SetConnection(db)
 	pdv.SetConnection(db)
+	reports.SetConnection(db)
 
 	if err = paymentform.CreateDefaultPayMents(); err != nil {
 		u.ErrorLogger.Fatal("Erro ao criar as espécies padrão: ", err)
