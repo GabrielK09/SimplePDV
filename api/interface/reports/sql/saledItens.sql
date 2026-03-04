@@ -17,7 +17,6 @@ WITH resumo AS (
         AND si.status = 'Concluída'
         AND s.created_at::DATE >= $1 
         AND s.created_at::DATE < $2
-
 )
 
 SELECT

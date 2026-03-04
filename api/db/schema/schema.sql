@@ -1,5 +1,15 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
+CREATE TABLE public.user (
+  id SERIAL PRIMARY KEY,
+  name character varying NOT NULL,
+  cpf character varying NOT NULL,
+  login character varying NOT NULL,
+  password character varying NOT NULL,
+  is_admin boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE public.customers (
   id SERIAL PRIMARY KEY,
   name character varying NOT NULL,

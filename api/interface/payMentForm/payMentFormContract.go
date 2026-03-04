@@ -146,6 +146,40 @@ func Show() (*PayMentForms, error) {
 
 }
 
+func ShowById(id int) (*PayMentForms, error) {
+	query := `
+		SELECT
+			id,
+			specie, 
+			pix_key
+
+		FROM
+			pay_ment_forms
+
+		WHERE
+			id = $1
+	`
+
+	var pf PayMentForms
+
+	err := conn.QueryRow(
+		ctx,
+		query,
+		id,
+	).Scan(
+		&pf.Id,
+		&pf.Specie,
+		&pf.PixKey,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pf, nil
+
+}
+
 func CreateDefaultPayMents() error {
 	u.InfoLogger.Println("CreateDefaultPayMents started")
 

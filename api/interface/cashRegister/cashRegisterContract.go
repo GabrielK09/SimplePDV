@@ -13,6 +13,8 @@ import (
 type CashRegisterContract struct {
 	Id           int       `json:"id"`
 	Description  string    `json:"description"`
+	SaleId       int       `json:"sale_id"`
+	ShoppingId   int       `json:"shopping_id"`
 	CustomerId   int       `json:"customer_id"`
 	Customer     string    `json:"customer"`
 	SpecieId     int       `json:"specie_id"`
@@ -25,6 +27,7 @@ type CashRegisterContract struct {
 }
 
 var conn *pgxpool.Pool
+var ctx = context.Background()
 
 func SetConnection(db *pgxpool.Pool) {
 	conn = db
@@ -32,6 +35,10 @@ func SetConnection(db *pgxpool.Pool) {
 
 func (c CashRegisterContract) Validate() map[string]string {
 	errorsField := make(map[string]string)
+
+	if c.Description == "" {
+		errorsField["description"] = "A descrição do lançamento é obrigatória."
+	}
 
 	if c.InputValue <= 0 && c.OutputValue <= 0 {
 		errorsField["input_value"] = "O valor de entrada não pode ser menor que zero."
@@ -41,6 +48,14 @@ func (c CashRegisterContract) Validate() map[string]string {
 	if c.InputValue > 0 && c.OutputValue > 0 {
 		errorsField["input_value"] = "O valor de entrada não pode ser informando quando houver um valor de saída informado."
 		errorsField["output_value"] = "O valor de saída não pode ser informando quando houver um valor de entrada informado."
+	}
+
+	if c.CustomerId < 1 {
+		errorsField["customer_id"] = "Identificador do cliente "
+	}
+
+	if c.SpecieId < 1 {
+		errorsField["specie_id"] = "Identificador da espécie inválido."
 	}
 
 	return errorsField
@@ -163,24 +178,18 @@ func (c *CashRegisterContract) Create(
 	tx pgx.Tx,
 	input_value,
 	output_value float64,
-	shoppingId,
-	saleId,
-	cusotmerId int,
-	customer string,
 ) map[string]string {
 	errorsField := make(map[string]string)
 
 	c.InputValue = input_value
 	c.OutputValue = output_value
-	c.CustomerId = cusotmerId
-	c.Customer = customer
 
 	if c.InputValue > 0 && c.OutputValue > 0 {
 		errorsField["input_value"] = "Um registro no caixa não pode ter um valor de entrada no mesmo registro de uma saída."
 		errorsField["output_value"] = "Um registro no caixa não pode ter um valor de saída no mesmo registro de uma entrada."
 	}
 
-	if shoppingId > 0 && saleId > 0 {
+	if c.ShoppingId > 0 && c.SaleId > 0 {
 		errorsField["shopping_id"] = "Uma venda e uma compra não podem ser gravadas no mesmo registro do caixa."
 	}
 
@@ -195,32 +204,35 @@ func (c *CashRegisterContract) Create(
 
 	c.TotalBalance = lastBalance + c.InputValue - c.OutputValue
 
-	var sale interface{} = nil
-	var shopping interface{} = nil
 	var description interface{} = ""
+	var saleId interface{} = nil
+	var shoppingId interface{} = nil
 
-	if saleId > 0 {
-		sale = saleId
-
+	if c.SaleId > 0 {
 		if input_value > 0 {
-			description = fmt.Sprintf("Venda N° %d", saleId)
+			description = fmt.Sprintf("Venda N° %d", c.SaleId)
 		} else {
-			description = fmt.Sprintf("Estorno de venda N° %d", saleId)
+			description = fmt.Sprintf("Estorno de venda N° %d", c.SaleId)
 		}
+
+		saleId = c.SaleId
+		shoppingId = nil
 	}
 
-	if shoppingId > 0 {
-		shopping = shoppingId
-
+	if c.ShoppingId > 0 {
 		if input_value > 0 {
-			description = fmt.Sprintf("Compra N° %d", saleId)
+			description = fmt.Sprintf("Compra N° %d", c.ShoppingId)
 		} else {
-			description = fmt.Sprintf("Estorno de compra N° %d", saleId)
+			description = fmt.Sprintf("Estorno da compra N° %d", c.ShoppingId)
 		}
+
+		shoppingId = c.ShoppingId
+		saleId = nil
 	}
 
-	if shoppingId <= 0 && saleId <= 0 {
-		description = "Registro manual do caixa"
+	if c.CustomerId < 1 {
+		c.CustomerId = 1
+		c.Customer = "Consumidor padrão."
 	}
 
 	if len(errorsField) > 0 {
@@ -236,8 +248,8 @@ func (c *CashRegisterContract) Create(
 		c.InputValue,
 		c.OutputValue,
 		c.TotalBalance,
-		sale,
-		shopping,
+		saleId,
+		shoppingId,
 	}
 
 	u.GeneralLogger.Println("Dados do insert: ", args)
@@ -271,7 +283,8 @@ func (c *CashRegisterContract) Create(
 				$10
 			)
 
-		RETURNING id
+		RETURNING 
+			id
 	`
 
 	err = tx.QueryRow(

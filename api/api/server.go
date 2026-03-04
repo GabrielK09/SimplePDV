@@ -3,14 +3,15 @@ package api
 import (
 	"log"
 	"myApi/api/cors"
+	authcontroller "myApi/api/handle/modules/controller/auth"
+	cashregisterController "myApi/api/handle/modules/controller/cashRegister"
 	customerController "myApi/api/handle/modules/controller/customer"
-	dashBoardController "myApi/api/handle/modules/controller/dashBoard"
+	dashboardcontroller "myApi/api/handle/modules/controller/dashBoard"
+	payMentController "myApi/api/handle/modules/controller/payMentForms"
 	productController "myApi/api/handle/modules/controller/product"
 	reportController "myApi/api/handle/modules/controller/report"
 	root "myApi/api/handle/modules/controller/root"
-	cashregisterController "myApi/api/handle/modules/controller/sale/cashRegister"
-	payMentController "myApi/api/handle/modules/controller/sale/payMentForms"
-	saleController "myApi/api/handle/modules/controller/sale/sale"
+	saleController "myApi/api/handle/modules/controller/sale"
 	u "myApi/helpers/logger"
 	"net/http"
 
@@ -24,6 +25,10 @@ func StartServer() {
 	cors := cors.WithCORS(r)
 
 	r.HandleFunc("/api/root", root.HandleRoot)
+
+	// Auth \\
+	r.HandleFunc("/api/auth/login", authcontroller.HandleAuth).Methods(http.MethodPost, http.MethodOptions)
+	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Products \\
 	r.HandleFunc("/api/products/all", productController.HandleGetProduct).Methods(http.MethodGet, http.MethodOptions)
@@ -56,7 +61,8 @@ func StartServer() {
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// DashBoard \\
-	r.HandleFunc("/api/dash-board/totales", dashBoardController.HandleProcessGetDashBoard).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/dash-board/totales", dashboardcontroller.HandleProcessGetDashBoard).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/dash-board/popular-itens", dashboardcontroller.HandleProcessGetDashBoardPopularItens).Methods(http.MethodPost, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Relatórios \\

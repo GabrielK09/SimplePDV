@@ -97,14 +97,27 @@
                     </q-card>
                 </div>
             </div>
+
+            <div class="q-col-gutter-md mr-6">
+                <div class="col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <q-table
+                            title="Itens mais vendidos"
+                            :rows="popularItensTableData"
+                            :columns="popularItensTable"
+                            row-key="name"
+                        />
+                    </q-card>
+                </div>
+            </div>
         </div>
     </q-page>
 </template>
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
-    import { computed, onMounted, ref } from 'vue';
-    import ApexChart from 'vue3-apexcharts';
+    import { onMounted, ref } from 'vue';
+    //import ApexChart from 'vue3-apexcharts';
     import { getDashBoardData } from '../services/dashBoardService';
     import dayjs from 'dayjs';
     import { getAll } from 'src/modules/cashRegister/services/cashRegisterService';
@@ -118,6 +131,31 @@
     const dashBoardData = ref<DashBoardContract>();
     const totalBalance = ref<number>(0);
     const showCashRegisterInformation = ref<boolean>(false);
+
+    const popularItensTable: QTableColumn[] = [
+        {
+            name: 'produto_id',
+            label: 'Cód. Produto',
+            field: 'produto_id',
+        },
+        {
+            name: 'produto',
+            label: 'Produto',
+            field: 'produto',
+        },
+        {
+            name: 'item_sale_value',
+            label: 'Valor do produto',
+            field: 'item_sale_value',
+        },
+        {
+            name: 'qtde',
+            label: 'Qtde',
+            field: 'qtde',
+        },
+    ];
+
+    const popularItensTableData = ref<any[]>([]);
 
     const filterDashBoard = async () => {
         const res = await getDashBoardData(startDate.value, endDate.value);

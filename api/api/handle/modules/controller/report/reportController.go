@@ -1,4 +1,4 @@
-package controller
+package reportController
 
 import (
 	"encoding/json"

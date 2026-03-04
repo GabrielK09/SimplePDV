@@ -2,6 +2,7 @@ package main
 
 import (
 	"myApi/api"
+	cashregisterController "myApi/api/handle/modules/controller/cashRegister"
 	"myApi/db"
 	loggerHelper "myApi/helpers/logger"
 	u "myApi/helpers/logger"
@@ -13,6 +14,7 @@ import (
 	"myApi/interface/product"
 	"myApi/interface/reports"
 	"myApi/interface/sale"
+	"myApi/interface/user"
 )
 
 func main() {
@@ -26,6 +28,7 @@ func main() {
 	u.GeneralLogger.Println("Banco de dados conectado com sucesso!")
 
 	product.SetConnection(db)
+	cashregisterController.SetConnection(db) // For manual insert
 	cashRegister.SetConnection(db)
 	sale.SetConnection(db)
 	customer.SetConnection(db)
@@ -33,6 +36,7 @@ func main() {
 	paymentform.SetConnection(db)
 	pdv.SetConnection(db)
 	reports.SetConnection(db)
+	user.SetConnection(db)
 
 	if err = paymentform.CreateDefaultPayMents(); err != nil {
 		u.ErrorLogger.Fatal("Erro ao criar as espécies padrão: ", err)
@@ -40,6 +44,10 @@ func main() {
 
 	if err = customer.CreateDefaultCustomer(); err != nil {
 		u.ErrorLogger.Fatal("Erro ao criar o consumidor padrão: ", err)
+	}
+
+	if err = user.CreateDefaultUser(); err != nil {
+		u.ErrorLogger.Fatal("Erro ao criar o usuário padrão: ", err)
 	}
 
 	api.StartServer()

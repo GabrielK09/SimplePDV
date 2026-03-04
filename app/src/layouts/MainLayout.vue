@@ -69,7 +69,7 @@
         { label: 'Caixa', icon: 'request_quote', name: 'request_quote', path: 'cash-register' },
         { label: 'Ponto de venda', icon: 'point_of_sale', name: 'point_of_sale', path: 'pdv' },
         { label: 'Listagem de vendas', icon: 'analytics', name: 'analytics', path: 'pdv/list-pdv' },
-        { label: 'Test api', icon: 'api', name: 'dashboard', path: 'api' }
+        //{ label: 'Test api', icon: 'api', name: 'dashboard', path: 'api' }
 
     ]);
 </script>

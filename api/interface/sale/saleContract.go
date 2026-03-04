@@ -532,13 +532,19 @@ func PaySale(payMent PaySaleContract) error {
 			return err
 		}
 
+		c, err := customer.Show(s.CustomerId)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao pegar os dados do cliente: ", err)
+			return err
+		}
+
 		if err := createInCashRegister(
 			tx,
 			p.AmountPaid,
 			0.0,
 			payMent.SaleId,
-			s.CustomerId,
-			s.Customer,
+			*c,
 			p,
 		); len(err) > 0 {
 			return fmt.Errorf("Erros: %s", err)
@@ -601,9 +607,8 @@ func createInCashRegister(
 	tx pgx.Tx,
 	inputValue,
 	outputValue float64,
-	saleId,
-	customerId int,
-	customer string,
+	saleId int,
+	customer customer.CustomerContract,
 	specie PayMentBody,
 ) map[string]string {
 	errorsField := make(map[string]string)
@@ -611,21 +616,25 @@ func createInCashRegister(
 
 	c.SpecieId = specie.SpecieId
 	c.Specie = specie.Specie
+	c.SaleId = saleId
+	c.CustomerId = customer.Id
+	c.Customer = customer.Name
 
 	if inputValue > 0 && outputValue > 0 {
 		u.ErrorLogger.Println("Um registro no caixa não pode ter um valor de entrada e um de saída no mesmo registro.")
 		errorsField["input_value"] = "Um registro no caixa não pode ter um valor de entrada no mesmo registro de uma saída."
 		errorsField["output_value"] = "Um registro no caixa não pode ter um valor de saída no mesmo registro de uma entrada."
+		return errorsField
 	}
 
 	if inputValue > 0 {
-		if err := c.Create(tx, inputValue, 0.0, 0, saleId, customerId, customer); len(err) > 0 {
+		if err := c.Create(tx, inputValue, 0.0); len(err) > 0 {
 			return err
 		}
 	}
 
 	if outputValue > 0 {
-		if err := c.Create(tx, 0.0, outputValue, 0, saleId, customerId, customer); len(err) > 0 {
+		if err := c.Create(tx, 0.0, outputValue); len(err) > 0 {
 			return err
 		}
 	}
@@ -742,14 +751,20 @@ func (s *SaleContract) CancelSale() (SaleContract, error) {
 		payMentFormsFromSale = append(payMentFormsFromSale, pf)
 	}
 
+	c, err := customer.Show(s.CustomerId)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro no select do cliente para validar a venda: ", err)
+		return SaleContract{}, err
+	}
+
 	for _, pf := range payMentFormsFromSale {
 		if err := createInCashRegister(
 			tx,
 			0.0,
 			pf.AmountPaid,
 			s.Id,
-			s.CustomerId,
-			s.Customer,
+			*c,
 			pf,
 		); len(err) > 0 {
 			u.ErrorLogger.Printf("Erro no insert de estorno no caixa venda - %s", err)
