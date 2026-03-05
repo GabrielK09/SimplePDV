@@ -101,11 +101,10 @@ func StartServer() {
 	r := mux.NewRouter()
 	c := cors.WithCORS(r)
 
-	r.HandleFunc("/api/root", root.HandleRoot)
-	// Auth \\
+	r.HandleFunc("/api/ping", root.HandleRoot)
 	r.HandleFunc("/api/auth/login", authcontroller.HandleAuth).Methods(http.MethodPost, http.MethodOptions)
-	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
+	// Adiciona o prefixo, e usa a função handler como middleware
 	proteced := r.PathPrefix("/api").Subrouter()
 	proteced.Use(AuthMiddleware)
 

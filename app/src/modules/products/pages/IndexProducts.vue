@@ -9,6 +9,7 @@
                         no-caps
                         color="blue"
                         to="/admin/products/create"
+                        class="max-phone:mb-5"
                         label="Cadastrar novo produto"
 
                     />

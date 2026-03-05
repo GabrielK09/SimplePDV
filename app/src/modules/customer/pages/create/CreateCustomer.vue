@@ -3,7 +3,7 @@
         <main class="min-h-[60vh] flex flex-center text-xl">
             <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                 <header class="border-gray-100 flex">
-                    <span class="text-black cursor-pointer">
+                    <span class="text-black cursor-pointer my-auto">
                         <router-link to="/admin/products">
                             <q-avatar size="30px" icon="arrow_back" />
 

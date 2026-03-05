@@ -19,7 +19,7 @@
                         color="blue"
                         to="/admin/cash-register/create"
                         label="Cadastrar uma movimentação"
-                        class="phone:mb-5"
+                        class="max-phone:mb-5"
                     />
                 </div>
             </div>

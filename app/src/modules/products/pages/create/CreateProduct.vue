@@ -3,12 +3,13 @@
         <main class="min-h-[60vh] flex flex-center text-xl">
             <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                 <header class="border-gray-100 flex">
-                    <span class="text-black cursor-pointer">
+                    <span class="text-black cursor-pointer my-auto">
                         <router-link to="/admin/products">
                             <q-avatar size="30px" icon="arrow_back" />
 
                         </router-link>
                     </span>
+
                     <h2 class="text-gray-600 text-center">Cadastrar um novo produto</h2>
 
                 </header>
@@ -22,7 +23,7 @@
                             v-model="nameUpper"
                             maxlength="255"
                             type="text"
-                            label="E-mail *"
+                            label-slot
                             stack-label
                             outlined
                             dense
@@ -38,16 +39,13 @@
                         </q-input>
 
                         <q-input
-                            v-model.number="product.price"
-                            type="number"
+                            v-model="product.price"
+                            type="text"
                             label-slot
                             stack-label
                             outlined
                             dense
-                            placeholder="0,00"
                             mask="##,##"
-                            fill-mask="0"
-                            reverse-fill-mask
                             class="mb-4"
                             :error="!!formErrors.price"
                             :error-message="formErrors.price"
@@ -60,7 +58,8 @@
                         </q-input>
 
                         <q-input
-                            v-model.number="product.qtde"
+                            v-model="product.qtde"
+                            type="text"
                             label-slot
                             stack-label
                             outlined
@@ -78,8 +77,8 @@
                         
                         <div class="flex flex-col mb-4">
                             <q-input
-                                v-model.number="product.commission"
-                                type="number"
+                                v-model="product.commission"
+                                type="text"
                                 label-slot
                                 stack-label
                                 outlined
@@ -135,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { computed, ref, watch } from 'vue';
     import { useRouter } from 'vue-router';
     import * as Yup from 'yup';
     import { createProduct } from '../../services/productsService';
@@ -144,25 +143,31 @@
     const productSchema = computed(() =>
         Yup.object({
             name: Yup.string().required('O nome do produto é obrigatório!'),
-            price: Yup.number().required('O valor do produto é obrigatório!'),
+
+            price: Yup
+                    .number()
+                    .min(1, 'O valor do produto não pode ser menor que zero.')
+                    .required('O valor do produto é obrigatório!'),
+            
             qtde: Yup
                     .number()
                     .min(1, 'A qtde do produto não pode ser menor que zero.')
                     .required('A quantia do produto é obrigatório!'),
+
             commission: Yup
                     .number()
                     .min(0, 'O valor de comissão não pode ser menor que zero.')
                     .max(100, 'O valor de comissão não pode ser maior que 100%.')
-                    .required('A quantia do produto é obrigatório!'),
+                    .required('A quantia do produto é obrigatório!')
         })
     );
 
     const product = ref<ProductContract>({
         id: 0,
         name: '',
-        price: 0,
-        qtde: 0,
-        commission: 0
+        price: null,
+        qtde: null,
+        commission: null
     });
 
     const formErrors = ref<Record<string, string>>({});
@@ -178,6 +183,33 @@
             product.value.name = val.toUpperCase();
         }
     });
+
+    watch(
+        () => product.value.price,
+        (val) => {
+            console.log(isNaN(val));
+            
+            product.value.price = isNaN(val) ? 0 : val;
+        }
+    );
+
+    watch(
+        () => product.value.qtde,
+        (val) => {
+            console.log(isNaN(val));
+            
+            product.value.qtde = isNaN(val) ? 0 : val;
+        }
+    );
+
+    watch(
+        () => product.value.commission,
+        (val) => {                    
+            const commissionVal = isNaN(val) ? 0 : val;
+
+            product.value.commission = commissionVal > 100 ? 100 : commissionVal;
+        }
+    );
 
     const submitProduct = async () => {
         try {

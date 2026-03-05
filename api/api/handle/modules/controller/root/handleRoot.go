@@ -19,7 +19,7 @@ func HandleRoot(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, nil, "Api rodando!")
+	resp := responsehelper.Response(true, "pong", "pong")
 
 	json.NewEncoder(w).Encode(resp)
 }

@@ -9,6 +9,7 @@
                         no-caps
                         color="blue"
                         to="/admin/pdv"
+                        class="max-phone:mb-5"
                         label="Cadastrar uma venda"
                     />
                 </div>
@@ -24,15 +25,9 @@
                     :filter="searchInput"
                 >
                     <template v-slot:body="props">
-                        <q-tr
-                            :props="props"
-                        >
-                            <q-td
-                                v-for="col in props.cols"
-                            >
-                                <div
-                                    class="flex flex-center"
-                                >
+                        <q-tr :props="props">
+                            <q-td v-for="col in props.cols">
+                                <div class="flex flex-center">
                                     <template v-if="col.name === 'actions'">
                                         <div v-if="props.row.status === 'Concluída'">
                                             <q-btn
