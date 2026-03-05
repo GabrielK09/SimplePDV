@@ -20,6 +20,7 @@
                     <div class="p-4 inputs">
                         <q-input
                             v-model="nameUpper"
+                            maxlength="255"
                             type="text"
                             label="E-mail *"
                             stack-label

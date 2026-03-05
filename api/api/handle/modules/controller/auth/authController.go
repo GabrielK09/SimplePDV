@@ -28,7 +28,7 @@ func checkPasswordHash(password, hash string) bool {
 }
 
 func createToken(userName string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodES256,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": userName,
 			"exp":      time.Now().Add(time.Hour * 24).Unix(),
@@ -37,7 +37,7 @@ func createToken(userName string) (string, error) {
 	tokenString, err := token.SignedString(secretKey)
 
 	if err != nil {
-		u.ErrorLogger.Println("Erro ao gerar o token.")
+		u.ErrorLogger.Println("Erro ao gerar o token.", err)
 		return "", err
 	}
 
@@ -45,8 +45,6 @@ func createToken(userName string) (string, error) {
 }
 
 func HandleAuth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		resp := responsehelper.Response(false, nil, "Método não permetido.")
@@ -75,6 +73,9 @@ func HandleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userByLogin, err := user.ShowByLogin(bodyUserData.Login)
+
+	u.InfoLogger.Println("Valor de userByLogin", userByLogin)
+	u.InfoLogger.Println("Valor de bodyUserData", bodyUserData)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

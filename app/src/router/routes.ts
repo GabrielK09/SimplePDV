@@ -6,6 +6,11 @@ const routes: RouteRecordRaw[] = [
         redirect: '/admin'
     },
     {
+        path: '/auth/login',
+        name: 'auth.login',
+        component: () => import('src/modules/auth/Login.vue'),
+    },
+    {
         path: '/admin',
         component: () => import('src/layouts/MainLayout.vue'),
         props: true,

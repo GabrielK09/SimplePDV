@@ -1,5 +1,7 @@
 import { boot } from 'quasar/wrappers';
 import axios, { type AxiosInstance } from 'axios';
+import { LocalStorage } from 'quasar';
+import { useNotify } from 'src/helpers/QNotify/useNotify';
 
 axios.defaults.withCredentials = false;
 declare module 'vue' {
@@ -16,6 +18,9 @@ declare module 'vue' {
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
+
+const { notify } = useNotify();
+
 const api = axios.create({
     baseURL: process.env.API_URL,
     headers: {
@@ -28,7 +33,6 @@ const apiCep = axios.create({
     headers: {
         Accept: 'application/json'
     }
-
 });
 
 const apiCnpj = axios.create({
@@ -36,24 +40,48 @@ const apiCnpj = axios.create({
     headers: {
         Accept: 'application/json'
     }
-
 });
 
-export default boot(({ app }) => {
+export default boot(({ app, router }) => {
     api.interceptors.request.use(
         (config) => {
+            const publicRoutes: string[] = [
+                '/auth/login',
+            ];
+
+            const isPublic = publicRoutes.some(route => config.url?.includes(route));
+            const token = LocalStorage.getItem("authToken");
+
+            if (!isPublic && (token === "undefined" || !token))
+            {
+                router.replace({
+                    path: '/auth/login'
+                });
+
+                LocalStorage.remove("authToken");
+            };
+
+            if(token) config.headers.Authorization = `Bearer ${token}`;
+
             return config;
         },
-        (error) => {
-            console.error('Erro: ', error);
-
+        (error) => {      
             return Promise.reject(error);
         }
     );
 
     api.interceptors.response.use(
         (response) => response,
-        (error) => {
+        (error) => {            
+            if (error.response.status === 401) 
+            {
+                router.replace({
+                    path: '/auth/login'
+                });
+
+                return Promise.reject(error);
+            };
+
             if (error.response) {
                 console.error('Eror:', error);
                 console.error('Status:', error.response.status);
@@ -62,7 +90,7 @@ export default boot(({ app }) => {
 
             } else {
                 console.error('Erro de rede:', error.message);
-            }
+            };
 
             return Promise.reject(error);
         }

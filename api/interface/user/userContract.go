@@ -8,7 +8,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserContract struct {
@@ -24,20 +23,6 @@ type UserContract struct {
 
 var conn *pgxpool.Pool
 var ctx = context.Background()
-
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword(
-		[]byte(password),
-		14,
-	)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao criptografar a senha.", err)
-		return "", err
-	}
-
-	return string(bytes), err
-}
 
 func SetConnection(db *pgxpool.Pool) {
 	conn = db
@@ -65,6 +50,8 @@ func ShowByLogin(login string) (*UserContract, error) {
 			id,
 			name,
 			cpf,
+			login,
+			password,
 			is_admin
 
 		FROM
@@ -82,78 +69,13 @@ func ShowByLogin(login string) (*UserContract, error) {
 		&user.Id,
 		&user.Name,
 		&user.Cpf,
+		&user.Login,
+		&user.Password,
 		&user.IsAdmin,
-	); err != nil {
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao ler os dados da query: ", err)
 		return nil, err
 	}
 
 	return &user, nil
-}
-
-func CreateDefaultUser() error {
-	u.InfoLogger.Println("CreateDefaultUser started")
-
-	var user UserContract
-
-	tx, err := conn.Begin(ctx)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)
-		return err
-	}
-
-	defer tx.Rollback(ctx)
-
-	selectQuery := `
-		SELECT
-			id
-
-		FROM
-			users
-			
-		LIMIT 	
-			1
-	`
-
-	if err = tx.QueryRow(
-		ctx,
-		selectQuery,
-	).Scan(&user.Id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		u.ErrorLogger.Println("Erro ao conferir se o usuário existe: ", err)
-		return err
-	}
-
-	if user.Id > 0 {
-		u.InfoLogger.Println("O usuário existe")
-		return nil
-	}
-
-	u.GeneralLogger.Println("Não possui valores: ", user.Id)
-
-	// Recolocar os dados do insert aqui
-
-	if err != nil {
-		return err
-	}
-
-	if _, err := tx.Exec(
-		ctx,
-		query,
-		hashedPassword,
-	); err != nil {
-		u.ErrorLogger.Println("Erro ao fazer o insert: ", err)
-		return err
-	}
-
-	err = tx.Commit(ctx)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao fazer o commit: ", err)
-		return err
-	}
-
-	u.GeneralLogger.Println("Usuário padrão cadastrado com sucesso!")
-
-	return nil
 }
