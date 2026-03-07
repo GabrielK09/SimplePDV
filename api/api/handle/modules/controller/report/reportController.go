@@ -3,9 +3,10 @@ package reportController
 import (
 	"encoding/json"
 
+	reportservices "myApi/api/services"
+	reportsdata "myApi/api/services/reports"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
-	"myApi/interface/reports"
 	"net/http"
 	"time"
 )
@@ -39,7 +40,7 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
-	var report reports.ReportBody
+	var report reportsdata.ReportBody
 
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -91,11 +92,11 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 
 	} else {
-		data, err := report.BuildReport()
+		data, err := report.BuildDataReport()
 
 		if err != nil {
 			u.ErrorLogger.Println("Erro ao processar o relatório: ", err)
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			resp := responsehelper.Response(false, err, "Erro ao processar o relatório.")
 
@@ -105,9 +106,44 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 
+		_ = reportservices.CreatePDFMaroto(data)
+
 		resp := responsehelper.Response(true, data, "Dados do relatório.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 }
+
+/*
+func GeneratePDFReport(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=Relatório.pdf")
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	} // Erro de método da rota
+
+	filePath, err := reportservices.CreateReport()
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao gerar o relatório: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+
+		resp := responsehelper.Response(false, err, "Erro ao gerar o relatório.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	resp := responsehelper.Response(true, filePath, "Dados do relatório.")
+
+	json.NewEncoder(w).Encode(resp)
+}
+*/
