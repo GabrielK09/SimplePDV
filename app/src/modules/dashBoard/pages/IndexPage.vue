@@ -106,17 +106,16 @@
                 </div>
             </div>
 
-            <div class="q-col-gutter-md mr-6">
-                <div class="col-md-3">
-                    <q-card class="q-pa-md shadow-2">
-                        <q-table
-                            title="Itens mais vendidos"
-                            :rows="popularItensTableData"
-                            :columns="popularItensTable"
-                            row-key="name"
-                        />
-                    </q-card>
-                </div>
+            <div class="mr-6">
+                <q-card class="q-pa-md">
+                    <q-table
+                        title="Itens mais vendidos"
+                        :rows="popularItensTableData"
+                        :columns="popularItensTableColumn"
+
+                        row-key="name"
+                    />
+                </q-card>
             </div>
         </div>
     </q-page>
@@ -129,9 +128,9 @@
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
-    import { onMounted, ref } from 'vue';
+    import { onMounted, ref, watch } from 'vue';
     //import ApexChart from 'vue3-apexcharts';
-    import { getDashBoardData } from '../services/dashBoardService';
+    import { filterPopularItensData, getDashBoardData } from '../services/dashBoardService';
     import { getAll } from 'src/modules/cashRegister/services/cashRegisterService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import ManagementReport from 'src/components/Reports/ManagementReport.vue';
@@ -142,50 +141,71 @@
     const dashBoardData = ref<DashBoardContract>();
     const totalBalance = ref<number>(0);
     const showCashRegisterInformation = ref<boolean>(false);
-
     const showReports = ref<boolean>(false);
 
-    const popularItensTable: QTableColumn[] = [
+    const popularItensTableColumn: QTableColumn[] = [
         {
             name: 'produto_id',
             label: 'Cód. Produto',
             field: 'produto_id',
+            align: 'left',
         },
         {
             name: 'produto',
             label: 'Produto',
             field: 'produto',
+            align: 'center',
         },
         {
             name: 'item_sale_value',
             label: 'Valor do produto',
             field: 'item_sale_value',
+            align: 'center',
         },
         {
             name: 'qtde',
             label: 'Qtde',
             field: 'qtde',
+            align: 'center',
         },
     ];
 
     const popularItensTableData = ref<any[]>([]);
+    const popularItensFilter = ref<PopularItensFilterContract>({
+        per_page: null
+    });
 
-    const filterDashBoard = async () => {
-        const res = await getDashBoardData(startDate.value, endDate.value);
+    const filterPopularItens = async () => {
+        const res = await filterPopularItensData(20);
 
-        if(res.success)
+        if(!res.success)
         {
-            dashBoardData.value = res.data;
-
-        } else {
             notify(
                 'negative',
                 res.message
             );
         };
+
+        popularItensTableData.value = res.data;
+    };
+
+    const filterDashBoard = async () => {
+        const res = await getDashBoardData(startDate.value, endDate.value);
+
+        if(!res.success)
+        {
+           notify(
+                'negative',
+                res.message
+            );
+        };
+
+        dashBoardData.value = res.data;
     };
 
     onMounted(async() => {
+        await filterPopularItens();
+
         const res = await getAll();
 
         if(!res.success) return;

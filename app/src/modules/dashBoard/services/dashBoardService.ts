@@ -26,3 +26,27 @@ export async function getDashBoardData(startDate: string, endDate: string): Prom
     };
 };
 
+export async function filterPopularItensData(per_page: number): Promise<any>
+{
+    try {
+        const res = await api.post('/dash-board/popular-itens', {
+            per_page: per_page
+        });
+
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+
+
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
