@@ -14,8 +14,8 @@ INNER JOIN
 WHERE
     s.status = 'Concluída' 
     AND si.status = 'Concluída'
-    AND s.created_at::DATE >= $1 
-    AND s.created_at::DATE < $2
 
 ORDER BY
     si.qtde DESC
+
+LIMIT $1

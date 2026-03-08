@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"errors"
 	u "myApi/helpers/logger"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,9 +20,6 @@ type DashBoardContract struct {
 	AmountSaled  float64 `json:"amount_saled"`
 	StartDateStr string  `json:"start_date"`
 	EndDateStr   string  `json:"end_date"`
-
-	StartDate time.Time `json:"-"`
-	EndDate   time.Time `json:"-"`
 }
 
 //go:embed sql/popularItens.sql
@@ -34,11 +30,7 @@ type PopularItens struct {
 	Produto       string  `json:"produto"`
 	ItemSaleValue float64 `json:"item_sale_value"`
 	Qtde          float64 `json:"qtde"`
-	StartDateStr  string  `json:"start_date"`
-	EndDateStr    string  `json:"end_date"`
-
-	StartDate time.Time `json:"-"`
-	EndDate   time.Time `json:"-"`
+	PerPage       int     `json:"per_page"`
 }
 
 var conn *pgxpool.Pool
@@ -48,14 +40,14 @@ func SetConnection(db *pgxpool.Pool) {
 	conn = db
 }
 
-func ShowPopularItens(startEnd, endDate time.Time) ([]PopularItens, error) {
+func (pr *PopularItens) ShowPopularItens() ([]PopularItens, error) {
+	u.InfoLogger.Println("Dados de ShowPopularItens: ", pr)
 	var popularItens []PopularItens
 
 	rows, err := conn.Query(
 		ctx,
 		popularItensReport,
-		startEnd,
-		endDate,
+		pr.PerPage,
 	)
 
 	if err != nil {
@@ -85,16 +77,14 @@ func ShowPopularItens(startEnd, endDate time.Time) ([]PopularItens, error) {
 	return popularItens, nil
 }
 
-func ShowDashBoard(startEnd, endDate time.Time) (DashBoardContract, error) {
+func (ds *DashBoardContract) ShowDashBoard() (DashBoardContract, error) {
 	var d DashBoardContract
-
-	u.GeneralLogger.Println("Query:\n", string(reportSQL))
 
 	if err := conn.QueryRow(
 		ctx,
 		string(reportSQL),
-		startEnd,
-		endDate,
+		ds.StartDateStr,
+		ds.EndDateStr,
 	).Scan(
 		&d.TotalSales,
 		&d.Commission,
