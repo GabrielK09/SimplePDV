@@ -4,3 +4,7 @@ interface DashBoardContract {
 	best_customer: string;
 	amount_saled: number;
 };
+
+interface PopularItensFilterContract {
+    per_page: number|null;
+};
