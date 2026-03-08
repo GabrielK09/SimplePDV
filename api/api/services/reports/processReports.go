@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	u "myApi/helpers/logger"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -13,9 +12,6 @@ type ReportBody struct {
 	ReportType   string `json:"report_type"`
 	StartDateStr string `json:"start_date"`
 	EndDateStr   string `json:"end_date"`
-
-	StartDate time.Time `json:"-"`
-	EndDate   time.Time `json:"-"`
 }
 
 const (
@@ -64,6 +60,9 @@ func SetConnection(db *pgxpool.Pool) {
 }
 
 func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
+	dataForReturn := make(map[string]interface{})
+	dataForReturn["report_type"] = r.ReportType
+
 	switch r.ReportType {
 	case cashRegister:
 		var cashRegisterData []CashRegister
@@ -71,8 +70,8 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		rows, err := conn.Query(
 			ctx,
 			cashRegisterReport,
-			r.StartDate,
-			r.EndDate,
+			r.StartDateStr,
+			r.StartDateStr,
 		)
 
 		if err != nil {
@@ -103,12 +102,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 			cashRegisterData = append(cashRegisterData, c)
 		}
 
-		dataForReturn := make(map[string]interface{})
-
 		dataForReturn["data"] = cashRegisterData
-		dataForReturn["report_type"] = r.ReportType
-
-		return dataForReturn, nil
 
 	case payMentForms:
 		var payMentFormsData []PayMentsForms
@@ -116,8 +110,8 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		rows, err := conn.Query(
 			ctx,
 			payMentFormsReport,
-			r.StartDate,
-			r.EndDate,
+			r.StartDateStr,
+			r.StartDateStr,
 		)
 
 		if err != nil {
@@ -143,12 +137,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 			payMentFormsData = append(payMentFormsData, p)
 		}
 
-		dataForReturn := make(map[string]interface{})
-
 		dataForReturn["data"] = payMentFormsData
-		dataForReturn["report_type"] = r.ReportType
-
-		return dataForReturn, nil
 
 	case saledItens:
 		var saledItensData []SaledItens
@@ -156,8 +145,8 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		rows, err := conn.Query(
 			ctx,
 			saledItensReport,
-			r.StartDate,
-			r.EndDate,
+			r.StartDateStr,
+			r.StartDateStr,
 		)
 
 		if err != nil {
@@ -186,14 +175,11 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 			saledItensData = append(saledItensData, si)
 		}
 
-		dataForReturn := make(map[string]interface{})
-
 		dataForReturn["data"] = saledItensData
-		dataForReturn["report_type"] = r.ReportType
-
-		return dataForReturn, nil
 
 	}
 
-	return nil, nil
+	u.InfoLogger.Println("Tamanho do data:", len(dataForReturn))
+
+	return dataForReturn, nil
 }

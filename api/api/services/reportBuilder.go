@@ -19,55 +19,48 @@ import (
 	"github.com/johnfercher/maroto/v2"
 )
 
-func CreateReport(data map[string]interface{}) (string, error) {
+// func CreateReport(data map[string]interface{}) (string, error) {
+func CreateReport(data map[string]interface{}) ([]byte, error) {
 	var fileName string
 
 	switch data["report_type"] {
 	case "cash-register":
-		fileName = "Relatório caixa.pdf"
+		fileName = "Relatório_caixa.pdf"
 
 	case "pay-ment-forms":
-		fileName = "Relatório formas de pagamento.pdf"
+		fileName = "Relatório_formas_de_pagamento.pdf"
 
 	case "saled-itens":
-		fileName = "Relatório itens vendidos.pdf"
+		fileName = "Relatório_itens_vendidos.pdf"
 	}
 
 	u.InfoLogger.Println("InitReportProps started")
 	m := CreatePDFMaroto(data)
 
 	doc, err := m.Generate()
+
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao gerar o PDF.", err)
-		return "", err
+		return nil, err
 	}
 
 	dir := "./files/"
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		u.ErrorLogger.Println("Erro ao criar o diretório do PDF.", err)
-		return "", err
+		return nil, err
 	}
 
 	filePath := filepath.Join(dir, fileName)
 
 	u.InfoLogger.Println("filePath: ", filePath)
 
-	absPath, err := filepath.Abs(filePath)
-
-	u.InfoLogger.Println("absPath: ", absPath)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao conferir o caminho do PDF.", err)
-		return "", err
-	}
-
-	if err := doc.Save(absPath); err != nil {
+	if err := doc.Save(filePath); err != nil {
 		u.ErrorLogger.Println("Erro ao salvar o PDF.", err)
-		return "", err
+		return nil, err
 	}
 
-	return filePath, nil
+	return doc.GetBytes(), nil
 }
 
 func CreatePDFMaroto(data map[string]interface{}) core.Maroto {
@@ -134,10 +127,10 @@ func getTransactions(data map[string]interface{}) []core.Row {
 				text.NewCol(3, item.Descricao, props.Text{Size: 8, Align: align.Center}),
 				text.NewCol(2, item.Cliente, props.Text{Size: 8, Align: align.Center}),
 				text.NewCol(1, item.Especie, props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(2, fmt.Sprintf("R$ %v", item.ValorEntrada), props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(2, fmt.Sprintf("R$ %v", item.ValoraSaida), props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(1, fmt.Sprintf("R$ %v", item.TotalEntrada), props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(1, fmt.Sprintf("R$ %v", item.TotalSaida), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprintf("R$ %2.f", item.ValorEntrada), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprintf("R$ %2.f", item.ValoraSaida), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(1, fmt.Sprintf("R$ %2.f", item.TotalEntrada), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(1, fmt.Sprintf("R$ %2.f", item.TotalSaida), props.Text{Size: 8, Align: align.Center}),
 			)
 
 			if i%2 == 0 {
@@ -162,7 +155,7 @@ func getTransactions(data map[string]interface{}) []core.Row {
 		for i, item := range contents {
 			r := row.New(4).Add(
 				text.NewCol(4, item.Especie, props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(8, fmt.Sprintf("R$ %v", item.TotalPaid), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(8, fmt.Sprintf("R$ %2.f", item.TotalPaid), props.Text{Size: 8, Align: align.Center}),
 			)
 
 			if i%2 == 0 {
@@ -191,7 +184,7 @@ func getTransactions(data map[string]interface{}) []core.Row {
 				text.NewCol(2, fmt.Sprint(item.SaleId), props.Text{Size: 8, Align: align.Center}),
 				text.NewCol(2, fmt.Sprint(item.ProductId), props.Text{Size: 8, Align: align.Center}),
 				text.NewCol(4, item.Produto, props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(2, fmt.Sprintf("R$ %v", item.ItemSaleValue), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprintf("R$ %2.f", item.ItemSaleValue), props.Text{Size: 8, Align: align.Center}),
 				text.NewCol(2, fmt.Sprint(item.Qtde), props.Text{Size: 8, Align: align.Center}),
 			)
 

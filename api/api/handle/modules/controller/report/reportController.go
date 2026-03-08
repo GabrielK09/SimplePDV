@@ -8,7 +8,6 @@ import (
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
 	"net/http"
-	"time"
 )
 
 const (
@@ -19,20 +18,10 @@ const (
 )
 
 func HandlePostReports(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	loc, err := time.LoadLocation("America/Sao_Paulo")
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		u.ErrorLogger.Println("Erro ao definir o timezone:", err)
-		resp := responsehelper.Response(false, err, "Erro ao definir o timezone.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
+	defer r.Body.Close()
 
 	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
@@ -43,6 +32,7 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 	var report reportsdata.ReportBody
 
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao processar os dados:", err)
 
@@ -52,75 +42,50 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	startDate, err := time.ParseInLocation(layout, report.StartDateStr, loc)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao processar o parse da data inicial:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-
-		resp := responsehelper.Response(false, err, "Erro ao processar o parse da data inicial.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	endDate, err := time.ParseInLocation(layout, report.EndDateStr, loc)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao processar o parse da data final:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-
-		resp := responsehelper.Response(false, err, "Erro ao processar o parse da data final.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	report.StartDate = startDate
-	report.EndDate = endDate
+	u.InfoLogger.Println("Valor de report:", report)
 
 	if report.ReportType != cashRegister && report.ReportType != payMentForms && report.ReportType != saledItens {
 		u.ErrorLogger.Println("Tipo de relatório incorreto.")
 		u.ErrorLogger.Println("Tipo recebido: ", report.ReportType)
 		u.ErrorLogger.Printf("Tipos esperados: %s, %s, %s", cashRegister, payMentForms, saledItens)
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 
 		resp := responsehelper.Response(false, nil, "Tipo de relatório incorreto.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
+	}
 
-	} else {
-		data, err := report.BuildDataReport()
+	data, err := report.BuildDataReport()
 
-		if err != nil {
-			u.ErrorLogger.Println("Erro ao processar o relatório: ", err)
-			w.WriteHeader(http.StatusInternalServerError)
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao processar os dados do relatório: ", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
 
-			resp := responsehelper.Response(false, err, "Erro ao processar o relatório.")
-
-			json.NewEncoder(w).Encode(resp)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-
-		file, err := reportservices.CreateReport(data)
-
-		if err != nil {
-			u.ErrorLogger.Println("Erro retornar o arquivo do PDF: ", err)
-			w.WriteHeader(http.StatusInternalServerError)
-
-			resp := responsehelper.Response(false, err, "Erro retornar o arquivo do PDF.")
-
-			json.NewEncoder(w).Encode(resp)
-			return
-		}
-
-		resp := responsehelper.Response(true, file, "Dados do relatório.")
+		resp := responsehelper.Response(false, err, "Erro ao processar o relatório.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
+
+	u.InfoLogger.Println("Dados a serem carregados: ", data)
+
+	pdfBytes, err := reportservices.CreateReport(data)
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		resp := responsehelper.Response(false, err, "Erro ao gerar o relatório.")
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=report.pdf")
+
+	w.Write(pdfBytes)
 }

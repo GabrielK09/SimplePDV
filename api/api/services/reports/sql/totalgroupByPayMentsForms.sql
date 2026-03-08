@@ -12,7 +12,7 @@ WITH resumo AS (
   WHERE
     s.status = 'Concluída' 
     AND s.created_at::DATE >= $1 
-    AND s.created_at::DATE < $2
+    AND s.created_at::DATE <= $2
 
   GROUP BY
     sp.specie
