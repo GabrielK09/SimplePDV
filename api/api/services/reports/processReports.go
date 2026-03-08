@@ -71,7 +71,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 			ctx,
 			cashRegisterReport,
 			r.StartDateStr,
-			r.StartDateStr,
+			r.EndDateStr,
 		)
 
 		if err != nil {
@@ -111,7 +111,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 			ctx,
 			payMentFormsReport,
 			r.StartDateStr,
-			r.StartDateStr,
+			r.EndDateStr,
 		)
 
 		if err != nil {
@@ -146,7 +146,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 			ctx,
 			saledItensReport,
 			r.StartDateStr,
-			r.StartDateStr,
+			r.EndDateStr,
 		)
 
 		if err != nil {
