@@ -3,9 +3,10 @@ package reportController
 import (
 	"encoding/json"
 
+	reportservices "myApi/api/services"
+	reportsdata "myApi/api/services/reports"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
-	"myApi/interface/reports"
 	"net/http"
 	"time"
 )
@@ -39,7 +40,7 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
-	var report reports.ReportBody
+	var report reportsdata.ReportBody
 
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -91,11 +92,11 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		return
 
 	} else {
-		data, err := report.BuildReport()
+		data, err := report.BuildDataReport()
 
 		if err != nil {
 			u.ErrorLogger.Println("Erro ao processar o relatório: ", err)
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			resp := responsehelper.Response(false, err, "Erro ao processar o relatório.")
 
@@ -105,7 +106,19 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 
-		resp := responsehelper.Response(true, data, "Dados do relatório.")
+		file, err := reportservices.CreateReport(data)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro retornar o arquivo do PDF: ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			resp := responsehelper.Response(false, err, "Erro retornar o arquivo do PDF.")
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		resp := responsehelper.Response(true, file, "Dados do relatório.")
 
 		json.NewEncoder(w).Encode(resp)
 		return

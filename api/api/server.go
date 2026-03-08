@@ -144,7 +144,8 @@ func StartServer() {
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Relatórios \\
-	proteced.HandleFunc("/report", reportController.HandlePostReports).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/report", reportController.HandlePostReports).Methods(http.MethodPost, http.MethodOptions)
+	//r.HandleFunc("/test-report", reportController.GeneratePDFReport).Methods(http.MethodGet, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	log.Println("Servidor rodando em http://localhost:8000/api")

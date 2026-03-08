@@ -41,11 +41,11 @@
                         <q-input
                             v-model="product.price"
                             type="text"
+                            mask="###,##"
                             label-slot
                             stack-label
                             outlined
                             dense
-                            mask="##,##"
                             class="mb-4"
                             :error="!!formErrors.price"
                             :error-message="formErrors.price"
@@ -79,6 +79,7 @@
                             <q-input
                                 v-model="product.commission"
                                 type="text"
+                                mask="##,##"
                                 label-slot
                                 stack-label
                                 outlined
@@ -187,18 +188,18 @@
     watch(
         () => product.value.price,
         (val) => {
-            console.log(isNaN(val));
+            console.log(val);
             
-            product.value.price = isNaN(val) ? 0 : val;
+            product.value.price = isNaN(Number(val.toString().replace(',', '.'))) ? 0 : val;
         }
     );
 
     watch(
         () => product.value.qtde,
         (val) => {
-            console.log(isNaN(val));
+            console.log(val);
             
-            product.value.qtde = isNaN(val) ? 0 : val;
+            product.value.qtde = isNaN(Number(val.toString().replace(',', '.'))) ? 0 : val;
         }
     );
 

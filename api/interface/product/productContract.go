@@ -45,11 +45,11 @@ func (p ProductContract) Validate() map[string]string {
 	}
 
 	if p.Commission < 0 {
-		errorsField["commission"] = "O valor de comissão não pode ser menor que zero."
+		errorsField["commission_min"] = "O valor de comissão não pode ser menor que zero."
 	}
 
 	if p.Commission > 100 {
-		errorsField["commission"] = "O valor de comissão não pode ser maior que 100%."
+		errorsField["commission_max"] = "O valor de comissão não pode ser maior que 100%."
 	}
 
 	return errorsField

@@ -622,8 +622,10 @@ func createInCashRegister(
 
 	if inputValue > 0 && outputValue > 0 {
 		u.ErrorLogger.Println("Um registro no caixa não pode ter um valor de entrada e um de saída no mesmo registro.")
+
 		errorsField["input_value"] = "Um registro no caixa não pode ter um valor de entrada no mesmo registro de uma saída."
 		errorsField["output_value"] = "Um registro no caixa não pode ter um valor de saída no mesmo registro de uma entrada."
+
 		return errorsField
 	}
 

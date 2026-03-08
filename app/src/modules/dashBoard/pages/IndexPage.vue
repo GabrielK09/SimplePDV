@@ -14,7 +14,7 @@
                             <q-input v-model="endDate" type="date" label="Data final" outlined />
                         </div>
 
-                        <div class="col-12 col-md-2">
+                        <div class="my-auto">
                             <q-btn
                                 color="primary"
                                 type="submit"
@@ -23,11 +23,18 @@
                                 class="full-width"
                             />
                         </div>
+
+                        <div class="my-auto">
+                            <q-btn 
+                                color="primary" 
+                                no-caps
+                                label="Relatórios" 
+                            />
+                        </div>
                     </div>
                 </q-form>
             </q-card>
 
-            <!-- CARDS DE MÉTRICAS -->
             <div class="row q-col-gutter-md mr-6">
                 <div class="col-12 col-md-3">
                     <q-card class="q-pa-md shadow-2">

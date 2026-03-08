@@ -2,7 +2,7 @@
     <q-page padding>
         <main class="px-4" id="sale-page">
             <section class="flex flex-col laptop:flex-row items-start gap-4">
-                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white rounded-lg p-4">
+                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white rounded-lg p-4">                    
                     <div class="flex items-center gap-2">
                         <q-btn
                             icon="menu"
