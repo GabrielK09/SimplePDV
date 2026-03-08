@@ -106,44 +106,21 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 
-		_ = reportservices.CreatePDFMaroto(data)
+		file, err := reportservices.CreateReport(data)
 
-		resp := responsehelper.Response(true, data, "Dados do relatório.")
+		if err != nil {
+			u.ErrorLogger.Println("Erro retornar o arquivo do PDF: ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			resp := responsehelper.Response(false, err, "Erro retornar o arquivo do PDF.")
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		resp := responsehelper.Response(true, file, "Dados do relatório.")
 
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 }
-
-/*
-func GeneratePDFReport(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Disposition", "attachment; filename=Relatório.pdf")
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	} // Erro de método da rota
-
-	filePath, err := reportservices.CreateReport()
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao gerar o relatório: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-
-		resp := responsehelper.Response(false, err, "Erro ao gerar o relatório.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-
-	resp := responsehelper.Response(true, filePath, "Dados do relatório.")
-
-	json.NewEncoder(w).Encode(resp)
-}
-*/

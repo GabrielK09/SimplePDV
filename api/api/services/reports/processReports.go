@@ -76,7 +76,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		)
 
 		if err != nil {
-			u.ErrorLogger.Println("Erro ao fazer a leitura dos dados: ", err)
+			u.ErrorLogger.Println("Erro ao executar a query dos dados: ", err)
 
 			return nil, err
 		}
@@ -106,7 +106,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		dataForReturn := make(map[string]interface{})
 
 		dataForReturn["data"] = cashRegisterData
-		dataForReturn["type"] = r.ReportType
+		dataForReturn["report_type"] = r.ReportType
 
 		return dataForReturn, nil
 
@@ -146,7 +146,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		dataForReturn := make(map[string]interface{})
 
 		dataForReturn["data"] = payMentFormsData
-		dataForReturn["type"] = r.ReportType
+		dataForReturn["report_type"] = r.ReportType
 
 		return dataForReturn, nil
 
@@ -189,7 +189,7 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 		dataForReturn := make(map[string]interface{})
 
 		dataForReturn["data"] = saledItensData
-		dataForReturn["type"] = r.ReportType
+		dataForReturn["report_type"] = r.ReportType
 
 		return dataForReturn, nil
 

@@ -1,2 +1,10 @@
-Info Logger: 	2026/03/07 15:35:45 reportBuilder.go:49: Data recebido para geração: map[data:[{Venda N° 1 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 2 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 3 GABRIEL Dinheiro 1 0 0 0} {Venda N° 4 Consumidor padrão Dinheiro 500 0 0 0} {Venda N° 5 GABRIEL Dinheiro 1 0 0 0} {Venda N° 6 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 8 Consumidor padrão Dinheiro 23 0 0 0} {Venda N° 9 Consumidor padrão Pix 1 0 0 0} {TOTAL   0 0 529 0}] type:cash-register]
-General Logger: 	2026/03/07 15:35:45 response.go:9: Data recebido: map[data:[{Venda N° 1 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 2 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 3 GABRIEL Dinheiro 1 0 0 0} {Venda N° 4 Consumidor padrão Dinheiro 500 0 0 0} {Venda N° 5 GABRIEL Dinheiro 1 0 0 0} {Venda N° 6 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 8 Consumidor padrão Dinheiro 23 0 0 0} {Venda N° 9 Consumidor padrão Pix 1 0 0 0} {TOTAL   0 0 529 0}] type:cash-register]
+General Logger: 	2026/03/07 23:49:01 main.go:42: Banco de dados conectado com sucesso!
+Info Logger: 	2026/03/07 23:49:01 payMentFormContract.go:184: CreateDefaultPayMents started
+Info Logger: 	2026/03/07 23:49:01 payMentFormContract.go:216: Os pagamentos existem
+Info Logger: 	2026/03/07 23:49:01 customerContract.go:248: CreateDefaultCustomer started
+Info Logger: 	2026/03/07 23:49:02 customerContract.go:279: O cliente existe
+Info Logger: 	2026/03/07 23:49:08 reportBuilder.go:36: InitReportProps started
+Info Logger: 	2026/03/07 23:49:08 reportBuilder.go:106: map[data:[{Venda N° 1 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 2 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 3 GABRIEL Dinheiro 1 0 0 0} {Venda N° 4 Consumidor padrão Dinheiro 500 0 0 0} {Venda N° 5 GABRIEL Dinheiro 1 0 0 0} {Venda N° 6 Consumidor padrão Dinheiro 1 0 0 0} {Venda N° 8 Consumidor padrão Dinheiro 23 0 0 0} {Venda N° 9 Consumidor padrão Pix 1 0 0 0} {TOTAL   0 0 529 0}] report_type:cash-register]
+Info Logger: 	2026/03/07 23:49:08 reportBuilder.go:54: filePath:  files\Relatório caixa.pdf
+Info Logger: 	2026/03/07 23:49:08 reportBuilder.go:58: absPath:  D:\Gabriel\Projetos\AchadinhosDaJu\api\files\Relatório caixa.pdf
+General Logger: 	2026/03/07 23:49:08 response.go:9: Data recebido: files\Relatório caixa.pdf

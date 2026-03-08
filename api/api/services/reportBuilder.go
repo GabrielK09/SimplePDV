@@ -1,6 +1,8 @@
 package reportservices
 
 import (
+	"fmt"
+	reportsdata "myApi/api/services/reports"
 	u "myApi/helpers/logger"
 	"os"
 	"path/filepath"
@@ -18,6 +20,19 @@ import (
 )
 
 func CreateReport(data map[string]interface{}) (string, error) {
+	var fileName string
+
+	switch data["report_type"] {
+	case "cash-register":
+		fileName = "Relatório caixa.pdf"
+
+	case "pay-ment-forms":
+		fileName = "Relatório formas de pagamento.pdf"
+
+	case "saled-itens":
+		fileName = "Relatório itens vendidos.pdf"
+	}
+
 	u.InfoLogger.Println("InitReportProps started")
 	m := CreatePDFMaroto(data)
 
@@ -34,8 +49,13 @@ func CreateReport(data map[string]interface{}) (string, error) {
 		return "", err
 	}
 
-	filePath := filepath.Join(dir, "Relatório.pdf")
+	filePath := filepath.Join(dir, fileName)
+
+	u.InfoLogger.Println("filePath: ", filePath)
+
 	absPath, err := filepath.Abs(filePath)
+
+	u.InfoLogger.Println("absPath: ", absPath)
 
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao conferir o caminho do PDF.", err)
@@ -83,24 +103,114 @@ func CreatePDFMaroto(data map[string]interface{}) core.Maroto {
 		}),
 	).WithStyle(&props.Cell{BackgroundColor: darkGrayColor})
 
+	u.InfoLogger.Println(data)
+
+	m.AddRows(getTransactions(data)...)
+
 	return m
 }
 
-func getTransactions(transactionType string) []core.Row {
-	switch transactionType{
+func getTransactions(data map[string]interface{}) []core.Row {
+	var rows []core.Row
+
+	switch data["report_type"] {
 	case "cash-register":
-		rows := []core.Row{
-			row.New(5).Add(
-				col.New(3),
-				text.NewCol()
-			)
+		contents := data["data"].([]reportsdata.CashRegister)
+
+		rows = []core.Row{
+			row.New(7).Add(
+				text.NewCol(3, "Descrição", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(2, "Cliente", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(1, "Espécie", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(2, "Valor de entrada", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(2, "Valor de saída", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(1, "Valor total de entrada", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(1, "Valor total de saída", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+			),
 		}
+
+		for i, item := range contents {
+			r := row.New(4).Add(
+				text.NewCol(3, item.Descricao, props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, item.Cliente, props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(1, item.Especie, props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprintf("R$ %v", item.ValorEntrada), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprintf("R$ %v", item.ValoraSaida), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(1, fmt.Sprintf("R$ %v", item.TotalEntrada), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(1, fmt.Sprintf("R$ %v", item.TotalSaida), props.Text{Size: 8, Align: align.Center}),
+			)
+
+			if i%2 == 0 {
+				gray := getGrayColor()
+
+				r.WithStyle(&props.Cell{BackgroundColor: gray})
+			}
+
+			rows = append(rows, r)
+		}
+	case "pay-ment-forms":
+		contents := data["data"].([]reportsdata.PayMentsForms)
+
+		rows = []core.Row{
+			row.New(5).Add(
+				col.New(1),
+				text.NewCol(2, "Espécie", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(10, "Valor pago", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+			),
+		}
+
+		for i, item := range contents {
+			r := row.New(4).Add(
+				text.NewCol(4, item.Especie, props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(8, fmt.Sprintf("R$ %v", item.TotalPaid), props.Text{Size: 8, Align: align.Center}),
+			)
+
+			if i%2 == 0 {
+				gray := getGrayColor()
+
+				r.WithStyle(&props.Cell{BackgroundColor: gray})
+			}
+
+			rows = append(rows, r)
+		}
+	case "saled-itens":
+		contents := data["data"].([]reportsdata.SaledItens)
+
+		rows = []core.Row{
+			row.New(5).Add(
+				text.NewCol(2, "ID da venda", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(2, "ID do produto", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(4, "Produto", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(2, "Valor do item", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+				text.NewCol(2, "Qtde vendida", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
+			),
+		}
+
+		for i, item := range contents {
+			r := row.New(4).Add(
+				text.NewCol(2, fmt.Sprint(item.SaleId), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprint(item.ProductId), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(4, item.Produto, props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprintf("R$ %v", item.ItemSaleValue), props.Text{Size: 8, Align: align.Center}),
+				text.NewCol(2, fmt.Sprint(item.Qtde), props.Text{Size: 8, Align: align.Center}),
+			)
+
+			if i%2 == 0 {
+				gray := getGrayColor()
+
+				r.WithStyle(&props.Cell{BackgroundColor: gray})
+			}
+
+			rows = append(rows, r)
+		}
+
 	}
+
+	return rows
 }
 
 func getPageHeader() core.Row {
 	return row.New(20).Add(
-		col.New(6),
 		col.New(3).Add(
 			text.New("Achadinhos da Ju", props.Text{
 				Size:  8,
@@ -124,14 +234,6 @@ func getGrayColor() *props.Color {
 		Red:   200,
 		Green: 200,
 		Blue:  200,
-	}
-}
-
-func getBlueColor() *props.Color {
-	return &props.Color{
-		Red:   10,
-		Green: 10,
-		Blue:  150,
 	}
 }
 
