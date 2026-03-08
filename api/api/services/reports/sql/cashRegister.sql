@@ -11,7 +11,7 @@ WITH resumo AS (
 
     WHERE
         cr.created_at::DATE >= $1 
-        AND cr.created_at::DATE < $2
+        AND cr.created_at::DATE <= $2
 
 ), tot AS (
     SELECT
@@ -20,13 +20,13 @@ WITH resumo AS (
         ''::text AS especie,
         0 AS valorEntrada,
         0 AS valorSaida,
-        SUM(COALESCE(cr.input_value, 0)) AS totalEntrada,
-        SUM(COALESCE(cr.output_value, 0)) AS totalSaida
+        COALESCE(SUM(cr.input_value), 0) AS totalEntrada,
+        COALESCE(SUM(cr.output_value), 0) AS totalSaida
     FROM
         cash_registers cr
     WHERE
         cr.created_at::DATE >= $1 
-        AND cr.created_at::DATE < $2
+        AND cr.created_at::DATE <= $2
 )
 
 SELECT

@@ -2,48 +2,47 @@
     <q-dialog v-model="internalDialog" persistent>
         <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
             <div class="bg-white p-4">
-                <div class="bg-white p-4">
-                    <div class="text-h6">Formas de Pagamento - Venda: {{ props.saleId }}</div>
+                <div class="text-h6">Formas de Pagamento - Venda: {{ props.saleId }}</div>
 
-                    <q-list bordered separator class="bg-white text-black">
-                        <q-item v-for="(payment, i) in payMentForms" :key="i">
-                            <q-item-section>
-                                {{ payment.specie }}
-                            </q-item-section>
+                <q-list bordered separator class="bg-white text-black">
+                    <q-item v-for="(payment, i) in payMentForms" :key="i">
+                        <q-item-section>
+                            {{ payment.specie }}
+                        </q-item-section>
 
-                            <q-item-section side>
-                                <div class="flex">
-                                    <span
-                                        v-if="Number(payMentValues[i].amount.replace(',', '.') || 0) > 0"
-                                        class="mt-auto mb-auto mr-2"
-                                        @click="resetValues(payMentValues[i].id)"
-                                    >
-                                        <q-btn
-                                            color="red"
-                                            icon="delete"
-                                            dense
-                                            size="7px"
-                                        />
-                                    </span>
-
-                                    <q-input
-                                        v-model="payMentValues[i].amount"
-                                        input-class="text-right"
-                                        class="w-24"
+                        <q-item-section side>
+                            <div class="flex">
+                                <span
+                                    v-if="Number(payMentValues[i].amount.replace(',', '.') || 0) > 0"
+                                    class="mt-auto mb-auto mr-2"
+                                    @click="resetValues(payMentValues[i].id)"
+                                >
+                                    <q-btn
+                                        color="red"
+                                        icon="delete"
                                         dense
-                                        outlined
-                                        placeholder="0,00"
-                                        mask="##,##"
-                                        fill-mask="0"
-                                        reverse-fill-mask
-                                        :disable="calculatePayMent.totalPaid >= props.totalSale || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
+                                        size="7px"
                                     />
-                                </div>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
-                </div>
+                                </span>
+
+                                <q-input
+                                    v-model="payMentValues[i].amount"
+                                    input-class="text-right"
+                                    class="w-24"
+                                    dense
+                                    outlined
+                                    placeholder="0,00"
+                                    mask="##,##"
+                                    fill-mask="0"
+                                    reverse-fill-mask
+                                    :disable="calculatePayMent.totalPaid >= props.totalSale || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
+                                />
+                            </div>
+                        </q-item-section>
+                    </q-item>
+                </q-list>
             </div>
+
 
             <div class="px-8">
                 <div class="flex flex-col gap-2 mb-6">
@@ -187,10 +186,6 @@
     });
 
     const resetValues = (id: number): void => {
-        console.log('Teste: ', {
-            id: id
-        });
-
         const payMentForm = payMentValues.value.find(p => p.id === id);
 
         payMentForm.amount = '0,00';
