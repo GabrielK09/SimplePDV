@@ -25,10 +25,11 @@
                         </div>
 
                         <div class="my-auto">
-                            <q-btn 
-                                color="primary" 
+                            <q-btn
+                                color="primary"
                                 no-caps
-                                label="Relatórios" 
+                                label="Relatórios"
+                                @click="showReports = !showReports"
                             />
                         </div>
                     </div>
@@ -119,6 +120,11 @@
             </div>
         </div>
     </q-page>
+
+    <ManagementReport
+        v-if="showReports"
+        @close="showReports = !$event"
+    />
 </template>
 
 <script setup lang="ts">
@@ -126,11 +132,9 @@
     import { onMounted, ref } from 'vue';
     //import ApexChart from 'vue3-apexcharts';
     import { getDashBoardData } from '../services/dashBoardService';
-    import dayjs from 'dayjs';
     import { getAll } from 'src/modules/cashRegister/services/cashRegisterService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-
-    dayjs('2006-01-02')
+    import ManagementReport from 'src/components/Reports/ManagementReport.vue';
 
     const { notify } = useNotify();
     const startDate = ref<string>('');
@@ -138,6 +142,8 @@
     const dashBoardData = ref<DashBoardContract>();
     const totalBalance = ref<number>(0);
     const showCashRegisterInformation = ref<boolean>(false);
+
+    const showReports = ref<boolean>(false);
 
     const popularItensTable: QTableColumn[] = [
         {

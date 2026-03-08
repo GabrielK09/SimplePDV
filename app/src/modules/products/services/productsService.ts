@@ -12,6 +12,7 @@ export async function getAll(): Promise<any>
             data.message,
             data.data || []
         );
+
     } catch (error) {
         return apiResponse(
             false,

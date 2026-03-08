@@ -154,14 +154,23 @@
 
     const productSchema = computed(() =>
         Yup.object({
-            name: Yup.string().required('O nome do produto é obrigatório!'),
-            price: Yup.number().required('O valor do produto é obrigatório!'),
-            qtde: Yup.number().required('A quantia do produto é obrigatório!'),
+            name: Yup
+                    .string()
+                    .required('O nome do produto é obrigatório!'),
+
+            price: Yup
+                    .number()
+                    .required('O valor do produto é obrigatório!'),
+
+            qtde: Yup
+                    .number()
+                    .required('A quantia do produto é obrigatório!'),
+
             commission: Yup
-                            .number()
-                            .min(0, 'O valor de comissão não pode ser menor que zero.')
-                            .max(100, 'O valor de comissão não pode ser maior que 100%.')
-                            .required('A quantia do produto é obrigatório!'),
+                    .number()
+                    .min(0, 'O valor de comissão não pode ser menor que zero.')
+                    .max(100, 'O valor de comissão não pode ser maior que 100%.')
+                    .required('A quantia do produto é obrigatório!'),
         })
     );
 

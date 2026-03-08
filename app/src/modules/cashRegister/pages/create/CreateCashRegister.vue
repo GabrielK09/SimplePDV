@@ -97,11 +97,6 @@
     import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { createManualCashRegister } from '../../services/cashRegisterService';
-    
-    /**
-        input_value: Yup.number().test(),
-        output_value: Yup.number().required('A quantia do produto é obrigatório!'),
-    */
 
     const cashRegisterData = ref<CashRegisterContract>({
         id: 0,
