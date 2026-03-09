@@ -3,6 +3,7 @@ package sale
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
@@ -780,4 +781,71 @@ func (s *SaleContract) CancelSale() (SaleContract, error) {
 	}
 
 	return *s, nil
+}
+
+func (s *SaleContract) InsertNewItens() error {
+	u.InfoLogger.Println("InsertNewItens Started: ", s)
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição. ", err)
+		return err
+	}
+
+	queryExistItem := `
+		SELECT
+			id
+		FROM
+			sale_itens
+		WHERE
+			sale_id = $1 
+			AND product_id = $2
+	`
+
+	for _, p := range s.Products {
+		u.InfoLogger.Println("No for")
+
+		if err := tx.QueryRow(
+			ctx,
+			queryExistItem,
+			s.Id,
+			p.Id,
+		).Scan(
+			&p.Id,
+		); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			u.InfoLogger.Println("Produto existente na tabela de itens da venda.")
+		}
+
+		u.InfoLogger.Println("Produto não existente na tabela de itens da venda: ", p)
+
+		if _, err := tx.Exec(
+			ctx,
+			`INSERT INTO sale_itens
+				(product_id, name, qtde, sale_value, sale_id)
+
+			VALUES
+				($1, $2, $3, $4, $5)
+				
+			RETURNING 
+				id,
+				name,
+				status
+			`,
+			&p.Id,
+			&p.Name,
+			&p.Qtde,
+			&p.SaleValue,
+			&p.SaleId,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao fazer o insert dos novos itens: ", err)
+			return err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao salvar o insert dos novos itens: ", err)
+		return err
+	}
+
+	return nil
 }

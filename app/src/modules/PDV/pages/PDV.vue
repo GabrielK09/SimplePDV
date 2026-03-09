@@ -19,7 +19,7 @@
 
                     <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin border w-[100%]">
                         <q-table
-                            :rows="data"
+                            :rows="productsSale"
                             :columns="columns"
                             v-model:pagination="pagination"
                             hide-bottom
@@ -165,7 +165,7 @@
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
-    import { getSaleDetailsById, saveSaleService } from '../services/pdvService';
+    import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { useRoute, useRouter } from 'vue-router';
 
@@ -190,7 +190,10 @@
         finallySale: true
     });
 
-    const data = ref<SaleItemContract[]>([]);
+    /**data is products for sale */
+    const productsSale = ref<SaleItemContract[]>([]); 
+    const afterProductsData = ref<SaleItemContract[]>([])
+
     const route = useRoute();
     const router = useRouter();
 
@@ -263,7 +266,7 @@
     };
 
     watch(
-        data,
+        productsSale,
         (newVal) => {
             pagination.value.rowsPerPage = newVal.length;
         },
@@ -271,14 +274,14 @@
     );
 
     const deleteProduct = (row: SaleItemContract) => {
-        const index = data.value.indexOf(row);
+        const index = productsSale.value.indexOf(row);
 
         if(index > -1)
         {
-            data.value.splice(index, 1);
+            productsSale.value.splice(index, 1);
         };
 
-        if (data.value.length <= 0)
+        if (productsSale.value.length <= 0)
         {
             disableButtons.editPayMentsForms = false;
             disableButtons.deleteSale = true;
@@ -298,15 +301,17 @@
     };
 
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
+        afterProductsData.value = productsSale.value.map(item => ({...item}));
+
         selectedProducts.forEach(p => {
-            const exisit = data.value.find(i => i.product_id === p.id);
+            const exisit = productsSale.value.find(i => i.product_id === p.id);
 
             if(exisit)
             {
                 exisit.qtde += 1;
 
             } else {
-                data.value.push({
+                productsSale.value.push({
                     id: 0,
                     product_id: p.id,
                     name: p.name,
@@ -319,13 +324,13 @@
         disableButtons.editPayMentsForms = true;
         disableButtons.deleteSale = false;
         disableButtons.saveSale = false;
-        disableButtons.finallySale = false;
+        disableButtons.finallySale = false;  
     };
 
     const calculateTotal = computed(() => {
         let subTotal: number = 0;
 
-        data.value.map(p => {
+        productsSale.value.map(p => {
             subTotal += p.price * p.qtde;
         });
 
@@ -359,7 +364,7 @@
 
             router.replace({query: {}});
 
-            data.value = [];
+            productsSale.value = [];
             showConfirmDialog.value = false;
 
         };
@@ -368,10 +373,15 @@
         {
             if(SessionStorage.getItem('sale'))
             {
-                notify('positive', 'Dados salvos com sucesso!');
+                notify(
+                    'positive', 
+                    'Dados salvos com sucesso!'
+
+                );
+                
                 removeSessionData('sale_id');
                 removeSessionData('sale');
-                data.value = [];
+                productsSale.value = [];
                 showConfirmDialog.value = false;
 
                 disableButtons.editPayMentsForms = false;
@@ -394,8 +404,34 @@
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
-        // Confirma se a venda não foi reaberta
-        if(route.query.id !== null && route.query.id !== undefined && route.query.id !== '')
+        const existingSale = SessionStorage.getItem('sale_id');
+        const saleId = route.query.id;
+
+        if (productsSale.value.length > afterProductsData.value.length)
+        {
+            console.log('Tem mais produtos do que antes');
+            const res = await insertNewItens({
+                id: Number(existingSale),
+                customer: pdvData.value.customer,
+                customer_id: pdvData.value.customer_id,
+                products: productsSale.value,
+                specie: pdvData.value.specie
+            });
+
+            if(!res.success)
+            {
+                notify(
+                    'negative',
+                    res.message
+                );
+                return;
+            };
+        };
+
+        console.log('Não tem mais produtos do que antes');
+
+        // Confirma se a venda não foi reaberta / importada
+        if(saleId)
         {
             showPayMentForms.value = true;
             returningSaleId.value = Number(route.query.id);
@@ -407,12 +443,10 @@
             customer_id: pdvData.value.customer_id,
             customer: pdvData.value.customer,
             specie: pdvData.value.specie,
-            products: data.value,
+            products: productsSale.value,
         };
 
         SessionStorage.set('sale', payload);
-
-        const existingSale = SessionStorage.getItem('sale_id');
 
         if(!isSave && existingSale)
         {
@@ -445,7 +479,7 @@
                 notify('positive', 'Dados salvos com sucesso!');
                 removeSessionData('sale_id');
                 removeSessionData('sale');
-                data.value = [];
+                productsSale.value = [];
                 return;
 
             };
@@ -466,8 +500,8 @@
         removeSessionData('sale_id');
         removeSessionData('sale');
 
-        data.value = [];
-        pdvData.value.products = data.value;
+        productsSale.value = [];
+        pdvData.value.products = productsSale.value;
 
         registeredCustomer.value = false;
 
@@ -498,12 +532,12 @@
                 );
             };
 
-            data.value = resData.products;
+            productsSale.value = resData.products;
             pdvData.value = {
                 customer: resData.customer,
                 id: resData.id,
                 customer_id: resData.customer_id,
-                products: data.value,
+                products: productsSale.value,
                 specie: ''
             };
 
@@ -518,13 +552,13 @@
 
         if(!existingSaleId && !existingSale) return;
 
-        data.value = existingSale.products;
+        productsSale.value = existingSale.products;
 
         pdvData.value = {
             id: existingSaleId,
             customer: existingSale.customer,
             customer_id: existingSale.customer_id,
-            products: data.value,
+            products: productsSale.value,
             specie: ''
         };
 

@@ -2,6 +2,7 @@ package salecontroller
 
 import (
 	"encoding/json"
+	"fmt"
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
@@ -261,6 +262,44 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	resp := responsehelper.Response(true, payMents, "Venda concluída com sucesso!")
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+func HandleInsertNewProducts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPut {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	} // Erro de método da rota
+
+	var sale sale.SaleContract
+
+	if err := json.NewDecoder(r.Body).Decode(&sale); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	if err := sale.InsertNewItens(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao fazer o insert dos novos produtos: ", err.Error())
+
+		resp := responsehelper.Response(false, nil, fmt.Sprintf("Erro ao fazer o insert dos novos produtos: %s", err.Error()))
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	resp := responsehelper.Response(true, nil, "Dados salvos com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
 }
