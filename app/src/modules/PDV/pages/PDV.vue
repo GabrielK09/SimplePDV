@@ -140,7 +140,6 @@
         :operation="operation"
         @close="showConfirmDialog = !$event"
         @confirm="handleConfirmDialog(operation, $event)"
-
     />
 
     <PayMentSale
@@ -149,7 +148,6 @@
         :total-sale="totalSale"
         @close="showPayMentForms = $event"
         @paide="resetSale(!$event)"
-
     />
 
     <PayMentForms
@@ -348,6 +346,11 @@
     };
 
     const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
+        console.log('handleConfirmDialog', {
+            confirmed: confirmed,
+            operation: operation
+        });
+
         if(confirmed && operation === 'delete')
         {
             notify('positive', 'Venda cancelada com sucesso!');

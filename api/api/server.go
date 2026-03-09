@@ -111,6 +111,7 @@ func StartServer() {
 	// Products \\
 	proteced.HandleFunc("/products/all", productController.HandleGetProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/find/{id}", productController.HandleGetByIdProduct).Methods(http.MethodGet, http.MethodOptions)
+	proteced.HandleFunc("/products/find-by-name", productController.HandleGetByNameProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/create", productController.HandlePostProduct).Methods(http.MethodPost, http.MethodOptions)
 	proteced.HandleFunc("/products/update/{id}", productController.HandlePutProduct).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct).Methods(http.MethodDelete, http.MethodOptions)

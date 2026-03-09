@@ -24,7 +24,7 @@
                     no-caps
                     color="primary"
                     type="submit"
-                    @click="emits('close', true)"
+                    @click="emits('confirm', true)"
                 />
             </q-card-actions>
         </q-card>
@@ -52,5 +52,5 @@
         (val) => {
             internalDialog.value = val;
         }
-    )
+    );
 </script>
