@@ -139,7 +139,7 @@
 
     const calculateChange = computed((): number =>
     {
-        return Math.abs(calculatePayMent.value.totalPaid - props.totalSale) > 0 ? Math.abs(calculatePayMent.value.totalPaid - props.totalSale) : 0;
+        return props.totalSale - calculatePayMent.value.totalPaid > 0 ? 0 : calculatePayMent.value.totalPaid - props.totalSale;
     });
 
     watch(payMentValues, (values) => {

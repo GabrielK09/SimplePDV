@@ -784,66 +784,76 @@ func (s *SaleContract) CancelSale() (SaleContract, error) {
 }
 
 func (s *SaleContract) InsertNewItens() error {
-	u.InfoLogger.Println("InsertNewItens Started: ", s)
+	u.InfoLogger.Println("InsertNewItens started")
+
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
-		u.ErrorLogger.Println("Erro ao iniciar a transição. ", err)
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
 		return err
 	}
 
-	queryExistItem := `
+	defer tx.Rollback(ctx)
+
+	queryForCheckItens := `
 		SELECT
 			id
 		FROM
 			sale_itens
 		WHERE
-			sale_id = $1 
+			sale_id = $1
 			AND product_id = $2
 	`
 
-	for _, p := range s.Products {
-		u.InfoLogger.Println("No for")
+	queryForInsertNewItem := `
+		INSERT INTO sale_itens
+			(product_id, name, qtde, sale_value, sale_id)
 
-		if err := tx.QueryRow(
+		VALUES
+			($1, $2, $3, $4, $5)
+	`
+
+	for _, p := range s.Products {
+		var existingId int
+
+		err := tx.QueryRow(
 			ctx,
-			queryExistItem,
+			queryForCheckItens,
 			s.Id,
-			p.Id,
-		).Scan(
-			&p.Id,
-		); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			u.InfoLogger.Println("Produto existente na tabela de itens da venda.")
+			p.ProductId,
+		).Scan(&existingId)
+
+		if err == nil {
+			u.InfoLogger.Println("Produto já existente na venda.")
+			continue
 		}
 
-		u.InfoLogger.Println("Produto não existente na tabela de itens da venda: ", p)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se o item existe: ", err)
+
+			return err
+		}
+
+		u.InfoLogger.Println("Novos produto não existentes na venda.")
 
 		if _, err := tx.Exec(
 			ctx,
-			`INSERT INTO sale_itens
-				(product_id, name, qtde, sale_value, sale_id)
-
-			VALUES
-				($1, $2, $3, $4, $5)
-				
-			RETURNING 
-				id,
-				name,
-				status
-			`,
-			&p.Id,
-			&p.Name,
-			&p.Qtde,
-			&p.SaleValue,
-			&p.SaleId,
+			queryForInsertNewItem,
+			p.ProductId,
+			p.Name,
+			p.Qtde,
+			p.SaleValue,
+			s.Id,
 		); err != nil {
-			u.ErrorLogger.Println("Erro ao fazer o insert dos novos itens: ", err)
+			u.ErrorLogger.Println("Erro ao inserir os novos itens: ", err)
+
 			return err
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		u.ErrorLogger.Println("Erro ao salvar o insert dos novos itens: ", err)
+		u.ErrorLogger.Println("Erro ao comitar: ", err)
+
 		return err
 	}
 
