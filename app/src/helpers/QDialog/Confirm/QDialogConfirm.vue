@@ -22,7 +22,7 @@
                     label="Confirmar"
                     dense
                     no-caps
-                    color="primary"
+                    color="red"
                     type="submit"
                     @click="emits('confirm', true)"
                 />

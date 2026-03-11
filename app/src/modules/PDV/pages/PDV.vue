@@ -407,18 +407,18 @@
                 return;
             };
 
-            saveSaleForPay(true);
+            saveSaleForPay(true);            
+            resetSale(false);
         };
-
+        
         showConfirmDialog.value = false;
 
-        disableButtons.editPayMentsForms = false;
-        disableButtons.deleteSale = true;
-        disableButtons.saveSale = true;
-        disableButtons.finallySale = true;
+        resetSale(false);
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
+        disableButtons.finallySale = true;
+
         const existingSale = SessionStorage.getItem('sale_id');
         const saleId = routeSaleId.value;
 
