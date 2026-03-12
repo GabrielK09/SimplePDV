@@ -94,6 +94,7 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u.InfoLogger.Println("Name - recebido: ", r.URL.Query().Get("name"))
 	product, err := product.ShowByName(r.URL.Query().Get("name"))
 
 	if err != nil {

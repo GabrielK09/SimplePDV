@@ -76,10 +76,9 @@
 
                         <BaseCustomerSelect
                             v-model="pdvData.customer_id"
-                            @selected:customer="(c) => pdvData.customer = c.name"
+                            @return:customer-name="pdvData.customer = $event"
                             :is-registered-customer="registeredCustomer"
                         />
-
                     </div>
 
                     <div class="mt-4 border p-2 rounded">
@@ -146,7 +145,7 @@
         v-if="showPayMentForms"
         :sale-id="returningSaleId"
         :total-sale="totalSale"
-        @close="showPayMentForms = $event"
+        @close="resetForCancelPay(!$event)"
         @paide="resetSale(!$event)"
     />
 
@@ -257,7 +256,7 @@
     const pdvData = ref<SaleContract>({
         id: 0,
         customer_id: 1,
-        customer: 'Consumidor padrão',
+        customer: '',
         specie: '',
         products: []
     });
@@ -312,7 +311,7 @@
         row.qtde = val;
     };
 
-    const pushProducts = (selectedProducts: SaleItemContract[]) => {
+    const pushProducts = (selectedProducts: SaleItemContract[]) => {        
         if(!Array.isArray(productsSale.value)) {
             productsSale.value = [];
         };
@@ -325,12 +324,14 @@
                 exisit.qtde += 1;
 
             } else {
+                console.log(p.qtde <= 0);
+                
                 productsSale.value.push({
                     id: 0,
                     product_id: p.id,
                     name: p.name,
                     price: p.price,
-                    qtde: 1
+                    qtde: p.qtde <= 0 ? 1 : p.qtde  
                 });
             };
         });
@@ -524,10 +525,11 @@
     };
 
     /**
-     * @param event please report false if using in emits or final saveSaleForPay
+     * Event please report false if using in emits or final saveSaleForPay
      */
     const resetSale = (event: boolean) => {
         showPayMentForms.value = event;
+
         removeSessionData('sale_id');
         removeSessionData('sale');
 
@@ -543,6 +545,8 @@
         disableButtons.finallySale = true;
 
         router.replace({query: {}});
+
+        pdvData.value.customer = 'Consumidor padrão';
     };
 
     const hasProductChanged = () => {
@@ -634,6 +638,16 @@
         disableButtons.finallySale = false;
 
     });
+
+    const resetForCancelPay = (event: boolean) => {
+        showPayMentForms.value = event;
+
+        disableButtons.editPayMentsForms = true;
+        disableButtons.deleteSale = false;
+        disableButtons.saveSale = false;
+        disableButtons.finallySale = false;
+
+    };
 </script>
 
 <style lang="scss">

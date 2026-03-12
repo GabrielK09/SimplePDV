@@ -122,6 +122,8 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u.InfoLogger.Println("payload: ", payload)
+
 	if payload.Customer == "" {
 		payload.Customer = "Consumidor padrão"
 	}

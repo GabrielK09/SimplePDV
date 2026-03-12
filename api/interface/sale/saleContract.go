@@ -308,7 +308,9 @@ func (s *SaleContract) Create() (int, error) {
 
 	defer tx.Rollback(ctx)
 
-	if s.CustomerId > 1 {
+	u.InfoLogger.Println("ID cliente: ", s.CustomerId)
+
+	if s.CustomerId > 1 && s.Customer != "Consumidor padrão" {
 		u.InfoLogger.Println("Cliente diferente do padrão")
 		otherCustomer, err := customer.Show(s.CustomerId)
 

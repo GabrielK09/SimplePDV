@@ -79,11 +79,11 @@
     }>();
 
     const searchProduct = async (): Promise<void> => {
+        let productQtde: number = 0;
+
         if(!id.value) return;
-
+       
         const product = await findById(Number(id.value));
-
-        id.value = null;
 
         if(!product)
         {
@@ -91,28 +91,36 @@
             return;
         };
 
-        emits('emit:selected-product', product.data);
+        const input = id.value?.toString().split('') ?? '';
+
+        if(input[1] === '*') productQtde = Number(input[0]) ?? 1;
+
+        const productData: SaleItemContract = {
+            id: product.data?.id,
+            name: product.data?.name,
+            price: product.data?.price,
+            product_id: product.data?.product_id,
+            qtde: productQtde
+        };
+
+        emits('emit:selected-product', productData);
+        id.value = '';
     };
 
     watch(
         () => id.value,
-        async (idValue) => {
-            let splitedInput: any;
+        async (idValue) => {            
+            const input = idValue?.toString().split('') ?? '';
 
-            if (idValue) {
-                splitedInput = idValue.toString().split('');
-
-            } else {
-                splitedInput = '';
-            };
-
-            if(typeof idValue === 'string' && splitedInput[0]=== '/')
+            console.log(input);
+            
+            if(input[0] === '/')
             {
                 habilitStringSearchInput.value = true;
                 await getProductByName();
 
                 return;
-
+    
             } else {
                 habilitStringSearchInput.value = false;
             };
@@ -126,12 +134,12 @@
 
         const search = id.value.toString().slice(1);
 
-        if(search) return;
-
+        if(!search) return;
+        
         const res = await findByName(search);
 
         if(!res.success) return;
-
+        
         itensData.value = res.data;
     };
 

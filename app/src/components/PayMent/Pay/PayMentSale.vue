@@ -79,7 +79,7 @@
                         <q-btn
                             label="Cancelar"
                             color="negative"
-                            @click="emits('close', false)"
+                            @click="emits('close', true)"
 
                         />
 
