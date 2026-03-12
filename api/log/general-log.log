@@ -1,9 +1,0 @@
-Info Logger: 	2026/03/12 13:37:21 saleContract.go:75: Formas de pagamento:  [{1 Dinheiro 13} {2 Pix 0}]
-General Logger: 	2026/03/12 13:37:21 saleContract.go:83: Forma de pagamento aqui:  {1 Dinheiro 13}
-General Logger: 	2026/03/12 13:37:21 saleContract.go:83: Forma de pagamento aqui:  {2 Pix 0}
-General Logger: 	2026/03/12 13:37:21 saleContract.go:88: totalPaide aqui:  13
-General Logger: 	2026/03/12 13:37:21 saleContract.go:486: Vai fazer o insert no sale_pay_ment pelo for
-General Logger: 	2026/03/12 13:37:22 cashRegisterContract.go:201: Dados: lastBalance - 4864966043.000000|InputValue - 13.000000|OutputValue - 0.000000
-General Logger: 	2026/03/12 13:37:22 cashRegisterContract.go:253: Dados do insert:  [Venda N° 39 1 Consumidor padrão 1 Dinheiro 13 0 4.864966056e+09 39 <nil>]
-General Logger: 	2026/03/12 13:37:22 saleContract.go:546: Venda está pendente, vai finalizar a venda e os itens.
-General Logger: 	2026/03/12 13:37:22 response.go:9: Data recebido: {39 [{1 Dinheiro 13} {2 Pix 0}]}

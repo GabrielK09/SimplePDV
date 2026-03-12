@@ -17,7 +17,7 @@
 
             <div>
                 <q-table
-
+                    v-model:pagination="pagination"
                     :rows="pdvs"
                     :columns="columns"
                     row-key="name"
@@ -120,6 +120,11 @@
 
     const { notify } = useNotify();
     const router = useRouter();
+
+    const pagination = ref({
+        sortBy: 'id' 
+    });
+
     const columns: QTableColumn[] = [
         {
             name: 'id',
@@ -158,8 +163,8 @@
 
     const allPDVs = ref<PDVContract[]>([]);
     const pdvs = ref<PDVContract[]>([]);
-    const showConfirmDialog = ref<boolean>(false);
 
+    const showConfirmDialog = ref<boolean>(false);
     const showSaleDetails = ref<boolean>(false);
     const selectedSaleId = ref<number>(0);
 
