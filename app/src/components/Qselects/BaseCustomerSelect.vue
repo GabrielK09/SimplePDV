@@ -30,22 +30,55 @@
 
     const emits = defineEmits<{
         (e: 'selected:customer', value: any),
-        (e: 'update:customer', value: any)
+        (e: 'return:customer-name', value: any)
     }>();
 
     const { notify } = useNotify();
     const customers = ref<CustomerContract[]>([]);
-
     const customerId = defineModel<number | null>()
     const customerName = ref<string>('Consumidor padrão');
-    
-    const selectedCustomer = ref<CustomerContract | null>(null);
 
     watch(
-        selectedCustomer,
-        (val) => {
-            emits('update:customer', val.id);
-            emits('selected:customer', val);
+        () => props.isRegisteredCustomer,
+        (newVal) => {
+            console.log(newVal);
+
+            if(!newVal) 
+            {
+                customerId.value = 1;
+
+            };
+        }
+    );
+    
+    watch(
+        customerName,
+        () => {        
+            if(customerName.value !== 'Consumidor padrão' && customerName.value !== '')
+            {
+                emits('return:customer-name', customerName);
+
+            } else {
+                customerName.value = 'Consumidor padrão';
+                emits('return:customer-name', customerName.value);
+            };
+        }
+    );
+
+    watch(
+        customerId,
+        () => {
+            console.log('watch customerId');
+
+            if(customerId.value < 1)
+            {
+                emits('return:customer-name', 'Consumidor padrão');
+
+            } else {
+                customerName.value = customers.value.find(c => c.id === customerId.value)?.name;
+
+                emits('return:customer-name', customerName.value);
+            };
         }
     );
 

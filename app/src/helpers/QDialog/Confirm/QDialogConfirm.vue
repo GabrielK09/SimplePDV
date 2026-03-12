@@ -22,9 +22,10 @@
                     label="Confirmar"
                     dense
                     no-caps
-                    color="primary"
+                    :color="props.operation === 'delete' ? 'red' : 'primary'"
                     type="submit"
-                    @click="emits('close', true)"
+                    :loading="startLoading"
+                    @click="emitEvent()"
                 />
             </q-card-actions>
         </q-card>
@@ -37,7 +38,7 @@
     const props = defineProps<{
         show: boolean;
         text: string;
-        operation?: string;
+        operation?: 'save'|'delete'|'';
     }>();
 
     const emits = defineEmits<{
@@ -46,11 +47,18 @@
     }>();
 
     const internalDialog = ref<boolean>(props.show);
+    const startLoading = ref<boolean>(false);
 
     watch(
         () => props.show,
         (val) => {
             internalDialog.value = val;
         }
-    )
+    );
+
+    const emitEvent = () => {
+        startLoading.value = true;
+        emits('confirm', true);
+        
+    };
 </script>

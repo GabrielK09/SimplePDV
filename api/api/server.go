@@ -111,6 +111,7 @@ func StartServer() {
 	// Products \\
 	proteced.HandleFunc("/products/all", productController.HandleGetProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/find/{id}", productController.HandleGetByIdProduct).Methods(http.MethodGet, http.MethodOptions)
+	proteced.HandleFunc("/products/find-by-name", productController.HandleGetByNameProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/create", productController.HandlePostProduct).Methods(http.MethodPost, http.MethodOptions)
 	proteced.HandleFunc("/products/update/{id}", productController.HandlePutProduct).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct).Methods(http.MethodDelete, http.MethodOptions)
@@ -127,6 +128,7 @@ func StartServer() {
 	proteced.HandleFunc("/sale/cancel/{id}", saleController.HandlePutCancelSale).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/sale/pay", saleController.HandlePutPaySale).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/sale/create", saleController.HandlePostSale).Methods(http.MethodPost, http.MethodOptions)
+	proteced.HandleFunc("/sale/new-itens", saleController.HandleNewItens).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/sale/pay-ment-forms", payMentController.HandleGetPayMentForms).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/sale/update/pay-ment-forms/pix-key", payMentController.HandlePutPayMentForms).Methods(http.MethodPut, http.MethodOptions)
 

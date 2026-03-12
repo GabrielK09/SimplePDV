@@ -3,6 +3,7 @@ package sale
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
@@ -108,9 +109,7 @@ func (s SaleContract) Validate() map[string]string {
 		errorsField["sub_total"] = "O valor da venda não pode ser zerado."
 	}
 
-	_, err := customer.Show(s.CustomerId)
-
-	if err != nil {
+	if _, err := customer.Show(s.CustomerId); err != nil {
 		u.ErrorLogger.Println("Erro no select do cliente para validar a venda: ", err)
 		errorsField["customer_id"] = fmt.Sprintf("%s", err)
 	}
@@ -309,7 +308,9 @@ func (s *SaleContract) Create() (int, error) {
 
 	defer tx.Rollback(ctx)
 
-	if s.CustomerId > 1 {
+	u.InfoLogger.Println("ID cliente: ", s.CustomerId)
+
+	if s.CustomerId > 1 && s.Customer != "Consumidor padrão" {
 		u.InfoLogger.Println("Cliente diferente do padrão")
 		otherCustomer, err := customer.Show(s.CustomerId)
 
@@ -335,7 +336,7 @@ func (s *SaleContract) Create() (int, error) {
 
 	var saleId int
 
-	err = tx.QueryRow(
+	if err = tx.QueryRow(
 		ctx,
 		querySale,
 		s.CustomerId,
@@ -343,14 +344,12 @@ func (s *SaleContract) Create() (int, error) {
 		s.SaleValue,
 	).Scan(
 		&saleId,
-	)
-
-	s.Id = saleId
-
-	if err != nil {
+	); err != nil {
 		u.ErrorLogger.Println("Erro no create (sale-contract): ", err)
 		return 0, err
 	}
+
+	s.Id = saleId
 
 	querySaleItem := `
 		INSERT INTO sale_itens
@@ -402,7 +401,7 @@ func (s *SaleContract) Create() (int, error) {
 			return 0, err
 		}
 
-		err = tx.QueryRow(
+		if err = tx.QueryRow(
 			context.Background(),
 			querySaleItem,
 			i.ProductId,
@@ -414,23 +413,19 @@ func (s *SaleContract) Create() (int, error) {
 			&i.Id,
 			&i.Name,
 			&i.Status,
-		)
+		); err != nil {
+			return 0, err
+		}
 
 		i.Name = p.Name
 		i.SaleId = saleId
-
-		if err != nil {
-			return 0, err
-		}
 
 		if err = p.DiscountedQtde(context.Background(), tx, i.Qtde); err != nil {
 			return 0, err
 		}
 	}
 
-	err = tx.Commit(context.Background())
-
-	if err != nil {
+	if err = tx.Commit(context.Background()); err != nil {
 		return 0, err
 	}
 
@@ -462,7 +457,7 @@ func PaySale(payMent PaySaleContract) error {
 			id = $1
 	`
 
-	err = tx.QueryRow(
+	if err = tx.QueryRow(
 		ctx,
 		queryForSale,
 		payMent.SaleId,
@@ -471,9 +466,7 @@ func PaySale(payMent PaySaleContract) error {
 		&s.Customer,
 		&s.SaleValue,
 		&s.Status,
-	)
-
-	if err != nil {
+	); err != nil {
 		u.ErrorLogger.Println("Erro no select da venda no paySale: ", err)
 		return err
 	}
@@ -518,18 +511,17 @@ func PaySale(payMent PaySaleContract) error {
 				id
 		`
 
-		_, err = tx.Exec(
+		if _, err = tx.Exec(
 			ctx,
 			queryForPayMent,
 			payMent.SaleId,
 			p.SpecieId,
 			p.Specie,
 			p.AmountPaid,
-		)
-
-		if err != nil {
+		); err != nil {
 			u.ErrorLogger.Println("Erro no insert do sale_pay_ment no paySale: ", err)
 			return err
+
 		}
 
 		c, err := customer.Show(s.CustomerId)
@@ -562,13 +554,11 @@ func PaySale(payMent PaySaleContract) error {
 			id = $1
 	`
 
-	_, err = tx.Exec(
+	if _, err = tx.Exec(
 		ctx,
 		queryForUpdateSale,
 		payMent.SaleId,
-	)
-
-	if err != nil {
+	); err != nil {
 		u.ErrorLogger.Println("Erro no update da venda para Concluída: ", err)
 		return err
 	}
@@ -582,20 +572,16 @@ func PaySale(payMent PaySaleContract) error {
 			sale_id = $1
 	`
 
-	_, err = tx.Exec(
+	if _, err = tx.Exec(
 		ctx,
 		queryForSaleItem,
 		payMent.SaleId,
-	)
-
-	if err != nil {
+	); err != nil {
 		u.ErrorLogger.Println("Erro no update dos itens da venda para Concluída: ", err)
 		return err
 	}
 
-	err = tx.Commit(ctx)
-
-	if err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Println("Erro no commit do paySale da venda: ", err)
 		return err
 	}
@@ -680,13 +666,11 @@ func (s *SaleContract) CancelSale() (SaleContract, error) {
 			id = $1
 	`
 
-	_, err = tx.Exec(
+	if _, err = tx.Exec(
 		ctx,
 		queryCancelSale,
 		s.Id,
-	)
-
-	if err != nil {
+	); err != nil {
 		u.ErrorLogger.Printf("Erro no update sale para cancelado - %s", err)
 		return SaleContract{}, err
 	}
@@ -702,13 +686,11 @@ func (s *SaleContract) CancelSale() (SaleContract, error) {
 			sale_id = $1
 	`
 
-	_, err = tx.Exec(
+	if _, err = tx.Exec(
 		ctx,
 		queryCancelSaleItem,
 		s.Id,
-	)
-
-	if err != nil {
+	); err != nil {
 		u.ErrorLogger.Printf("Erro no update sale_itens para cancelado - %s", err)
 		return SaleContract{}, err
 	}
@@ -780,4 +762,147 @@ func (s *SaleContract) CancelSale() (SaleContract, error) {
 	}
 
 	return *s, nil
+}
+
+func (s *SaleContract) InsertNewItens() error {
+	if s.Id <= 0 {
+		return nil
+	}
+
+	u.InfoLogger.Println("InsertNewItens started")
+
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	queryForCheckItens := `
+		SELECT
+			qtde,
+			sale_value,
+			id
+		FROM
+			sale_itens
+		WHERE
+			sale_id = $1
+			AND product_id = $2
+	`
+
+	queryForInsertNewItem := `
+		INSERT INTO sale_itens
+			(product_id, name, qtde, sale_value, sale_id)
+
+		VALUES
+			($1, $2, $3, $4, $5)
+	`
+
+	for _, p := range s.Products {
+		var itens struct {
+			qtde      int
+			saleValue float64
+			id        int
+		}
+
+		err := tx.QueryRow(
+			ctx,
+			queryForCheckItens,
+			s.Id,
+			p.ProductId,
+		).Scan(
+			&itens.qtde,
+			&itens.saleValue,
+			&itens.id,
+		)
+
+		if err == nil {
+			u.InfoLogger.Println("Produto já existente na venda.")
+			continue
+		}
+
+		// Usar p.ProductId
+		if _, err := tx.Exec(
+			ctx,
+			`
+				UPDATE 
+					sale_itens
+				SET	
+					qtde = $3,
+					sale_value = $4
+				WHERE
+					sale_id = $1
+					AND product_id = $2
+			`,
+			s.Id,
+			p.ProductId,
+			p.Qtde,
+			p.SaleValue,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao atualizar o item com qtde maior: ", err)
+
+			return err
+		}
+
+		if !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se o item existe: ", err)
+
+			return err
+		}
+
+		u.InfoLogger.Println("Novos produto não existentes na venda.")
+
+		if _, err := tx.Exec(
+			ctx,
+			queryForInsertNewItem,
+			p.ProductId,
+			p.Name,
+			p.Qtde,
+			p.SaleValue,
+			s.Id,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao inserir os novos itens: ", err)
+
+			return err
+		}
+	}
+
+	queryForUpdateNewTotalSale := `
+		UPDATE 
+			sales
+		SET
+			sale_value = (
+				SELECT
+					COALESCE(SUM(qtde * sale_value), 0)
+
+				FROM
+					sale_itens
+
+				WHERE
+					sale_id = $1
+			)
+		WHERE
+			id = $1
+	`
+
+	if _, err := tx.Exec(
+		ctx,
+		queryForUpdateNewTotalSale,
+		s.Id,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar o total da venda depois da inserção/alteração dos itens: ", err)
+		return err
+	}
+
+	u.InfoLogger.Println("Valor da venda atualizado.")
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao comitar: ", err)
+
+		return err
+	}
+
+	return nil
 }

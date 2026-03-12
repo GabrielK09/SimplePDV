@@ -19,7 +19,7 @@
 
                     <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin border w-[100%]">
                         <q-table
-                            :rows="data"
+                            :rows="productsSale"
                             :columns="columns"
                             v-model:pagination="pagination"
                             hide-bottom
@@ -76,10 +76,9 @@
 
                         <BaseCustomerSelect
                             v-model="pdvData.customer_id"
-                            @selected:customer="(c) => pdvData.customer = c.name"
+                            @return:customer-name="pdvData.customer = $event"
                             :is-registered-customer="registeredCustomer"
                         />
-
                     </div>
 
                     <div class="mt-4 border p-2 rounded">
@@ -140,16 +139,14 @@
         :operation="operation"
         @close="showConfirmDialog = !$event"
         @confirm="handleConfirmDialog(operation, $event)"
-
     />
 
     <PayMentSale
         v-if="showPayMentForms"
         :sale-id="returningSaleId"
         :total-sale="totalSale"
-        @close="showPayMentForms = $event"
+        @close="resetForCancelPay(!$event)"
         @paide="resetSale(!$event)"
-
     />
 
     <PayMentForms
@@ -167,7 +164,7 @@
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
-    import { getSaleDetailsById, saveSaleService } from '../services/pdvService';
+    import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { useRoute, useRouter } from 'vue-router';
 
@@ -192,7 +189,11 @@
         finallySale: true
     });
 
-    const data = ref<SaleItemContract[]>([]);
+    /**data is products for sale */
+    const productsSale = ref<SaleItemContract[]>([]); 
+
+    const originalProductsSale = ref<SaleItemContract[]>([]); 
+
     const route = useRoute();
     const router = useRouter();
 
@@ -255,32 +256,43 @@
     const pdvData = ref<SaleContract>({
         id: 0,
         customer_id: 1,
-        customer: 'Consumidor padrão',
+        customer: '',
         specie: '',
         products: []
     });
 
-    function removeSessionData(key: string): void {
+    const removeSessionData = (key: string): void => {
         SessionStorage.remove(key);
     };
 
+    const routeSaleId = computed(() => {
+        const id = route.query.id;
+
+        if (Array.isArray(id)) return Number(id[0]) || null;
+        if (id === null || id === undefined || id === '') return null;
+
+        const parsed = Number(id);
+        return Number.isNaN(parsed) ? null : parsed;
+    });
+
     watch(
-        data,
-        (newVal) => {
-            pagination.value.rowsPerPage = newVal.length;
+        () => productsSale.value?.length ?? 0,
+        (length) => {
+            
+            pagination.value.rowsPerPage = length;
         },
-        { deep: true }
+        { immediate: true }
     );
 
     const deleteProduct = (row: SaleItemContract) => {
-        const index = data.value.indexOf(row);
+        const index = productsSale.value.indexOf(row);
 
         if(index > -1)
         {
-            data.value.splice(index, 1);
+            productsSale.value.splice(index, 1);
         };
 
-        if (data.value.length <= 0)
+        if (productsSale.value.length <= 0)
         {
             disableButtons.editPayMentsForms = false;
             disableButtons.deleteSale = true;
@@ -299,21 +311,27 @@
         row.qtde = val;
     };
 
-    const pushProducts = (selectedProducts: SaleItemContract[]) => {
+    const pushProducts = (selectedProducts: SaleItemContract[]) => {        
+        if(!Array.isArray(productsSale.value)) {
+            productsSale.value = [];
+        };
+
         selectedProducts.forEach(p => {
-            const exisit = data.value.find(i => i.product_id === p.id);
+            const exisit = productsSale.value.find(i => i.product_id === p.id);
 
             if(exisit)
             {
                 exisit.qtde += 1;
 
             } else {
-                data.value.push({
+                console.log(p.qtde <= 0);
+                
+                productsSale.value.push({
                     id: 0,
                     product_id: p.id,
                     name: p.name,
                     price: p.price,
-                    qtde: 1
+                    qtde: p.qtde <= 0 ? 1 : p.qtde  
                 });
             };
         });
@@ -321,18 +339,19 @@
         disableButtons.editPayMentsForms = true;
         disableButtons.deleteSale = false;
         disableButtons.saveSale = false;
-        disableButtons.finallySale = false;
+        disableButtons.finallySale = false;  
     };
 
-    const calculateTotal = computed(() => {
-        let subTotal: number = 0;
+    const cloneProducts = (items: SaleItemContract[]) =>
+        items.map(item => ({ ...item }));
 
-        data.value.map(p => {
-            subTotal += p.price * p.qtde;
-        });
+    const calculateTotal = computed(() => {
+        const subTotal = productsSale.value.reduce((total, p) => {
+            return total + (p.price * p.qtde);
+        }, 0);
 
         totalSale.value = subTotal;
-        return subTotal.toFixed(2).toString().replace('.', ',');
+        return subTotal.toFixed(2).replace('.', ',');
     });
 
     const deleteSale = () => {
@@ -348,6 +367,11 @@
     };
 
     const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
+        console.log('handleConfirmDialog', {
+            confirmed: confirmed,
+            operation: operation
+        });
+
         if(confirmed && operation === 'delete')
         {
             notify('positive', 'Venda cancelada com sucesso!');
@@ -356,7 +380,7 @@
 
             router.replace({query: {}});
 
-            data.value = [];
+            productsSale.value = [];
             showConfirmDialog.value = false;
 
         };
@@ -365,10 +389,15 @@
         {
             if(SessionStorage.getItem('sale'))
             {
-                notify('positive', 'Dados salvos com sucesso!');
+                notify(
+                    'positive', 
+                    'Dados salvos com sucesso!'
+
+                );
+                
                 removeSessionData('sale_id');
                 removeSessionData('sale');
-                data.value = [];
+                productsSale.value = [];
                 showConfirmDialog.value = false;
 
                 disableButtons.editPayMentsForms = false;
@@ -379,23 +408,74 @@
                 return;
             };
 
-            saveSaleForPay(true);
+            saveSaleForPay(true);            
+            resetSale(false);
         };
-
+        
         showConfirmDialog.value = false;
 
-        disableButtons.editPayMentsForms = false;
-        disableButtons.deleteSale = true;
-        disableButtons.saveSale = true;
-        disableButtons.finallySale = true;
+        resetSale(false);
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
-        // Confirma se a venda não foi reaberta
-        if(route.query.id !== null && route.query.id !== undefined && route.query.id !== '')
+        disableButtons.finallySale = true;
+
+        const existingSale = SessionStorage.getItem('sale_id');
+        const saleId = routeSaleId.value;
+
+        if(isSave)
         {
+            if(hasProductChanged()) {
+                const res = await insertNewItens({
+                    id: Number(existingSale || saleId),
+                    customer: pdvData.value.customer,
+                    customer_id: pdvData.value.customer_id,
+                    products: productsSale.value,
+                    specie: pdvData.value.specie
+                });
+
+                if (!res.success) {
+                    notify('negative', res.message);
+                    return;
+                };
+
+                return;
+            };
+
+            notify('positive', 'Dados salvos com sucesso!');
+            removeSessionData('sale_id');
+            removeSessionData('sale');
+
+            productsSale.value = [];
+
+            originalProductsSale.value = [];
+
+            router.replace({query: {}});
+
+            return;
+        };
+
+        // Confirma se a venda não foi reaberta / importada
+        if((existingSale || saleId) && hasProductChanged()) {
+            const res = await insertNewItens({
+                id: Number(existingSale || saleId),
+                customer: pdvData.value.customer,
+                customer_id: pdvData.value.customer_id,
+                products: productsSale.value,
+                specie: pdvData.value.specie
+            });
+
+            if (!res.success) {
+                notify('negative', res.message);
+                return;
+            };
+
+            originalProductsSale.value = cloneProducts(productsSale.value)
+        };
+
+        if (saleId) {
             showPayMentForms.value = true;
-            returningSaleId.value = Number(route.query.id);
+            returningSaleId.value = Number(saleId);
             return;
         };
 
@@ -404,16 +484,14 @@
             customer_id: pdvData.value.customer_id,
             customer: pdvData.value.customer,
             specie: pdvData.value.specie,
-            products: data.value,
+            products: productsSale.value,
         };
 
         SessionStorage.set('sale', payload);
 
-        const existingSale = SessionStorage.getItem('sale_id');
-
         if(!isSave && existingSale)
         {
-            returningSaleId.value = existingSale as number;
+            returningSaleId.value = Number(existingSale);
             showPayMentForms.value = true;
             return;
         };
@@ -424,7 +502,7 @@
 
         if(res.success)
         {
-            returningSaleId.value = !(route.query.id === null && route.query.id === undefined && route.query.id === '') ? res.data.id : Number(route.query.id);
+            returningSaleId.value = res.data.id ?? routeSaleId.value;
 
             SessionStorage.set('sale_id', returningSaleId.value);
 
@@ -437,34 +515,27 @@
                 return;
             };
 
-            if(isSave)
-            {
-                notify('positive', 'Dados salvos com sucesso!');
-                removeSessionData('sale_id');
-                removeSessionData('sale');
-                data.value = [];
-                return;
-
-            };
-
             showPayMentForms.value = true;
 
         } else {
-            isSave ? null : notify('negative', `Erro ao finalizar a venda: ${res.message}`);
-
+            isSave 
+                ? null 
+                : notify('negative', `Erro ao finalizar a venda: ${res.message}`); 
         };
     };
 
     /**
-     * @param event please report false if using in emits or final saveSaleForPay
+     * Event please report false if using in emits or final saveSaleForPay
      */
     const resetSale = (event: boolean) => {
         showPayMentForms.value = event;
+
         removeSessionData('sale_id');
         removeSessionData('sale');
 
-        data.value = [];
-        pdvData.value.products = data.value;
+        productsSale.value = [];
+        originalProductsSale.value = [];
+        pdvData.value.products = productsSale.value;
 
         registeredCustomer.value = false;
 
@@ -474,10 +545,40 @@
         disableButtons.finallySale = true;
 
         router.replace({query: {}});
+
+        pdvData.value.customer = 'Consumidor padrão';
+    };
+
+    const hasProductChanged = () => {
+        if (productsSale.value.length !== originalProductsSale.value.length) {
+            return true;
+        };
+
+        const currentMap = new Map(
+            productsSale.value.map(item => [
+                item.product_id,
+                { qtde: item.qtde, price: item.price }
+            ])
+        );
+
+        for (const oldItem of originalProductsSale.value) {
+            const current = currentMap.get(oldItem.product_id);
+
+            if (!current) return true;
+
+            if (
+                current.qtde !== oldItem.qtde ||
+                current.price !== oldItem.price
+            ) return true;
+        };
+
+        return false;
     };
 
     onMounted(async () => {
-        if(route.query.id !== null && route.query.id !== undefined && route.query.id !== '')
+        productsSale.value = [];  
+        
+        if(routeSaleId.value)
         {
             notify(
                 'positive',
@@ -485,7 +586,7 @@
             );
 
             const res = await getSaleDetailsById(Number(route.query.id));
-            const resData: SaleContract = res.data;
+            const resData: SaleContract = res.data.sale;
 
             if(!res.success)
             {
@@ -495,12 +596,14 @@
                 );
             };
 
-            data.value = resData.products;
+            productsSale.value = resData.products || [];
+            originalProductsSale.value = cloneProducts(productsSale.value);
+
             pdvData.value = {
                 customer: resData.customer,
                 id: resData.id,
                 customer_id: resData.customer_id,
-                products: data.value,
+                products: productsSale.value,
                 specie: ''
             };
 
@@ -508,6 +611,8 @@
             disableButtons.deleteSale = false;
             disableButtons.saveSale = false;
             disableButtons.finallySale = false;
+
+            return;
         };
 
         const existingSaleId: number = SessionStorage.getItem('sale_id');
@@ -515,21 +620,34 @@
 
         if(!existingSaleId && !existingSale) return;
 
-        data.value = existingSale.products;
+        productsSale.value = existingSale.products || [];
+
+        originalProductsSale.value = cloneProducts(existingSale.products);
 
         pdvData.value = {
             id: existingSaleId,
             customer: existingSale.customer,
             customer_id: existingSale.customer_id,
-            products: data.value,
-            specie: ''
+            products: productsSale.value,
+            specie: existingSale.specie
         };
 
         disableButtons.editPayMentsForms = true;
         disableButtons.deleteSale = false;
         disableButtons.saveSale = false;
         disableButtons.finallySale = false;
+
     });
+
+    const resetForCancelPay = (event: boolean) => {
+        showPayMentForms.value = event;
+
+        disableButtons.editPayMentsForms = true;
+        disableButtons.deleteSale = false;
+        disableButtons.saveSale = false;
+        disableButtons.finallySale = false;
+
+    };
 </script>
 
 <style lang="scss">

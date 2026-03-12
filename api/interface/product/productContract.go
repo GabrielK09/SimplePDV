@@ -173,6 +173,64 @@ func Show(id int) (*ProductContract, error) {
 	return &p, nil
 }
 
+func ShowByName(productName string) ([]ProductContract, error) {
+	var products []ProductContract
+
+	u.InfoLogger.Println("ShowByName:", productName)
+
+	query := `
+		SELECT
+			id,
+			name, 
+			price, 
+			qtde, 
+			commission
+		FROM
+			products
+
+		WHERE
+			name ILIKE '%'||$1||'%'
+
+		ORDER BY 
+			name
+
+		LIMIT 
+			20
+	`
+
+	rows, err := conn.Query(
+		context.Background(),
+		query,
+		productName,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao realizar a query:", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var p ProductContract
+
+		if err := rows.Scan(
+			&p.Id,
+			&p.Name,
+			&p.Price,
+			&p.Qtde,
+			&p.Commission,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao realizar a query:", err)
+			return nil, err
+		}
+
+		products = append(products, p)
+	}
+
+	return products, nil
+}
+
 func GetAll() ([]ProductContract, error) {
 	var products []ProductContract
 

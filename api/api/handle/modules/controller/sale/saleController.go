@@ -122,6 +122,8 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u.InfoLogger.Println("payload: ", payload)
+
 	if payload.Customer == "" {
 		payload.Customer = "Consumidor padrão"
 	}
@@ -263,4 +265,43 @@ func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
 	resp := responsehelper.Response(true, payMents, "Venda concluída com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+func HandleNewItens(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPut {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	} // Erro de método da rota
+
+	var sale sale.SaleContract
+
+	if err := json.NewDecoder(r.Body).Decode(&sale); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao processar os dados.: ", err)
+		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	if err := sale.InsertNewItens(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao inserir os novos dados da venda: ", err)
+		resp := responsehelper.Response(false, err, "Erro ao inserir os novos dados da venda.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	resp := responsehelper.Response(true, sale, "Venda concluída com sucesso!")
+
+	json.NewEncoder(w).Encode(resp)
+
 }
