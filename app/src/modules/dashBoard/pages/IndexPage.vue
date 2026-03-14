@@ -209,8 +209,8 @@
         const res = await getAll();
 
         if(!res.success) return;
-        const cashRegisterData = res.data;
+        const cashRegisterData: CashRegisterContract[] = res.data;
 
-        totalBalance.value = cashRegisterData[cashRegisterData.length - 1].total_balance;
+        totalBalance.value = cashRegisterData.reduce((total, a) => total + (a.input_value - a.output_value), 0);
     });
 </script>

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"myApi/api"
 	cashregisterController "myApi/api/handle/modules/controller/cashRegister"
@@ -16,10 +17,10 @@ import (
 	"myApi/interface/sale"
 	"myApi/interface/user"
 	"myApi/jobs"
-	"os"
 )
 
-var job bool
+var ctx = context.Background()
+var job string
 
 func main() {
 	loggerHelper.Logger()
@@ -29,14 +30,14 @@ func main() {
 		loggerHelper.ErrorLogger.Fatal("Erro ao conectar ao banco: ", err)
 	}
 
-	flag.BoolVar(&job, "isJob", false, "confire if is a job")
+	flag.StringVar(&job, "job", "", "confire if is a job")
 	flag.Parse()
 
-	if job {
-		loggerHelper.InfoLogger.Println("É um job.")
-		jobs.CreateUser()
-
-		os.Exit(0)
+	switch job {
+	case "createUser":
+		jobs.CreateUser(db, ctx)
+	case "resetSite":
+		jobs.ResetSite(db, ctx)
 	}
 
 	loggerHelper.GeneralLogger.Println("Banco de dados conectado com sucesso!")

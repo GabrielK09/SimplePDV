@@ -122,7 +122,7 @@
 
         cashRegister.value = data;
         allCashRegister.value = [...cashRegister.value];
-        totalBalance.value = allCashRegister.value[allCashRegister.value.length - 1].total_balance;
+        totalBalance.value = cashRegister.value.reduce((total, a) => total + (a.input_value - a.output_value), 0);
     };
 
     onMounted(() => {

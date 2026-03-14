@@ -67,7 +67,7 @@
             format(val: number) {
                 return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
             }
-        },
+        }
     ];
 
     const itensData = ref<SaleItemContract[]>([]);
@@ -82,7 +82,7 @@
         let productQtde: number = 0;
 
         if(!id.value) return;
-       
+
         const product = await findById(Number(id.value));
 
         if(!product)
@@ -109,18 +109,18 @@
 
     watch(
         () => id.value,
-        async (idValue) => {            
+        async (idValue) => {
             const input = idValue?.toString().split('') ?? '';
 
             console.log(input);
-            
+
             if(input[0] === '/')
             {
                 habilitStringSearchInput.value = true;
                 await getProductByName();
 
                 return;
-    
+
             } else {
                 habilitStringSearchInput.value = false;
             };
@@ -135,15 +135,17 @@
         const search = id.value.toString().slice(1);
 
         if(!search) return;
-        
+
         const res = await findByName(search);
 
         if(!res.success) return;
-        
+
         itensData.value = res.data;
     };
 
     const selectProduct = (evt: Event, row: SaleItemContract) => {
+        console.log('evt: ', evt);
+
         emits('emit:selected-product', row);
 
         id.value = null;
