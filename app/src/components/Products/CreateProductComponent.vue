@@ -1,5 +1,5 @@
 <template>
-    <q-page padding>
+    <q-dialog>
         <main class="min-h-[60vh] flex flex-center text-xl">
             <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                 <header class="border-gray-100 flex">
@@ -130,15 +130,19 @@
                 </q-form>
             </section>
         </main>
-    </q-page>
+    </q-dialog>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import * as Yup from 'yup';
-    import { createProduct } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import { createProduct } from 'src/modules/products/services/productsService';
+
+    const emits = defineEmits<{
+        (e: 'close', value: boolean)
+    }>();
 
     const priceInput = ref<string>('');
 
@@ -155,7 +159,7 @@
     const router = useRouter();
     const { notify } = useNotify();
 
-    let loadingLogin = ref<boolean>(false);
+    const loadingLogin = ref<boolean>(false);
 
     const nameUpper = computed({
         get: () => product.value.name,

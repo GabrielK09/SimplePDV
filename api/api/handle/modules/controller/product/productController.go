@@ -170,6 +170,7 @@ func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		u.ErrorLogger.Println("Erro ao gravar o produto: ", err)
 		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
 		json.NewEncoder(w).Encode(resp)
@@ -178,6 +179,7 @@ func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := payload.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		u.ErrorLogger.Println("Campos obrigatórios ausentes.", err)
 		resp := responsehelper.Response(false, err, "Campos obrigatórios ausentes.")
 
 		json.NewEncoder(w).Encode(resp)
@@ -186,6 +188,7 @@ func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := payload.Create(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao gravar o produto: ", err)
 		resp := responsehelper.Response(false, err, "Erro ao gravar o produto.")
 
 		json.NewEncoder(w).Encode(resp)

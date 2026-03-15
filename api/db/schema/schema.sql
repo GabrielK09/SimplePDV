@@ -55,11 +55,11 @@ CREATE TABLE public.shopping (
 );
 CREATE TABLE public.shopping_itens (
   id SERIAL PRIMARY KEY,
+  shopping_id bigint NOT NULL,
   product_id integer,
   name character varying NOT NULL,
   qtde_purchased integer NOT NULL,
   purchased_value double precision NOT NULL,
-  shopping_id bigint NOT NULL,
   status character varying DEFAULT 'Associado'::character varying,
   deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
