@@ -190,9 +190,9 @@
     });
 
     /**data is products for sale */
-    const productsSale = ref<SaleItemContract[]>([]); 
+    const productsSale = ref<SaleItemContract[]>([]);
 
-    const originalProductsSale = ref<SaleItemContract[]>([]); 
+    const originalProductsSale = ref<SaleItemContract[]>([]);
 
     const route = useRoute();
     const router = useRouter();
@@ -278,7 +278,7 @@
     watch(
         () => productsSale.value?.length ?? 0,
         (length) => {
-            
+
             pagination.value.rowsPerPage = length;
         },
         { immediate: true }
@@ -311,7 +311,7 @@
         row.qtde = val;
     };
 
-    const pushProducts = (selectedProducts: SaleItemContract[]) => {        
+    const pushProducts = (selectedProducts: SaleItemContract[]) => {
         if(!Array.isArray(productsSale.value)) {
             productsSale.value = [];
         };
@@ -325,13 +325,13 @@
 
             } else {
                 console.log(p.qtde <= 0);
-                
+
                 productsSale.value.push({
                     id: 0,
                     product_id: p.id,
                     name: p.name,
                     price: p.price,
-                    qtde: p.qtde <= 0 ? 1 : p.qtde  
+                    qtde: p.qtde <= 0 ? 1 : p.qtde
                 });
             };
         });
@@ -339,7 +339,7 @@
         disableButtons.editPayMentsForms = true;
         disableButtons.deleteSale = false;
         disableButtons.saveSale = false;
-        disableButtons.finallySale = false;  
+        disableButtons.finallySale = false;
     };
 
     const cloneProducts = (items: SaleItemContract[]) =>
@@ -367,11 +367,6 @@
     };
 
     const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
-        console.log('handleConfirmDialog', {
-            confirmed: confirmed,
-            operation: operation
-        });
-
         if(confirmed && operation === 'delete')
         {
             notify('positive', 'Venda cancelada com sucesso!');
@@ -390,11 +385,11 @@
             if(SessionStorage.getItem('sale'))
             {
                 notify(
-                    'positive', 
+                    'positive',
                     'Dados salvos com sucesso!'
 
                 );
-                
+
                 removeSessionData('sale_id');
                 removeSessionData('sale');
                 productsSale.value = [];
@@ -408,10 +403,10 @@
                 return;
             };
 
-            saveSaleForPay(true);            
+            saveSaleForPay(true);
             resetSale(false);
         };
-        
+
         showConfirmDialog.value = false;
 
         resetSale(false);
@@ -518,9 +513,9 @@
             showPayMentForms.value = true;
 
         } else {
-            isSave 
-                ? null 
-                : notify('negative', `Erro ao finalizar a venda: ${res.message}`); 
+            isSave
+                ? null
+                : notify('negative', `Erro ao finalizar a venda: ${res.message}`);
         };
     };
 
@@ -576,8 +571,8 @@
     };
 
     onMounted(async () => {
-        productsSale.value = [];  
-        
+        productsSale.value = [];
+
         if(routeSaleId.value)
         {
             notify(
@@ -646,7 +641,6 @@
         disableButtons.deleteSale = false;
         disableButtons.saveSale = false;
         disableButtons.finallySale = false;
-
     };
 </script>
 

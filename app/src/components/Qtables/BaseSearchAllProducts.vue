@@ -31,6 +31,7 @@
                             <template v-slot:append>
                                 <q-icon name="search" />
                             </template>
+
                             <template v-slot:label>
                                 <span class="text-xs">Buscar por um produto ...</span>
                             </template>

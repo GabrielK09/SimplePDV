@@ -1,4 +1,4 @@
-package paymentcontroller
+package paymentformscontroller
 
 import (
 	"encoding/json"

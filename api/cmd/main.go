@@ -5,8 +5,10 @@ import (
 	"flag"
 	"myApi/api"
 	cashregisterController "myApi/api/handle/modules/controller/cashRegister"
+	processpayment "myApi/api/services/payMent"
 	reports "myApi/api/services/reports"
 	"myApi/db"
+	dbaction "myApi/db/dbActions/seeder"
 	loggerHelper "myApi/helpers/logger"
 	"myApi/interface/cashRegister"
 	"myApi/interface/customer"
@@ -15,12 +17,14 @@ import (
 	"myApi/interface/pdv"
 	"myApi/interface/product"
 	"myApi/interface/sale"
+	"myApi/interface/shopping"
 	"myApi/interface/user"
 	"myApi/jobs"
 )
 
 var ctx = context.Background()
-var job string
+var jobFlag string
+var dbFlag string
 
 func main() {
 	loggerHelper.Logger()
@@ -30,14 +34,25 @@ func main() {
 		loggerHelper.ErrorLogger.Fatal("Erro ao conectar ao banco: ", err)
 	}
 
-	flag.StringVar(&job, "job", "", "confire if is a job")
+	flag.StringVar(&dbFlag, "db", "", "confirm if is a db flag")
+
+	flag.StringVar(&jobFlag, "job", "", "confirm if is a job")
 	flag.Parse()
 
-	switch job {
+	switch jobFlag {
 	case "createUser":
 		jobs.CreateUser(db, ctx)
+		return
+
 	case "resetSite":
 		jobs.ResetSite(db, ctx)
+		return
+	}
+
+	switch dbFlag {
+	case "seed":
+		dbaction.DBSeed(db, ctx)
+		return
 	}
 
 	loggerHelper.GeneralLogger.Println("Banco de dados conectado com sucesso!")
@@ -51,7 +66,9 @@ func main() {
 	paymentform.SetConnection(db)
 	pdv.SetConnection(db)
 	reports.SetConnection(db)
+	shopping.SetConnection(db)
 	user.SetConnection(db)
+	processpayment.SetConnection(db)
 
 	if err = paymentform.CreateDefaultPayMents(); err != nil {
 		loggerHelper.ErrorLogger.Fatal("Erro ao criar as espécies padrão: ", err)

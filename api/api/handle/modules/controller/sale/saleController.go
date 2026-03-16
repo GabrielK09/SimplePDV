@@ -169,7 +169,8 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func HandlePutCancelSale(w http.ResponseWriter, r *http.Request) {
+/*
+	func HandlePutCancelSale(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
@@ -223,49 +224,7 @@ func HandlePutCancelSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func HandlePutPaySale(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodPut {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	} // Erro de método da rota
-
-	var payMents sale.PaySaleContract
-
-	if err := json.NewDecoder(r.Body).Decode(&payMents); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	if err := payMents.ValidatePay(); len(err) > 0 {
-		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao validar o pagamento da venda.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	if err := sale.PaySale(payMents); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao processar o pagamento da venda.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-
-	resp := responsehelper.Response(true, payMents, "Venda concluída com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
-}
+*/
 
 func HandleNewItens(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

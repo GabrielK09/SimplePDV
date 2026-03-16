@@ -24,6 +24,7 @@ type ProductContract struct {
 }
 
 var conn *pgxpool.Pool
+var ctx = context.Background()
 
 func SetConnection(db *pgxpool.Pool) {
 	conn = db
@@ -56,6 +57,15 @@ func (p ProductContract) Validate() map[string]string {
 }
 
 func (p *ProductContract) Create() error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transação: ", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
 	query := `	
 		INSERT INTO products
 			(name, price, qtde, commission, returned, saled)
@@ -67,7 +77,7 @@ func (p *ProductContract) Create() error {
 			id
 	`
 
-	err := conn.QueryRow(
+	err = conn.QueryRow(
 		context.Background(),
 		query,
 		p.Name,

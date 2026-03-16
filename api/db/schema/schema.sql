@@ -4,7 +4,7 @@ CREATE TABLE public.user (
   id SERIAL PRIMARY KEY,
   name character varying NOT NULL,
   cpf character varying NOT NULL,
-  login character varying NOT NULL,
+  login character varying NOT NULL unique,
   password character varying NOT NULL,
   is_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -47,19 +47,20 @@ CREATE TABLE public.sales (
 );
 CREATE TABLE public.shopping (
   id SERIAL PRIMARY KEY,
-  load integer,
+  load integer unique,
   operation character varying,
   status character varying DEFAULT 'Pendente'::character varying,
+  total_shopping double precision,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE public.shopping_itens (
   id SERIAL PRIMARY KEY,
+  shopping_id bigint NOT NULL,
   product_id integer,
   name character varying NOT NULL,
   qtde_purchased integer NOT NULL,
   purchased_value double precision NOT NULL,
-  shopping_id bigint NOT NULL,
   status character varying DEFAULT 'Associado'::character varying,
   deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),

@@ -11,9 +11,9 @@ interface PayMentFormContract {
  * Para o pagamento na api
  */
 interface PayMentPayLoadContract {
-    sale_id: number;
+    sale_id?: number;
+    shopping_id?: number;
     species: any[];
-
 };
 
 /**

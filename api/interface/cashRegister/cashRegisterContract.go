@@ -2,6 +2,7 @@ package cashRegister
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
 	"time"
@@ -108,7 +109,7 @@ func getLastBalance(tx pgx.Tx) (float64, error) {
 		query,
 	).Scan(
 		&balance,
-	); err != nil {
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao fazer a consulta do balanço: ", err)
 		return 0, err
 	}

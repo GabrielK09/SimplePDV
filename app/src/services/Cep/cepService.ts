@@ -3,7 +3,7 @@ import apiResponse from "src/helpers/response/apiResponse";
 
 export async function getCepData(cep: string): Promise<any>
 {
-try {
+    try {
         const res = await apiCep.get(`/${cep.replace(/\D/, '')}/json`);
         const data = res.data;
 
