@@ -4,7 +4,7 @@ import apiResponse from "src/helpers/response/apiResponse";
 export async function getAll(): Promise<any>
 {
     try {
-        const res = await api.get('shopping/all');
+        const res = await api.get('/shopping/all');
         const data = res.data;
 
         return apiResponse(
@@ -51,6 +51,26 @@ export async function deleteshopping(shoppingId: number): Promise<any>
             true,
             data.message,
             data.data || []
+        );
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
+
+export async function getLastShoppingId(): Promise<any> 
+{
+    try {
+        const res = await api.get('/shopping/return-last-id');
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || 0
         );
     } catch (error) {
         return apiResponse(

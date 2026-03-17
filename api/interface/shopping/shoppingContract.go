@@ -2,9 +2,14 @@ package shopping
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
+	"myApi/interface/product"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,11 +26,11 @@ type ShoppingContract struct {
 
 type ShoppingItenContract struct {
 	Id             int       `json:"id"`
+	ShoppingId     int       `json:"shopping_id"`
 	ProductId      int       `json:"product_id"`
 	Name           string    `json:"name"`
 	QtdePurchased  int       `json:"qtde_purchased"`
 	PurchasedValue float64   `json:"purchased_value"`
-	ShoppingId     int       `json:"shopping_id"`
 	Status         string    `json:"status"`
 	DeletedAt      time.Time `json:"deleted_at"`
 	CreatedAt      time.Time `json:"created_at"`
@@ -42,6 +47,18 @@ func SetConnection(db *pgxpool.Pool) {
 func (s *ShoppingContract) Validate() map[string]string {
 	errors := make(map[string]string)
 
+	existingLoad, err := checkExistLoad(s.Load)
+
+	if err != nil {
+		errors["database"] = fmt.Sprintf("Erro ao conferir se a carga já existe: %s", err)
+		return errors
+	}
+
+	if existingLoad {
+		errors["load"] = "Essa carga já foi cadastrada."
+		return errors
+	}
+
 	if s.Load < 0 {
 		errors["load"] = "A informação da carga da compra é obrigatória."
 		return errors
@@ -52,7 +69,24 @@ func (s *ShoppingContract) Validate() map[string]string {
 		return errors
 	}
 
+	if len(s.ShoppingItens) <= 0 {
+		errors["shopping_itens"] = "Itens ausentes na compra."
+		return errors
+	}
+
 	for _, p := range s.ShoppingItens {
+		product, err := product.Show(p.ProductId)
+
+		if err != nil {
+			errors["database"] = fmt.Sprintf("Erro ao conferir se o item existe: %s", err)
+			return errors
+		}
+
+		if product == nil {
+			errors["product"] = "Produto não localizado."
+			return errors
+		}
+
 		if p.QtdePurchased <= 0 && p.PurchasedValue <= 0 {
 			errors["qtde_purchased"] = "A qtde de compra não pode ser menor que zero."
 			errors["purchased_value"] = "O valor do item da compra não pode ser menor que zero."
@@ -71,7 +105,9 @@ func GetAll() ([]ShoppingContract, error) {
 			id,
 			load,
 			operation,
-			status
+			status,
+			total_shopping
+
 		FROM			
 			shopping
 	`
@@ -96,6 +132,7 @@ func GetAll() ([]ShoppingContract, error) {
 			&s.Load,
 			&s.Operation,
 			&s.Status,
+			&s.TotalShopping,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao ler os dados da query: ", err)
 			return []ShoppingContract{}, err
@@ -109,6 +146,8 @@ func GetAll() ([]ShoppingContract, error) {
 
 func (s *ShoppingContract) Create() (int, error) {
 	var shoppingId int
+	var subTotal float64
+
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
@@ -118,21 +157,27 @@ func (s *ShoppingContract) Create() (int, error) {
 
 	queryInsertShopping := `
 		INSERT INTO shopping
-			(load, operation)
+			(load, operation, total_shopping)
 
 		VALUES(
 			$1, 
-			'Entrada'
+			'Entrada',
+			$2
 		)
 
 		RETURNING
 			id
 	`
 
+	for _, iten := range s.ShoppingItens {
+		subTotal = calchelper.CalculateTotalSale(iten.PurchasedValue, iten.QtdePurchased)
+	}
+
 	if err := tx.QueryRow(
 		ctx,
 		queryInsertShopping,
 		s.Load,
+		subTotal,
 	).Scan(
 		&shoppingId,
 	); err != nil {
@@ -143,15 +188,15 @@ func (s *ShoppingContract) Create() (int, error) {
 	s.Id = shoppingId
 
 	queryInsertItens := `
-		INSERT INTO 
-			shopping_itens
+		INSERT INTO shopping_itens
+			(shopping_id, product_id, name, qtde_purchased, purchased_value)
 
 		VALUES(
-			shopping_id = $1,
-			product_id = $2,
-			name = $3,
-			qtde_purchased = $4,
-			purchased_value = $5
+			$1,
+			$2,
+			$3,
+			$4,
+			$5
 		)
 	`
 
@@ -162,16 +207,7 @@ func (s *ShoppingContract) Create() (int, error) {
 		SET
 			name = $2,
 			price = $3,
-			qtde = (
-				SELECT
-					COALESCE(SUM(qtde + $4), 0)
-
-				FROM
-					products
-
-				WHERE
-					id = $1
-			),
+			qtde = qtde + $4
 
 		WHERE
 			id = $1
@@ -181,7 +217,7 @@ func (s *ShoppingContract) Create() (int, error) {
 		if _, err := tx.Exec(
 			ctx,
 			queryInsertItens,
-			shoppingId,
+			s.Id,
 			p.ProductId,
 			p.Name,
 			p.QtdePurchased,
@@ -221,7 +257,7 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 			load,
 			operation,
 			status,
-			total_shopping,
+			total_shopping
 			
 		FROM
 			shopping
@@ -241,9 +277,61 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 		&s.Status,
 		&s.TotalShopping,
 	); err != nil {
-		u.ErrorLogger.Println("Erro ao pegar os dados da venda")
+		u.ErrorLogger.Println("Erro ao pegar os dados da compra: ", err)
 		return nil, err
 	}
 
 	return &s, nil
+}
+
+func checkExistLoad(load int) (bool, error) {
+	var shoppingId int
+
+	query := `
+		SELECT
+			id
+
+		FROM
+			shopping
+
+		WHERE
+			load = $1
+	`
+
+	err := conn.QueryRow(ctx, query, load).Scan(&shoppingId)
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao conferir se esse LOAD existe: ", err)
+		return false, err
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+
+	return false, nil
+}
+
+func ReturnLastShoppingId() (int, error) {
+	var shoppingId int
+
+	query := `
+		SELECT
+			id
+		FROM
+			shopping
+
+		ORDER BY
+			id DESC
+	`
+
+	if err := conn.QueryRow(
+		ctx,
+		query,
+	).Scan(&shoppingId); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao conferir o ultimo ID do compras: ", err)
+		return 0, err
+	}
+
+	return shoppingId, nil
 }

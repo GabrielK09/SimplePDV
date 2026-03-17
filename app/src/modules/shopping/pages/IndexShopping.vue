@@ -49,7 +49,7 @@
                             >
                                 <template v-if="col.name === 'actions'">
                                     <div
-                                        class="text-center"
+                                        class="text-center flex flex-center"
                                     >
                                         <q-btn size="10px" no-caps color="red" icon="delete" flat @click="showDialogDeleteshopping(props.row.id)"/>
 
@@ -57,7 +57,10 @@
                                 </template>
 
                                 <template v-else>
-                                    {{ col.value }}
+                                    <div class="text-center">
+                                        {{ col.value }}
+
+                                    </div>
                                 </template>
                             </q-td>
                         </q-tr>
@@ -92,19 +95,13 @@
             align: 'center'
         },
         {
-            name: 'price',
-            label: 'Preço',
-            field: 'price',
+            name: 'total_shopping',
+            label: 'Total da compra',
+            field: 'total_shopping',
             align: 'center',
             format(val: number) {
                 return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
             }
-        },
-        {
-            name: 'qtde',
-            label: 'Qtde',
-            field: 'qtde',
-            align: 'center'
         },
         {
             name: 'actions',
@@ -122,6 +119,8 @@
     const getAllshopping = async () => {
         const res = await getAll();
         const data = res.data;
+
+        console.log(data);
 
         shopping.value = data;
         allshopping.value = [...shopping.value];

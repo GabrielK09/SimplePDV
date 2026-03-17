@@ -2,6 +2,7 @@ package paymentcontroller
 
 import (
 	"encoding/json"
+	"fmt"
 	processpayment "myApi/api/services/payMent"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
@@ -12,6 +13,7 @@ import (
 
 func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	var label string
 
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -31,13 +33,15 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 
 	if payMents.ShoppingId <= 0 && payMents.SaleId <= 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		u.ErrorLogger.Println("IDs ausentes.")
+		u.ErrorLogger.Printf("IDs ausentes, shopping_id: %d, sale_id: %d", payMents.ShoppingId, payMents.SaleId)
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Identificadores de compra ou venda ausentes ausentes."))
 		return
 	}
 
 	if payMents.ShoppingId == 0 && payMents.SaleId > 0 {
+		u.InfoLogger.Println("Vai finalizar uma venda.")
+
 		if err := payMents.ValidatePay(payMents.SaleId); len(err) > 0 {
 			u.ErrorLogger.Println("Erro ao validar o pagamento da venda.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -46,7 +50,7 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := processpayment.PaySale(payMents); err != nil {
+		if err := processpayment.PayMentShoppingOrSale(payMents); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 
 			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar o pagamento da venda."))
@@ -55,6 +59,8 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payMents.SaleId == 0 && payMents.ShoppingId > 0 {
+		u.InfoLogger.Println("Vai finalizar uma compra.")
+
 		if err := payMents.ValidatePay(payMents.ShoppingId); len(err) > 0 {
 			u.ErrorLogger.Println("Erro ao validar o pagamento da compra.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -63,7 +69,8 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := processpayment.PaySale(payMents); err != nil {
+		if err := processpayment.PayMentShoppingOrSale(payMents); err != nil {
+			u.ErrorLogger.Println("Erro ao pagar a compra/venda: ", err)
 			w.WriteHeader(http.StatusInternalServerError)
 
 			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar o pagamento da venda."))
@@ -73,7 +80,15 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(responsehelper.Response(true, payMents, "Venda concluída com sucesso!"))
+	if payMents.SaleId > 0 {
+		label = "Venda"
+	}
+
+	if payMents.ShoppingId > 0 {
+		label = "Compra"
+	}
+
+	json.NewEncoder(w).Encode(responsehelper.Response(true, payMents, fmt.Sprintf("%s concluída com sucesso!", label)))
 }
 
 func HandlePutCancelSale(w http.ResponseWriter, r *http.Request) {}

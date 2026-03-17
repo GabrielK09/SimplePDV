@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
+func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -19,6 +19,44 @@ func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
+	shoppings, err := shopping.GetAll()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		resp := responsehelper.Response(false, err, "Erro ao retornar todos os produtos.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppings, "Todas as compras cadastradas."))
+}
+
+func HandleGetLastShoppingId(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	} // Erro de método da rota
+
+	shoppingId, err := shopping.ReturnLastShoppingId()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao retornar o ID: ", err)
+		resp := responsehelper.Response(false, err, "Falha na operação.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppingId, ""))
 }
 
 func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
@@ -26,9 +64,8 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
 
@@ -44,11 +81,18 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := payload.Validate(); len(err) > 0 {
+		if err["load"] != "" {
+			w.WriteHeader(http.StatusInternalServerError)
+			u.ErrorLogger.Println("Carga duplicada.", err)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Dados duplicados"))
+			return
+		}
+
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		u.ErrorLogger.Println("Campos obrigatórios ausentes.", err)
-		resp := responsehelper.Response(false, err, "Campos obrigatórios ausentes.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Campos obrigatórios ausentes."))
 		return
 	}
 
@@ -64,7 +108,5 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	resp := responsehelper.Response(true, shoppingId, "Compra cadastrada com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppingId, "Compra cadastrada com sucesso!"))
 }

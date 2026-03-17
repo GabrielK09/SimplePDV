@@ -35,8 +35,8 @@ func main() {
 	}
 
 	flag.StringVar(&dbFlag, "db", "", "confirm if is a db flag")
-
 	flag.StringVar(&jobFlag, "job", "", "confirm if is a job")
+
 	flag.Parse()
 
 	switch jobFlag {

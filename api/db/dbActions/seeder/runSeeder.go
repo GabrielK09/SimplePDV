@@ -35,7 +35,7 @@ func DBSeed(db *pgxpool.Pool, ctx context.Context) {
 
 		VALUES
 			(
-				'Produto teste',
+				'PRODUTO TESTE',
 				10,
 				10,
 				0,

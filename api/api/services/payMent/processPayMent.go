@@ -39,14 +39,28 @@ func (p PayContract) ValidatePay(id int) map[string]string {
 	var payMent PayMentBody
 
 	if p.ShoppingId == 0 && p.SaleId > 0 {
-		if _, err := sale.Show(p.SaleId); err != nil {
+		saleData, err := sale.Show(p.SaleId)
+
+		if err != nil {
+			errorsField["database"] = fmt.Sprintf("Ocorreu um erro ao conferir se a venda existe: %s", err)
+			return errorsField
+		}
+
+		if saleData == nil {
 			errorsField["sale_id"] = fmt.Sprintf("O identificador da venda está incorreto, %s", err)
 			return errorsField
 		}
 	}
 
 	if p.SaleId == 0 && p.ShoppingId > 0 {
-		if _, err := shopping.Show(p.ShoppingId); err != nil {
+		shoppingData, err := shopping.Show(p.ShoppingId)
+
+		if err != nil {
+			errorsField["database"] = fmt.Sprintf("Ocorreu um erro ao conferir se a compra existe: %s", err)
+			return errorsField
+		}
+
+		if shoppingData == nil {
 			errorsField["shopping_id"] = fmt.Sprintf("O identificador da compra está incorreto, %s", err)
 			return errorsField
 		}
@@ -80,159 +94,296 @@ func (p PayContract) ValidatePay(id int) map[string]string {
 	return errorsField
 }
 
-func PaySale(payMent PayContract) error {
-	//func PaySale(informedPayMent []an) error {
-
+func PayMentShoppingOrSale(payMent PayContract) error {
 	tx, err := conn.Begin(ctx)
 	var totalPaide float64
 
 	if err != nil {
-		u.ErrorLogger.Println("Erro ao iniciar a transiction no paySale: ", err)
+		u.ErrorLogger.Println("Erro ao iniciar a transiction no PayMentShoppingOrSale: ", err)
 		return err
 	}
 
 	defer tx.Rollback(ctx)
 
-	var s sale.SaleContract
-
-	queryForSale := `
-		SELECT
-			customer_id,
-			customer,
-			sale_value,
-			status
-		FROM
-			sales
-		WHERE
-			id = $1
-	`
-
-	if err = tx.QueryRow(
-		ctx,
-		queryForSale,
-		payMent.SaleId,
-	).Scan(
-		&s.CustomerId,
-		&s.Customer,
-		&s.SaleValue,
-		&s.Status,
-	); err != nil {
-		u.ErrorLogger.Println("Erro no select da venda no paySale: ", err)
-		return err
-	}
-
-	if s.Status == "Concluída" {
-		return fmt.Errorf("Essa venda já está finalizada.")
-	}
-
 	for _, p := range payMent.Species {
 		totalPaide += p.AmountPaid
 	}
 
-	if totalPaide < s.SaleValue {
-		return fmt.Errorf("Valor informado menor do que da venda.")
-	}
+	if payMent.SaleId > 0 {
+		var s sale.SaleContract
 
-	u.GeneralLogger.Println("Vai fazer o insert no sale_pay_ment pelo for")
+		queryForSale := `
+			SELECT
+				customer_id,
+				customer,
+				sale_value,
+				status
+			FROM
+				sales
+			WHERE
+				id = $1
+		`
 
-	for _, p := range payMent.Species {
-		if p.AmountPaid <= 0 {
-			continue
+		if err = tx.QueryRow(
+			ctx,
+			queryForSale,
+			payMent.SaleId,
+		).Scan(
+			&s.CustomerId,
+			&s.Customer,
+			&s.SaleValue,
+			&s.Status,
+		); err != nil {
+			u.ErrorLogger.Println("Erro no select da venda no PayMentShoppingOrSale: ", err)
+			return err
 		}
 
-		queryForPayMent := `
-			INSERT INTO sale_pay_ment
-				(
-					sale_id, 
-					specie_id, 
-					specie, 
-					amount_paid
-				)
+		if s.Status == "Concluída" {
+			return fmt.Errorf("Essa venda já está finalizada.")
+		}
 
-			VALUES
-				(
-					$1, 
-					$2, 
-					$3, 
-					$4
-				)
-			
-			RETURNING
-				id
+		if totalPaide < s.SaleValue {
+			return fmt.Errorf("Valor informado menor do que da venda.")
+		}
+
+		u.GeneralLogger.Println("Vai fazer o insert no sale_pay_ment pelo for")
+
+		for _, p := range payMent.Species {
+			if p.AmountPaid <= 0 {
+				continue
+			}
+
+			queryForPayMent := `
+				INSERT INTO sale_pay_ment
+					(
+						sale_id, 
+						specie_id, 
+						specie, 
+						amount_paid
+					)
+	
+				VALUES
+					(
+						$1, 
+						$2, 
+						$3, 
+						$4
+					)
+				
+				RETURNING
+					id
+			`
+
+			if _, err = tx.Exec(
+				ctx,
+				queryForPayMent,
+				payMent.SaleId,
+				p.SpecieId,
+				p.Specie,
+				p.AmountPaid,
+			); err != nil {
+				u.ErrorLogger.Println("Erro no insert do sale_pay_ment no paySale: ", err)
+				return err
+
+			}
+
+			c, err := customer.Show(s.CustomerId)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar os dados do cliente: ", err)
+				return err
+			}
+
+			if err := createInCashRegister(
+				tx,
+				p.AmountPaid,
+				0.0,
+				payMent.SaleId,
+				0,
+				*c,
+				p,
+			); len(err) > 0 {
+				return fmt.Errorf("Erros: %s", err)
+			}
+		}
+
+		u.GeneralLogger.Println("Venda está pendente, vai finalizar a venda e os itens.")
+
+		queryForUpdateSale := `
+			UPDATE 
+				sales
+			SET
+				status = 'Concluída'		
+			WHERE 
+				id = $1
 		`
 
 		if _, err = tx.Exec(
 			ctx,
-			queryForPayMent,
+			queryForUpdateSale,
 			payMent.SaleId,
-			p.SpecieId,
-			p.Specie,
-			p.AmountPaid,
 		); err != nil {
-			u.ErrorLogger.Println("Erro no insert do sale_pay_ment no paySale: ", err)
-			return err
-
-		}
-
-		c, err := customer.Show(s.CustomerId)
-
-		if err != nil {
-			u.ErrorLogger.Println("Erro ao pegar os dados do cliente: ", err)
+			u.ErrorLogger.Println("Erro no update da venda para Concluída: ", err)
 			return err
 		}
 
-		if err := createInCashRegister(
-			tx,
-			p.AmountPaid,
-			0.0,
+		queryForSaleItem := `
+			UPDATE
+				sale_itens
+			SET
+				status = 'Concluída'	
+			WHERE 
+				sale_id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryForSaleItem,
 			payMent.SaleId,
-			*c,
-			p,
-		); len(err) > 0 {
-			return fmt.Errorf("Erros: %s", err)
+		); err != nil {
+			u.ErrorLogger.Println("Erro no update dos itens da venda para Concluída: ", err)
+			return err
 		}
-	}
+	} // Processo para pagamento de VENDA
 
-	u.GeneralLogger.Println("Venda está pendente, vai finalizar a venda e os itens.")
+	if payMent.ShoppingId > 0 {
+		var s shopping.ShoppingContract
 
-	queryForUpdateSale := `
-		UPDATE 
-			sales
-		SET
-			status = 'Concluída'		
-		WHERE 
-			id = $1
-	`
+		querySelectShopping := `
+			SELECT
+				id,
+				load,
+				operation,
+				status
+			FROM			
+				shopping
 
-	if _, err = tx.Exec(
-		ctx,
-		queryForUpdateSale,
-		payMent.SaleId,
-	); err != nil {
-		u.ErrorLogger.Println("Erro no update da venda para Concluída: ", err)
-		return err
-	}
+			WHERE
+				id = $1
+		`
 
-	queryForSaleItem := `
-		UPDATE
-			sale_itens
-		SET
-			status = 'Concluída'	
-		WHERE 
-			sale_id = $1
-	`
+		if err = tx.QueryRow(
+			ctx,
+			querySelectShopping,
+			payMent.ShoppingId,
+		).Scan(
+			&s.Id,
+			&s.Load,
+			&s.Operation,
+			&s.Status,
+		); err != nil {
+			u.ErrorLogger.Println("Erro no select da compra no PayMentShoppingOrSale: ", err)
+			return err
+		}
 
-	if _, err = tx.Exec(
-		ctx,
-		queryForSaleItem,
-		payMent.SaleId,
-	); err != nil {
-		u.ErrorLogger.Println("Erro no update dos itens da venda para Concluída: ", err)
-		return err
+		if s.Status == "Concluída" {
+			return fmt.Errorf("Essa compra já está finalizada.")
+		}
+
+		if totalPaide < s.TotalShopping {
+			return fmt.Errorf("Valor informado menor do que da compra.")
+		}
+
+		for _, p := range payMent.Species {
+			if p.AmountPaid <= 0 {
+				continue
+			}
+
+			queryForPayMent := `
+				INSERT INTO shopping_pay_ment
+					(
+						shopping_id, 
+						specie_id, 
+						specie, 
+						amount_paid
+					)
+	
+				VALUES
+					(
+						$1, 
+						$2, 
+						$3, 
+						$4
+					)
+				
+				RETURNING
+					id
+			`
+
+			if _, err = tx.Exec(
+				ctx,
+				queryForPayMent,
+				payMent.ShoppingId,
+				p.SpecieId,
+				p.Specie,
+				p.AmountPaid,
+			); err != nil {
+				u.ErrorLogger.Println("Erro no insert do shopping_pay_ment no paySale: ", err)
+				return err
+
+			}
+
+			c, err := customer.Show(1)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar os dados do cliente: ", err)
+				return err
+			}
+
+			if err := createInCashRegister(
+				tx,
+				p.AmountPaid,
+				0.0,
+				0,
+				payMent.ShoppingId,
+				*c,
+				p,
+			); len(err) > 0 {
+				return fmt.Errorf("Erros: %s", err)
+			}
+		}
+
+		u.GeneralLogger.Println("A compra está pendente, vai finalizar a compra e os itens.")
+
+		queryForUpdateShopping := `
+			UPDATE
+				shopping
+			SET
+				status = 'Concluída'		
+			WHERE 
+				id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryForUpdateShopping,
+			payMent.SaleId,
+		); err != nil {
+			u.ErrorLogger.Println("Erro no update da compra para Concluída: ", err)
+			return err
+		}
+
+		queryForShoppingItem := `
+			UPDATE
+				shopping_itens
+			SET
+				status = 'Concluída'	
+			WHERE 
+				sale_id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryForShoppingItem,
+			payMent.SaleId,
+		); err != nil {
+			u.ErrorLogger.Println("Erro no update dos itens da compra para Concluída: ", err)
+			return err
+		}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		u.ErrorLogger.Println("Erro no commit do paySale da venda: ", err)
+		u.ErrorLogger.Println("Erro no commit do PayMentShoppingOrSale da compra: ", err)
 		return err
 	}
 
@@ -243,7 +394,8 @@ func createInCashRegister(
 	tx pgx.Tx,
 	inputValue,
 	outputValue float64,
-	saleId int,
+	saleId,
+	shoppingId int,
 	customer customer.CustomerContract,
 	specie PayMentBody,
 ) map[string]string {
@@ -252,7 +404,10 @@ func createInCashRegister(
 
 	c.SpecieId = specie.SpecieId
 	c.Specie = specie.Specie
+
 	c.SaleId = saleId
+	c.ShoppingId = shoppingId
+
 	c.CustomerId = customer.Id
 	c.Customer = customer.Name
 
@@ -433,6 +588,7 @@ func CancelSale() (sale.SaleContract, error) {
 			0.0,
 			pf.AmountPaid,
 			s.Id,
+			0,
 			*c,
 			pf,
 		); len(err) > 0 {

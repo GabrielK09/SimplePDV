@@ -149,6 +149,8 @@ func StartServer() {
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Compras \\
+	proteced.HandleFunc("/shopping/all", shoppingcontroller.HandleGetAllShopping).Methods(http.MethodGet, http.MethodOptions)
+	proteced.HandleFunc("/shopping/return-last-id", shoppingcontroller.HandleGetLastShoppingId).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/shopping/create", shoppingcontroller.HandlePostCreateShopping).Methods(http.MethodPost, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 

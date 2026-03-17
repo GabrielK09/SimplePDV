@@ -324,8 +324,11 @@ func Delete(id int) error {
 	}
 
 	query := `
-		DELETE FROM
+		UPDATE
 			products
+
+		SET
+			
 
 		WHERE 
 			id = $1

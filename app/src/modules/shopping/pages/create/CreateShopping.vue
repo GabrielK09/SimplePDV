@@ -39,7 +39,7 @@
                                 <q-checkbox
                                     v-model="selectedProducts"
                                     :val="props.row"
-                                    :disable="associateProdutcs.find(p => p.id === props.row.id) !== undefined ? true : false"
+                                    :disable="associateProdutcs.find(ap => ap.product_id === props.row.id) !== undefined ? true : false"
                                     dense
                                 />
                             </q-td>
@@ -58,6 +58,7 @@
                 <div class="flex justify-end py-4 ">
                     <div>
                         <q-btn
+                            no-caps
                             color="primary"
                             label="Desassociar todos"
                             :disable="associateProdutcs.length === 0"
@@ -68,6 +69,7 @@
 
                     <div>
                         <q-btn
+                            no-caps
                             color="primary"
                             label="Desassociar"
                             :disable="associateProdutcs.length === 0"
@@ -78,6 +80,7 @@
 
                     <div>
                         <q-btn
+                            no-caps
                             color="primary"
                             label="Associar"
                             @click="associateCheckedProdutcs"
@@ -102,10 +105,10 @@
                             </q-td>
                         </template>
 
-                        <template v-slot:body-cell-price="props">
+                        <template v-slot:body-cell-purchased_value="props">
                             <q-td :props="props">
                                 <q-input
-                                    v-model.number="props.row.price"
+                                    v-model.number="props.row.purchased_value"
                                     type="number"
                                     class="w-12 flex ml-auto mr-auto"
                                     input-class="text-center"
@@ -115,10 +118,10 @@
                             </q-td>
                         </template>
 
-                        <template v-slot:body-cell-qtde="props">
+                        <template v-slot:body-cell-qtde_purchased="props">
                             <q-td :props="props">
                                 <q-input
-                                    v-model.number="props.row.qtde"
+                                    v-model.number="props.row.qtde_purchased"
                                     type="number"
                                     class="w-12 flex ml-auto mr-auto"
                                     input-class="text-center"
@@ -180,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn } from 'quasar';
+    import { QTableColumn, SessionStorage } from 'quasar';
     import * as ProductsService from 'src/modules/products/services/productsService';
     import { onMounted, ref } from 'vue';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
@@ -233,9 +236,9 @@
             align: 'left'
         },
         {
-            name: 'id',
+            name: 'product_id',
             label: 'ID',
-            field: 'id',
+            field: 'product_id',
             align: 'center'
         },
         {
@@ -245,18 +248,18 @@
             align: 'center'
         },
         {
-            name: 'price',
+            name: 'purchased_value',
             label: 'Preço de entrada',
-            field: 'price',
+            field: 'purchased_value',
             align: 'center',
             format(val: number) {
                 return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
             }
         },
         {
-            name: 'qtde',
+            name: 'qtde_purchased',
             label: 'Qtde de entrada',
-            field: 'qtde',
+            field: 'qtde_purchased',
             align: 'center'
         },
     ];
@@ -264,7 +267,7 @@
     const productsStockData = ref<ProductContract[]>([]);
     const allProductsStockData = ref<ProductContract[]>([]);
 
-    const associateProdutcs = ref<ProductContract[]>([]);
+    const associateProdutcs = ref<ShoppingItemContract[]>([]);
 
     const searchInput = ref<string>('');
 
@@ -305,7 +308,7 @@
 
     const associateCheckedProdutcs = () => {
         selectedProducts.value.forEach(p => {
-            if(associateProdutcs.value.find(ap => ap.id === p.id))
+            if(associateProdutcs.value.find(ap => ap.product_id === p.id))
             {
                 notify(
                     'info',
@@ -315,12 +318,11 @@
                 return;
             };
 
-            const newProductStock: ProductContract = {
-                id: p.id,
+            const newProductStock: ShoppingItemContract = {
+                product_id: p.id,
                 name: p.name,
-                price: p.price,
-                qtde: 1,
-                commission: 0,
+                purchased_value: p.price,
+                qtde_purchased: 1,
             };
 
             associateProdutcs.value.push(newProductStock);
@@ -334,7 +336,7 @@
 
     const disassociateCheckedProdutcs = () => {
         selectedProducts.value.forEach(p => {
-            associateProdutcs.value = associateProdutcs.value.filter(ap => p.id !== ap.id);
+            associateProdutcs.value = associateProdutcs.value.filter(ap => p.id !== ap.product_id);
         });
 
         selectedProducts.value = [];
@@ -364,19 +366,20 @@
     const submitShopping = async () => {
         showInformLoadComponent.value = !showInformLoadComponent.value;
 
-        const totalShopping = associateProdutcs.value.reduce((total, a) => total + (a.price * a.qtde), 0);
+        const totalShopping = associateProdutcs.value.reduce((total, a) => total + (a.purchased_value * a.qtde_purchased), 0);
 
         console.log(`Total da compra: ${totalShopping}`);
 
         shoppingPrePayLoad.value = {
             id: 0,
             load: 0,
-            shoppingWithItem: associateProdutcs.value,
+            shopping_itens: associateProdutcs.value,
             totalShopping: totalShopping
         };
     };
 
     onMounted(() => {
+        SessionStorage.remove('shopping_id');
         getAllProductsStokc();
     });
  </script>

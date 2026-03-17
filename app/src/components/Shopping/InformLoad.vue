@@ -1,23 +1,33 @@
 <template>
     <q-dialog v-model="internalDialog" persistent>
         <q-card>
-            <main class="rounded-md flex flex-center text-xl mt-4 bg-white">
-                <section class="w-[80vh] rounded-lg px-4">
+            <main class="rounded-md flex flex-center mt-4 bg-white text-xl">
+                <section class="rounded-lg p-6 flex flex-col">
+                    <span class="font-bold mb-2">Última carga: {{ lastShoppingId }}</span>
+
                     <q-input
                         v-model.number="shoppingDataPayLoad.load"
                         type="text"
-                        label="N° Carga da compra"
                         stack-label
                         label-slot
+                        input-class="text-lg"
+                    >
+                        <template v-slot:label>
+                            <span class="font-bold text-lg">
+                                N° Carga da compra
+                            </span>
+                        </template>
+                    </q-input>
 
-                    />
+                    <div class="mt-4">
+                        <q-btn
+                            color="primary"
+                            label="Confirmar carga da compra"
+                            no-caps
+                            @click="saveShoppingForPay"
+                        />
 
-                    <q-btn
-                        color="primary"
-                        label="OK"
-                        no-caps
-                        @click="saveShoppingForPay"
-                    />
+                    </div>
                 </section>
             </main>
         </q-card>
@@ -35,19 +45,22 @@
 
 <script setup lang="ts">
     import { SessionStorage } from 'quasar';
-    import { ref } from 'vue';
-    import { createshopping } from 'src/modules/shopping/services/shoppingService';
+    import { onMounted, ref } from 'vue';
+    import { createshopping, getLastShoppingId } from 'src/modules/shopping/services/shoppingService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import PayMentSale from '../PayMent/Pay/PayMentSale.vue';
+    import { useRouter } from 'vue-router';
 
     const { notify } = useNotify();
 
+    const router = useRouter();
     const props = defineProps<{
         shoppingData: ShoppingContract
     }>();
 
     const shoppingDataPayLoad = ref<ShoppingContract>(props.shoppingData);
     const shoppingId = ref<number | null>(null);
+    const lastShoppingId = ref<number>(0);
     const internalDialog = ref<boolean>(true);
     const showPayMentForms = ref<boolean>(false);
 
@@ -94,8 +107,30 @@
 
     const resetShopping = (event: boolean) => {
         showPayMentForms.value = event;
+        internalDialog.value = event;
+
+        router.replace({
+            name: 'shopping.index'
+        });
 
         removeSessionData('shopping_id');
     };
 
+    onMounted(async () => {
+        const res = await getLastShoppingId();
+        const data = res.data;
+
+        if(!res.success)
+        {
+            notify(
+                'negative',
+                res.message
+            );   
+
+            internalDialog.value = false;
+            return;  
+        };
+
+        lastShoppingId.value = data;
+    }); 
 </script>

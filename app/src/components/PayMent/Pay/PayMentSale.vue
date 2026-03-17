@@ -244,7 +244,7 @@
     };
 
     const finallySale = async () => {
-        const res = await PayMentServiceFn.payMentService(payMentValues.value, props.saleId, 0);
+        const res = await PayMentServiceFn.payMentService(payMentValues.value, props.saleId ?? 0, props.shoppingId ?? 0);
 
         if(res.success)
         {
