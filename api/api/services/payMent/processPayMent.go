@@ -32,6 +32,11 @@ type PayContract struct {
 	Species    []PayMentBody `json:"species"`
 }
 
+type CancelContract struct {
+	SaleId     int `json:"sale_id"`
+	ShoppingId int `json:"shopping_id"`
+}
+
 func (p PayContract) ValidatePay(id int) map[string]string {
 	errorsField := make(map[string]string)
 
@@ -332,8 +337,8 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 
 			if err := createInCashRegister(
 				tx,
-				p.AmountPaid,
 				0.0,
+				p.AmountPaid,
 				0,
 				payMent.ShoppingId,
 				*c,
@@ -357,7 +362,7 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 		if _, err = tx.Exec(
 			ctx,
 			queryForUpdateShopping,
-			payMent.SaleId,
+			payMent.ShoppingId,
 		); err != nil {
 			u.ErrorLogger.Println("Erro no update da compra para Concluída: ", err)
 			return err
@@ -369,7 +374,7 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 			SET
 				status = 'Concluída'	
 			WHERE 
-				sale_id = $1
+				shopping_id = $1
 		`
 
 		if _, err = tx.Exec(
@@ -435,172 +440,442 @@ func createInCashRegister(
 	return errorsField
 }
 
-func CancelSale() (sale.SaleContract, error) {
+func CancelSaleOrShopping(c CancelContract) error {
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
 		u.ErrorLogger.Printf("Erro ao iniciar a transação - %s", err)
-		return sale.SaleContract{}, err
+		return err
 	}
 
 	defer tx.Rollback(ctx)
 
-	var s sale.SaleContract
+	if c.SaleId > 0 {
+		var s sale.SaleContract
 
-	querySelectSale := `
-		SELECT
-			id,
-			customer_id,
-			customer,
-			sale_value,
-			status,
-			created_at,
-			updated_at
+		querySelectSale := `
+			SELECT
+				id,
+				customer_id,
+				sale_value,
+				status
 
-		FROM
-			sales
-		
-		WHERE
-			id = $1
-	`
+			FROM
+				sales
+			
+			WHERE
+				id = $1
+		`
 
-	if err := tx.QueryRow(
-		ctx,
-		querySelectSale,
-	).Scan(
-		&s.Id,
-		&s.CustomerId,
-		&s.Customer,
-		&s.SaleValue,
-		&s.Status,
-		&s.CreatedAt,
-		&s.UpdatedAt,
-	); err != nil {
-		u.ErrorLogger.Println("Erro ao localizar a venda: ", err)
-		return sale.SaleContract{}, err
-	}
-
-	var payMentFormsFromSale []PayMentBody
-
-	if s.Status == "Cancelado" {
-		u.ErrorLogger.Printf("Essa venda n° %d já está cancelada", s.Id)
-		return sale.SaleContract{}, fmt.Errorf("Essa venda n° %d já está cancelada", s.Id)
-	}
-
-	for _, p := range s.Products {
-		u.GeneralLogger.Println("Conferindo se os produtos da venda já não estão cancelados.")
-		if p.Status == "Cancelado" {
-			u.ErrorLogger.Printf("O prduto n° %d venda n° %d já está cancelada", p.ProductId, s.Id)
-			return sale.SaleContract{}, fmt.Errorf("O prduto n° %d venda n° %d já está cancelada", p.ProductId, s.Id)
-		}
-	}
-
-	queryCancelSale := `
-		UPDATE
-			sales
-
-		SET
-			status = 'Cancelado'
-
-		WHERE
-			id = $1
-	`
-
-	if _, err = tx.Exec(
-		ctx,
-		queryCancelSale,
-		s.Id,
-	); err != nil {
-		u.ErrorLogger.Printf("Erro no update sale para cancelado - %s", err)
-		return sale.SaleContract{}, err
-	}
-
-	queryCancelSaleItem := `
-		UPDATE
-			sale_itens
-
-		SET
-			status = 'Cancelado'
-
-		WHERE
-			sale_id = $1
-	`
-
-	if _, err = tx.Exec(
-		ctx,
-		queryCancelSaleItem,
-		s.Id,
-	); err != nil {
-		u.ErrorLogger.Printf("Erro no update sale_itens para cancelado - %s", err)
-		return sale.SaleContract{}, err
-	}
-
-	queryFromPayMentsForms := `
-		SELECT
-			specie_id,
-			specie,
-			amount_paid
-		FROM
-			sale_pay_ment
-
-		WHERE
-			sale_id = $1
-	`
-
-	rows, err := tx.Query(
-		ctx,
-		queryFromPayMentsForms,
-		s.Id,
-	)
-
-	if err != nil {
-		u.ErrorLogger.Printf("Erro no select das formas de pagamento da venda - %s", err)
-		return sale.SaleContract{}, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var pf PayMentBody
-
-		if err := rows.Scan(
-			&pf.SpecieId,
-			&pf.Specie,
-			&pf.AmountPaid,
+		if err := tx.QueryRow(
+			ctx,
+			querySelectSale,
+			c.SaleId,
+		).Scan(
+			&s.Id,
+			&s.CustomerId,
+			&s.SaleValue,
+			&s.Status,
 		); err != nil {
-			u.ErrorLogger.Printf("Erro no select das formas de pagamento da venda - %s", err)
-			return sale.SaleContract{}, err
+			u.ErrorLogger.Println("Erro ao localizar a venda: ", err)
+			return err
 		}
 
-		payMentFormsFromSale = append(payMentFormsFromSale, pf)
-	}
+		var payMentFormsFromSale []PayMentBody
 
-	c, err := customer.Show(s.CustomerId)
+		if s.Status == "Cancelado" {
+			u.ErrorLogger.Printf("Essa venda n° %d já está cancelada", s.Id)
+			return fmt.Errorf("Essa venda n° %d já está cancelada", s.Id)
+		}
 
-	if err != nil {
-		u.ErrorLogger.Println("Erro no select do cliente para validar a venda: ", err)
-		return sale.SaleContract{}, err
-	}
+		querySelectItensSale := `
+			SELECT
+				product_id,
+				qtde,
+				status
+			FROM
+				sale_itens
+			WHERE
+				id = $1
+		`
 
-	for _, pf := range payMentFormsFromSale {
-		if err := createInCashRegister(
-			tx,
-			0.0,
-			pf.AmountPaid,
+		itensSaleSelect, err := tx.Query(
+			ctx,
+			querySelectItensSale,
 			s.Id,
-			0,
-			*c,
-			pf,
-		); len(err) > 0 {
-			u.ErrorLogger.Printf("Erro no insert de estorno no caixa venda - %s", err)
-			return sale.SaleContract{}, fmt.Errorf("Erro ao registrar o estorno no caixa.")
+		)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao executar o query: ", err)
+			return err
+		}
+
+		defer itensSaleSelect.Close()
+
+		for itensSaleSelect.Next() {
+			var s struct {
+				ProductId int
+				Qtde      int
+				Status    string
+			}
+
+			if err := itensSaleSelect.Scan(
+				&s.ProductId,
+				&s.Qtde,
+				&s.Status,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
+				return err
+			}
+
+			if s.Status != "Cancelado" {
+				continue
+			}
+
+			if s.Status == "Cancelado" {
+				return fmt.Errorf("Produto ID %d, venda n° %d, já cancelado", s.ProductId, c.SaleId)
+			}
+
+			queryUpdateReturnQtdeStock := `
+				UPDATE
+					products
+
+				SET
+					qtde = qtde + $2
+
+				WHERE
+					id = $1
+			`
+
+			if _, err := tx.Exec(
+				ctx,
+				queryUpdateReturnQtdeStock,
+				s.ProductId,
+				s.Qtde,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+				return err
+
+			}
+		}
+
+		queryCancelSale := `
+			UPDATE
+				sales
+
+			SET
+				status = 'Cancelado'
+
+			WHERE
+				id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryCancelSale,
+			s.Id,
+		); err != nil {
+			u.ErrorLogger.Printf("Erro no update sale para cancelado - %s", err)
+			return err
+		}
+
+		queryCancelSaleItem := `
+			UPDATE
+				sale_itens
+
+			SET
+				status = 'Cancelado'
+
+			WHERE
+				sale_id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryCancelSaleItem,
+			s.Id,
+		); err != nil {
+			u.ErrorLogger.Printf("Erro no update sale_itens para cancelado - %s", err)
+			return err
+		}
+
+		queryFromPayMentsForms := `
+			SELECT
+				specie_id,
+				specie,
+				amount_paid
+			FROM
+				sale_pay_ment
+	
+			WHERE
+				sale_id = $1
+		`
+
+		payMentFormsSelect, err := tx.Query(
+			ctx,
+			queryFromPayMentsForms,
+			s.Id,
+		)
+
+		if err != nil {
+			u.ErrorLogger.Printf("Erro no select das formas de pagamento da venda - %s", err)
+			return err
+		}
+
+		defer payMentFormsSelect.Close()
+
+		for payMentFormsSelect.Next() {
+			var pf PayMentBody
+
+			if err := payMentFormsSelect.Scan(
+				&pf.SpecieId,
+				&pf.Specie,
+				&pf.AmountPaid,
+			); err != nil {
+				u.ErrorLogger.Printf("Erro no select das formas de pagamento da venda - %s", err)
+				return err
+			}
+
+			payMentFormsFromSale = append(payMentFormsFromSale, pf)
+		}
+
+		customer, err := customer.Show(s.CustomerId)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro no select do cliente para validar a venda: ", err)
+			return err
+		}
+
+		for _, pf := range payMentFormsFromSale {
+			if err := createInCashRegister(
+				tx,
+				0.0,
+				pf.AmountPaid,
+				s.Id,
+				0,
+				*customer,
+				pf,
+			); len(err) > 0 {
+				u.ErrorLogger.Printf("Erro no insert de estorno no caixa venda - %s", err)
+				return fmt.Errorf("Erro ao registrar o estorno no caixa.")
+			}
+		}
+	}
+
+	if c.ShoppingId > 0 {
+		var s shopping.ShoppingContract
+
+		querySelectShopping := `
+			SELECT
+				id,
+				load,
+				total_shopping,
+				status
+
+			FROM
+				shopping
+			
+			WHERE
+				id = $1
+		`
+
+		if err := tx.QueryRow(
+			ctx,
+			querySelectShopping,
+			c.ShoppingId,
+		).Scan(
+			&s.Id,
+			&s.Load,
+			&s.TotalShopping,
+			&s.Status,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao localizar a compra: ", err)
+			return err
+		}
+
+		var payMentFormsFromSale []PayMentBody
+
+		if s.Status == "Cancelado" {
+			u.ErrorLogger.Printf("Essa compra n° %d, lote n° %d, já está cancelada", s.Id, s.Load)
+			return fmt.Errorf("Essa compra  n° %d, lote n° %d, já está cancelada", s.Id, s.Load)
+		}
+
+		querySelectItensShopping := `
+			SELECT
+				product_id,
+				status
+			FROM
+				shopping_itens
+			WHERE
+				id = $1
+		`
+
+		itensShoppingSelect, err := tx.Query(
+			ctx,
+			querySelectItensShopping,
+			s.Id,
+		)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao executar o query: ", err)
+			return err
+		}
+
+		defer itensShoppingSelect.Close()
+
+		for itensShoppingSelect.Next() {
+			var sp struct {
+				ProductId int
+				Qtde      int
+				Status    string
+			}
+
+			if err := itensShoppingSelect.Scan(
+				&sp.ProductId,
+				&sp.Status,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
+				return err
+			}
+
+			if s.Status != "Cancelado" {
+				continue
+			}
+
+			if s.Status == "Cancelado" {
+				return fmt.Errorf("Produto ID %d, compra n° %d, lote %d, já cancelado", sp.ProductId, c.ShoppingId, s.Load)
+			}
+
+			queryUpdateDiscountQtdeStock := `
+				UPDATE
+					products
+
+				SET
+					qtde = qtde - $2
+
+				WHERE
+					id = $1
+			`
+
+			if _, err := tx.Exec(
+				ctx,
+				queryUpdateDiscountQtdeStock,
+				sp.ProductId,
+				sp.Qtde,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+				return err
+
+			}
+		}
+
+		queryCancelShopping := `
+			UPDATE
+				shopping
+
+			SET
+				status = 'Cancelado'
+
+			WHERE
+				id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryCancelShopping,
+			s.Id,
+		); err != nil {
+			u.ErrorLogger.Printf("Erro no update shopping para cancelado - %s", err)
+			return err
+		}
+
+		queryCancelShoppingItem := `
+			UPDATE
+				shopping_itens
+
+			SET
+				status = 'Cancelado'
+
+			WHERE
+				shopping_id = $1
+		`
+
+		if _, err = tx.Exec(
+			ctx,
+			queryCancelShoppingItem,
+			s.Id,
+		); err != nil {
+			u.ErrorLogger.Printf("Erro no update shopping_itens para cancelado - %s", err)
+			return err
+		}
+
+		queryFromPayMentsForms := `
+			SELECT
+				specie_id,
+				specie,
+				amount_paid
+			FROM
+				shopping_pay_ment
+	
+			WHERE
+				shopping_id = $1
+		`
+
+		payMentFormsSelect, err := tx.Query(
+			ctx,
+			queryFromPayMentsForms,
+			s.Id,
+		)
+
+		if err != nil {
+			u.ErrorLogger.Printf("Erro no select das formas de pagamento da compra - %s", err)
+			return err
+		}
+
+		defer payMentFormsSelect.Close()
+
+		for payMentFormsSelect.Next() {
+			var pf PayMentBody
+
+			if err := payMentFormsSelect.Scan(
+				&pf.SpecieId,
+				&pf.Specie,
+				&pf.AmountPaid,
+			); err != nil {
+				u.ErrorLogger.Printf("Erro no select das formas de pagamento da venda - %s", err)
+				return err
+			}
+
+			payMentFormsFromSale = append(payMentFormsFromSale, pf)
+		}
+
+		customer, err := customer.Show(1)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro no select do cliente para validar a venda: ", err)
+			return err
+		}
+
+		for _, pf := range payMentFormsFromSale {
+			if err := createInCashRegister(
+				tx,
+				pf.AmountPaid,
+				0.0,
+				0,
+				c.ShoppingId,
+				*customer,
+				pf,
+			); len(err) > 0 {
+				u.ErrorLogger.Printf("Erro no insert de estorno no caixa compra - %s", err)
+				return fmt.Errorf("Erro ao registrar o estorno no caixa.")
+			}
 		}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Printf("Erro ao comitar - %s", err)
-		return sale.SaleContract{}, err
+		return err
 	}
 
-	return s, nil
+	return nil
 }

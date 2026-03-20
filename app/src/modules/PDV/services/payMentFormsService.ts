@@ -45,3 +45,19 @@ export async function updatePayMentFormService(payLoad: string): Promise<any>
         );
     };
 };
+
+export async function cancelShoppingOrSale(payLoad: CancelContract): Promise<any> 
+{
+    try {
+        const res = await api.put(`/${payLoad.route}/cancel`, payLoad);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );            
+    } catch (error) {
+        return false;      
+    };
+};

@@ -41,10 +41,10 @@ export async function createshopping(payLoad: any): Promise<any>
     };
 };
 
-export async function deleteshopping(shoppingId: number): Promise<any>
+export async function cancelShopping(shoppingId: number): Promise<any>
 {
     try {
-        const res = await api.delete(`shopping/delete/${shoppingId}`);
+        const res = await api.put(`shopping/delete/${shoppingId}`);
         const data = res.data;
 
         return apiResponse(
@@ -61,10 +61,10 @@ export async function deleteshopping(shoppingId: number): Promise<any>
     };
 };
 
-export async function getLastShoppingId(): Promise<any> 
+export async function getLastShoppingLoad(): Promise<any> 
 {
     try {
-        const res = await api.get('/shopping/return-last-id');
+        const res = await api.get('/shopping/return-last-load');
         const data = res.data;
 
         return apiResponse(
@@ -80,3 +80,24 @@ export async function getLastShoppingId(): Promise<any>
         );
     };
 };
+
+export async function getShoppingById(id: number): Promise<any> 
+{
+    try {
+        const res = await api.get(`/shopping/details/${id}`);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || 0
+        );
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
+

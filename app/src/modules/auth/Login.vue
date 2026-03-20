@@ -95,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-    import { LocalStorage, useQuasar } from 'quasar';
+    import { LocalStorage } from 'quasar';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { onMounted, ref } from 'vue';
     import { loginService } from './services/loginService';
@@ -129,7 +129,7 @@
 
             LocalStorage.set("authToken", res.data);
 
-            router.replace({ path: `/admin` });
+            router.replace({ path: '/admin' });
 
         } else {
             notify(
@@ -142,9 +142,6 @@
 
     onMounted(() => {
         LocalStorage.remove("authToken");
-        LocalStorage.remove("isAttendant");
-        LocalStorage.remove("siteName");
-        LocalStorage.remove("lastCheck");
-        LocalStorage.remove("lastURL");
+
     });
 </script>

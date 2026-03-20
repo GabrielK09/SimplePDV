@@ -19,8 +19,6 @@ declare module 'vue' {
 // "export default () => {}" function below (which runs individually
 // for each client)
 
-const { notify } = useNotify();
-
 const api = axios.create({
     baseURL: process.env.API_URL,
     headers: {
@@ -61,7 +59,7 @@ export default boot(({ app, router }) => {
                 LocalStorage.remove("authToken");
             };
 
-            if(token) config.headers.Authorization = `Bearer ${token}`;
+            if (token) config.headers.Authorization = `Bearer ${token}`;
 
             return config;
         },

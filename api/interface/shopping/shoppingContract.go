@@ -157,7 +157,11 @@ func (s *ShoppingContract) Create() (int, error) {
 
 	queryInsertShopping := `
 		INSERT INTO shopping
-			(load, operation, total_shopping)
+			(
+				load, 
+				operation, 
+				total_shopping
+			)
 
 		VALUES(
 			$1, 
@@ -169,8 +173,8 @@ func (s *ShoppingContract) Create() (int, error) {
 			id
 	`
 
-	for _, iten := range s.ShoppingItens {
-		subTotal = calchelper.CalculateTotalSale(iten.PurchasedValue, iten.QtdePurchased)
+	for _, p := range s.ShoppingItens {
+		subTotal = calchelper.CalculateTotalSale(p.PurchasedValue, p.QtdePurchased)
 	}
 
 	if err := tx.QueryRow(
@@ -284,6 +288,67 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 	return &s, nil
 }
 
+func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
+	var shoppingItens []ShoppingItenContract
+
+	/*shopping_id integer,
+	product_id integer,
+	name character varying NOT NULL,
+	qtde_purchased integer NOT NULL,
+	purchased_value double precision NOT NULL,
+	status character varying DEFAULT 'Associado'::character varying,*/
+
+	queryForSelectItens := `
+		SELECT
+			id,
+			shopping_id,
+			product_id,
+			name,
+			qtde_purchased,
+			purchased_value,
+			status
+		FROM
+			shopping_itens
+
+		WHERE
+			shopping_id = $1
+	`
+
+	rows, err := conn.Query(
+		ctx,
+		queryForSelectItens,
+		shopingId,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao executar a query: ", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var item ShoppingItenContract
+
+		if err := rows.Scan(
+			&item.Id,
+			&item.ShoppingId,
+			&item.ProductId,
+			&item.Name,
+			&item.QtdePurchased,
+			&item.PurchasedValue,
+			&item.Status,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao executar a query: ", err)
+			return nil, err
+		}
+
+		shoppingItens = append(shoppingItens, item)
+	}
+
+	return &shoppingItens, nil
+}
+
 func checkExistLoad(load int) (bool, error) {
 	var shoppingId int
 
@@ -312,17 +377,20 @@ func checkExistLoad(load int) (bool, error) {
 	return false, nil
 }
 
-func ReturnLastShoppingId() (int, error) {
+func ReturnLastShoppingLoad() (int, error) {
 	var shoppingId int
 
 	query := `
 		SELECT
-			id
+			load
 		FROM
 			shopping
 
 		ORDER BY
-			id DESC
+			load DESC
+
+		LIMIT 
+			1
 	`
 
 	if err := conn.QueryRow(

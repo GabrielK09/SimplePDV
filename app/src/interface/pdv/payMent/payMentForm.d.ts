@@ -25,3 +25,12 @@ interface PayMentValue {
     amount: string;
     pix_key: string;
 };
+
+/**
+ * Usado para cancelamento tanto para venda quanto para compra
+ */
+interface CancelContract {
+    shopping_id?: number;
+    sale_id?: number;
+    route: string;
+};

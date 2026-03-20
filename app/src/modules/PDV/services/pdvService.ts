@@ -42,28 +42,6 @@ export async function saveSaleService(payLoad: SaleContract): Promise<any>
     };
 };
 
-export async function cancelSale(saleId: number): Promise<any>
-{
-    try {
-        const res = await api.put(`sale/cancel/${saleId}`);
-        const data = res.data;
-
-        return apiResponse(
-            true,
-            data.message,
-            data.data || []
-        );
-    } catch (error) {
-        console.error('Erro: ', error);
-
-        return apiResponse(
-            false,
-            error.response?.data?.message,
-            error.response?.data?.data
-        );
-    };
-};
-
 export async function getSaleDetailsById(saleId: number): Promise<any>
 {
     try {

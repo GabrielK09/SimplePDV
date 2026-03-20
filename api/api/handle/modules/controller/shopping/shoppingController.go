@@ -6,6 +6,9 @@ import (
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/shopping"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +36,7 @@ func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppings, "Todas as compras cadastradas."))
 }
 
-func HandleGetLastShoppingId(w http.ResponseWriter, r *http.Request) {
+func HandleGetLastShoppingLoad(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -44,7 +47,7 @@ func HandleGetLastShoppingId(w http.ResponseWriter, r *http.Request) {
 		return
 	} // Erro de método da rota
 
-	shoppingId, err := shopping.ReturnLastShoppingId()
+	shoppingId, err := shopping.ReturnLastShoppingLoad()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -109,4 +112,64 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppingId, "Compra cadastrada com sucesso!"))
+}
+
+func HandlePutCancelShopping(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPut {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	} // Erro de método da rota
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Forma de pagamento alterada com sucesso!"))
+}
+
+func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	} // Erro de método da rota
+
+	params := mux.Vars(r)
+	shoppingId, err := strconv.Atoi(params["id"])
+
+	shoppingData, err := shopping.Show(shoppingId)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		u.ErrorLogger.Println("Erro ao buscar os dados da compra: ", err)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar os dados da compra."))
+		return
+	}
+
+	shoppingIntesData, err := shopping.ShowShoppingItens(shoppingId)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		u.ErrorLogger.Println("Erro ao buscar os itens da compra: ", err)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar os itens da compra."))
+		return
+	}
+
+	repsonse := map[string]any{
+		"shopping":             shoppingData,
+		"shoppingWithProducts": shoppingIntesData,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, repsonse, "Forma de pagamento alterada com sucesso!"))
 }

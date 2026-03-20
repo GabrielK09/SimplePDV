@@ -82,7 +82,7 @@
                             label="Cancelar"
                             color="negative"
                             @click="emits('close', true)"
-
+                            :disable="disableBtn"
                         />
 
                         <q-btn
@@ -91,7 +91,7 @@
                             type="submit"
                             id="finallySale-btn"
                             @click="confirmValues"
-                            :disable="calculatePayMent.totalPaid < props.totalSale"
+                            :disable="calculatePayMent.totalPaid < props.totalSale || disableBtn"
                         />
                     </div>
                 </q-card-actions>
@@ -113,7 +113,6 @@
     import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
     import QRCodePix from '../PIX/QRCodePix.vue';
     import * as PayMentServiceFn from 'src/services/PayMent/abastractPayMent';
-    import formatValueToNumber from "src/helpers/FormatValue/FormatToNumber";
 
     const { notify } = useNotify();
 
@@ -133,6 +132,7 @@
     const payMentPayLoad = ref<any>();
 
     const internalDialog = ref<boolean>(true);
+    const disableBtn = ref<boolean>(false);
 
     // Necessidades do PIX
     const showQrCodePix = ref<boolean>(false);
@@ -244,6 +244,8 @@
     };
 
     const finallySale = async () => {
+        disableBtn.value = true;
+
         const res = await PayMentServiceFn.payMentService(payMentValues.value, props.saleId ?? 0, props.shoppingId ?? 0);
 
         if(res.success)
@@ -260,6 +262,8 @@
 
             payMentPayLoad.value = payMentValues.value;
 
+            disableBtn.value = false;
+
             return;
         };
 
@@ -267,9 +271,13 @@
             'negative',
             res.message
         );
+
+        disableBtn.value = false;
     };
 
     const onKeyDownEnter = (e: KeyboardEvent) => {
+        if(disableBtn.value) return;
+
         if(e.key.toLocaleLowerCase() !== 'enter') return;
         if(!internalDialog.value) return;
 
@@ -278,7 +286,8 @@
 
     const onKeyDownF3Money = (e: KeyboardEvent) =>
     {
-        if(e.key.toLocaleLowerCase() !== 'f2') return;
+        if(disableBtn.value) return;
+        if(e.key.toLocaleLowerCase() !== 'f3') return;
         if(!internalDialog.value) return;
 
         const payMent = payMentValues.value.find(p => p.specie === 'Dinheiro');

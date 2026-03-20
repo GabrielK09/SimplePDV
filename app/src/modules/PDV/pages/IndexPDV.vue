@@ -112,11 +112,12 @@
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
     import { onMounted, ref } from 'vue';
-    import { cancelSale, getAll } from '../services/pdvService';
+    import { getAll } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import { useRouter } from 'vue-router';
     import SaleDetails from './Show/SaleDetails.vue';
+    import { cancelShoppingOrSale } from '../services/payMentFormsService';
 
     const { notify } = useNotify();
     const router = useRouter();
@@ -194,14 +195,19 @@
     const handleConfirmDialog = async (event: boolean): Promise<void> => {
         if(!event) return;
 
-        const res = await cancelSale(selectedSaleId.value);
+        const res = await cancelShoppingOrSale({
+            sale_id: selectedSaleId.value,
+            route: 'sale'
+        });
 
         if(!res.success)
         {
             notify(
                 'negative',
-                res.message
+                res.message || 'Erro ao realizar a operação.'
             );
+
+            showConfirmDialog.value = false;
 
             return;
         };

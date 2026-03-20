@@ -9,6 +9,7 @@ import (
 	_ "myApi/interface/sale"
 	_ "myApi/interface/shopping"
 	"net/http"
+	"strings"
 )
 
 func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
@@ -91,4 +92,34 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responsehelper.Response(true, payMents, fmt.Sprintf("%s concluída com sucesso!", label)))
 }
 
-func HandlePutCancelSale(w http.ResponseWriter, r *http.Request) {}
+func HandlePutCancelSaleOrShopping(w http.ResponseWriter, r *http.Request) {
+
+	var label string
+	var cancelBody processpayment.CancelContract
+
+	if err := json.NewDecoder(r.Body).Decode(&cancelBody); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
+		return
+	}
+
+	if cancelBody.SaleId > 0 {
+		label = "Venda"
+	}
+
+	if cancelBody.ShoppingId > 0 {
+		label = "Compra"
+	}
+
+	if err := processpayment.CancelSaleOrShopping(cancelBody); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, fmt.Sprintf("Erro ao cancelar %s", strings.ToLower(label))))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, fmt.Sprintf("%s cancelada com sucesso!", label)))
+}

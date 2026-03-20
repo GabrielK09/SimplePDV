@@ -110,7 +110,6 @@ const routes: RouteRecordRaw[] = [
                         name: 'shopping.create',
                         component: () => import('src/modules/shopping/pages/create/CreateShopping.vue')
                     },
-
                 ]
             }
         ],

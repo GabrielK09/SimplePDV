@@ -1,5 +1,4 @@
-General Logger: 	2026/03/17 12:54:42 response.go:9: Data recebido: [{1 PRODUTO TESTE 10 17 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/03/17 12:54:43 response.go:9: Data recebido: [{1 CONSUMIDOR PADRÃO  0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/03/17 12:54:45 response.go:9: Data recebido: [{1 PRODUTO TESTE 10 17 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/03/17 12:54:46 response.go:9: Data recebido: [{1 1 Entrada Pendente [] 10 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} {2 2 Entrada Pendente [] 20 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
-General Logger: 	2026/03/17 12:54:49 response.go:9: Data recebido: [{1 PRODUTO TESTE 10 17 0 0 0 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/20 12:45:56 cashRegisterContract.go:202: Dados: lastBalance - 0.000000|InputValue - 0.000000|OutputValue - 10.000000
+General Logger: 	2026/03/20 12:45:56 cashRegisterContract.go:254: Dados do insert:  [Estorno de venda N° 1 1 CONSUMIDOR PADRÃO 1 Dinheiro 0 10 -10 1 <nil>]
+General Logger: 	2026/03/20 12:45:56 response.go:9: Data recebido: <nil>
+General Logger: 	2026/03/20 12:45:56 response.go:9: Data recebido: [{1 1 Consumidor padrão 10 Cancelado [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]

@@ -15,13 +15,14 @@
                 </div>
             </div>
 
-            <div class="">
+            <div>
                 <q-table
+                    v-model:pagination="pagination"
                     borded
                     :rows="shopping"
                     :columns="columns"
                     row-key="name"
-                    class="rounded-xl"
+                    class="rounded-xl"  
                 >
                     <template v-slot:top-right>
                         <q-input
@@ -41,18 +42,50 @@
                     </template>
 
                     <template v-slot:body="props">
-                        <q-tr
-                            :props="props"
-                        >
-                            <q-td
-                                v-for="(col, i) in props.cols"
-                            >
+                        <q-tr :props="props">
+                            <q-td v-for="col in props.cols">
                                 <template v-if="col.name === 'actions'">
+                                    <div class="text-center flex flex-center">
+                                        <div v-if="props.row.status === 'Concluída' && props.row.status !== 'Cancelado'">
+                                            <q-btn
+                                                size="10px"
+                                                no-caps
+                                                color="red"
+                                                icon="cancel"
+                                                flat
+                                                @click="showCancelShopping(props.row.id)"
+                                            />
+                                        </div>
+
+                                        <div v-else-if="props.row.status !== 'Concluída' && props.row.status !== 'Cancelado'">
+                                            <q-btn
+                                                size="10px"
+                                                no-caps
+                                                color="black"
+                                                icon="upload"
+                                                flat
+                                                @click="importShopping(props.row.id)"
+                                            />
+                                        </div>
+
+                                        <q-btn
+                                            size="10px"
+                                            color="black"
+                                            icon="visibility"
+                                            flat                                        
+                                        />
+                                    </div>
+                                </template>
+
+                                <template v-if="col.name === 'status'">
                                     <div
                                         class="text-center flex flex-center"
+                                        :class="{
+                                            'text-green-600': props.row.status === 'Concluída',
+                                            'text-red-600': props.row.status === 'Cancelado'
+                                        }"
                                     >
-                                        <q-btn size="10px" no-caps color="red" icon="delete" flat @click="showDialogDeleteshopping(props.row.id)"/>
-
+                                        {{ col.value }}
                                     </div>
                                 </template>
 
@@ -78,20 +111,50 @@
             </div>
         </div>
     </q-page>
+
+    <QDialogConfirm
+        v-if="showConfirmDialog"
+        :text="'Deseja realmente cancelar essa compra?'"
+        :show="showConfirmDialog"
+        @confirm="handleConfirmDialog($event)"
+        @close="showConfirmDialog = !$event"
+    />
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn, useQuasar } from 'quasar';
+    import { QTableColumn } from 'quasar';
     import { onMounted, ref } from 'vue';
-    import { getAll, deleteshopping } from '../services/shoppingService';
+    import { getAll } from '../services/shoppingService';
+    import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import { cancelShoppingOrSale } from 'src/modules/PDV/services/payMentFormsService';
+    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
+    import { useRouter } from 'vue-router';
 
-    const $q = useQuasar();
+    const { notify } = useNotify();
+    const showConfirmDialog = ref<boolean>(false);
+    const router = useRouter();
+
+    const pagination = ref({
+        sortBy: 'id' 
+    });
 
     const columns: QTableColumn[] = [
         {
             name: 'id',
             label: 'ID',
             field: 'id',
+            align: 'center'
+        },
+        {
+            name: 'load',
+            label: 'Carga da compra',
+            field: 'load',
+            align: 'center'
+        },
+        {
+            name: 'status',
+            label: 'Status',
+            field: 'status',
             align: 'center'
         },
         {
@@ -111,75 +174,67 @@
         }
     ];
 
-    let allshopping = ref<ProductContract[]>([]);
-    let shopping = ref<ProductContract[]>([]);
+    const allshopping = ref<ProductContract[]>([]);
+    const shopping = ref<ProductContract[]>([]);
 
-    let searchInput = ref<string>('');
+    const searchInput = ref<string>('');
+    const selectedShoppingId = ref<number | null>(0);
 
     const getAllshopping = async () => {
         const res = await getAll();
         const data = res.data;
 
-        console.log(data);
-
         shopping.value = data;
         allshopping.value = [...shopping.value];
     };
 
-    const showDialogDeleteshopping = (shoppingId: number) => {
-        $q.dialog({
-            title: 'Excluir compra',
-            message: `Deseja realmente remover esse compra (${shoppingId})?`,
-            cancel: {
-                push: true,
-                label: 'Não',
-                color: 'red',
-            },
-
-            ok: {
-                push: true,
-                label: 'Sim',
-                color: 'green',
-            },
-
-        }).onOk(() => {
-            deleteShoopByDialog(shoppingId);
-
-        }).onCancel(() => {
-            return;
-        });
+    const filtershopping = () => {
+        //shopping.value = allshopping.value.filter(shoop => shoop.name.toLowerCase().includes(searchInput.value));
     };
 
-    const deleteShoopByDialog = async (shoppingId: number) => {
-        const data = await deleteshopping(shoppingId);
+    const handleConfirmDialog = async (event: boolean): Promise<void> => {
+        if(!event) return;
 
-        console.log(data);
+        const res = await cancelShoppingOrSale({
+            shopping_id: selectedShoppingId.value,
+            route: 'shopping'
+        });
 
-        if(data.success)
+        if(!res.success)
         {
-            $q.notify({
-                type: 'positive',
-                message: data.message,
-                position: 'top',
-                timeout: 1200
+            notify(
+                'negative',
+                res.message || 'Erro ao realizar a operação.'
+            );
 
-            });
-        } else {
-            $q.notify({
-                type: 'negative',
-                message: data.data.data,
-                position: 'top',
-                timeout: 1200
-
-            });
+            showConfirmDialog.value = false;
+            return;
         };
 
-        getAllshopping();
+        notify(
+            'positive',
+            res.message
+        );
+
+        showConfirmDialog.value = false;
+        
+        await getAllshopping();
+
+        return;
     };
 
-    const filtershopping = () => {
-        shopping.value = allshopping.value.filter(shoop => shoop.name.toLowerCase().includes(searchInput.value));
+    const showCancelShopping = (shoppingId: number): void => {
+        showConfirmDialog.value = true;
+        selectedShoppingId.value = shoppingId;
+    };
 
+    const importShopping = (shoppingId: number) => {
+        router.replace({
+            name: 'shopping.create',
+            query: {
+                id: shoppingId
+            }
+        });
     };
 
     onMounted(() => {

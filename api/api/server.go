@@ -127,7 +127,7 @@ func StartServer() {
 	// Sale \\
 	proteced.HandleFunc("/sale/all", saleController.HandleGetSale).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/sale/details/{id}", saleController.HandleGetSaleWithProducts).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/sale/cancel/{id}", paymentcontroller.HandlePutCancelSale).Methods(http.MethodPut, http.MethodOptions)
+	proteced.HandleFunc("/sale/cancel", paymentcontroller.HandlePutCancelSaleOrShopping).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/sale/create", saleController.HandlePostSale).Methods(http.MethodPost, http.MethodOptions)
 	proteced.HandleFunc("/sale/new-itens", saleController.HandleNewItens).Methods(http.MethodPut, http.MethodOptions)
 
@@ -150,18 +150,17 @@ func StartServer() {
 
 	// Compras \\
 	proteced.HandleFunc("/shopping/all", shoppingcontroller.HandleGetAllShopping).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/shopping/return-last-id", shoppingcontroller.HandleGetLastShoppingId).Methods(http.MethodGet, http.MethodOptions)
+	proteced.HandleFunc("/shopping/return-last-load", shoppingcontroller.HandleGetLastShoppingLoad).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/shopping/create", shoppingcontroller.HandlePostCreateShopping).Methods(http.MethodPost, http.MethodOptions)
+	proteced.HandleFunc("/shopping/cancel", paymentcontroller.HandlePutCancelSaleOrShopping).Methods(http.MethodPut, http.MethodOptions)
+	proteced.HandleFunc("/shopping/details/{id}", shoppingcontroller.HandleGetShoppingById).Methods(http.MethodGet, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Pagamentos \\
-	// Trocado para proteced.HandleFunc("/sale/pay", saleController.HandlePutPaySale).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/pay-ment-forms/pay", paymentcontroller.HandlePutPaySaleOrShopping).Methods(http.MethodPut, http.MethodOptions)
 
-	// Trocado para proteced.HandleFunc("/sale/pay-ment-forms", payMentController.HandleGetPayMentForms).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/pay-ment-forms/all", paymentFormscontroller.HandleGetPayMentForms).Methods(http.MethodGet, http.MethodOptions)
 
-	// Trocado para proteced.HandleFunc("/sale/update/pay-ment-forms/pix-key", payMentController.HandlePutPayMentForms).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/pay-ment-forms/update/pix-key", paymentFormscontroller.HandlePutPayMentForms).Methods(http.MethodPut, http.MethodOptions)
 
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\

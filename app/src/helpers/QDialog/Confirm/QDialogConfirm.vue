@@ -59,6 +59,5 @@
     const emitEvent = () => {
         startLoading.value = true;
         emits('confirm', true);
-        
     };
 </script>
