@@ -11,13 +11,10 @@ import (
 )
 
 const (
-	cashRegister  = "cash-register"
-	payMentForms  = "pay-ment-forms"
-	saledItens    = "saled-itens"
-	shoppingItens = "shopping-itens"
-	shoppings     = "shoppings"
-
-	layout = "2006-01-02"
+	cashRegister = "cash-register"
+	payMentForms = "pay-ment-forms"
+	saledItens   = "saled-itens"
+	layout       = "2006-01-02"
 )
 
 func HandlePostReports(w http.ResponseWriter, r *http.Request) {
@@ -47,12 +44,7 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 
 	u.InfoLogger.Println("Valor de report:", report)
 
-	if report.ReportType != cashRegister &&
-		report.ReportType != payMentForms &&
-		report.ReportType != saledItens &&
-		report.ReportType != shoppingItens &&
-		report.ReportType != shoppings {
-
+	if report.ReportType != cashRegister && report.ReportType != payMentForms && report.ReportType != saledItens {
 		u.ErrorLogger.Println("Tipo de relatório incorreto.")
 		u.ErrorLogger.Println("Tipo recebido: ", report.ReportType)
 		u.ErrorLogger.Printf("Tipos esperados: %s, %s, %s", cashRegister, payMentForms, saledItens)
@@ -60,7 +52,9 @@ func HandlePostReports(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 
-		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Tipo de relatório incorreto."))
+		resp := responsehelper.Response(false, nil, "Tipo de relatório incorreto.")
+
+		json.NewEncoder(w).Encode(resp)
 		return
 	}
 

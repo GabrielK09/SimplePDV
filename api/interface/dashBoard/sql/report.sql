@@ -47,6 +47,7 @@ SELECT
     COALESCE(mc.best_customer, '') AS best_customer,
     COALESCE(mc.amount_saled, 0) AS amount_saled
 
+
 FROM
     resumo r
 

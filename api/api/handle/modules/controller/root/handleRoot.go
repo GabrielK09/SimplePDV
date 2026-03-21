@@ -19,5 +19,7 @@ func HandleRoot(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(responsehelper.Response(true, "pong", "pong"))
+	resp := responsehelper.Response(true, "pong", "pong")
+
+	json.NewEncoder(w).Encode(resp)
 }
