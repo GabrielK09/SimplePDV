@@ -367,27 +367,15 @@
     };
 
     const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
-        if(confirmed && operation === 'delete')
-        {
-            notify('positive', 'Venda cancelada com sucesso!');
-            removeSessionData('sale_id');
-            removeSessionData('sale');
-
-            router.replace({query: {}});
-
-            productsSale.value = [];
-            showConfirmDialog.value = false;
-
-        };
-
         if(confirmed && operation === 'save')
         {
             if(SessionStorage.getItem('sale'))
             {
+                console.log('Tem uma venda ainda salva: ', SessionStorage.getItem('sale'));
+
                 notify(
                     'positive',
                     'Dados salvos com sucesso!'
-
                 );
 
                 removeSessionData('sale_id');
@@ -403,8 +391,23 @@
                 return;
             };
 
+            console.log('Vai continuar');
+
             saveSaleForPay(true);
             resetSale(false);
+        };
+
+        if(confirmed && operation === 'delete')
+        {
+            notify('positive', 'Venda cancelada com sucesso!');
+            removeSessionData('sale_id');
+            removeSessionData('sale');
+
+            router.replace({query: {}});
+
+            productsSale.value = [];
+            showConfirmDialog.value = false;
+
         };
 
         showConfirmDialog.value = false;
