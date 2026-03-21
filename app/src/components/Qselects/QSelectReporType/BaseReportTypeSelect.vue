@@ -18,7 +18,9 @@
     const reportTypesSelect = [
         {name: "Caixa", value: "cash-register"},
         {name: "Formas de pagamento", value: "pay-ment-forms"},
-        {name: "Itens vendidos", value: "saled-itens"}
+        {name: "Itens vendidos", value: "saled-itens"},
+        {name: "Itens comprados", value: "shopping-itens"},
+        {name: "Compras", value: "shoppings"}
     ];
 
     const reportTypes = ref<any>(reportTypesSelect);

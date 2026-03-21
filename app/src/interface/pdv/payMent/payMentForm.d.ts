@@ -11,9 +11,9 @@ interface PayMentFormContract {
  * Para o pagamento na api
  */
 interface PayMentPayLoadContract {
-    sale_id: number;
+    sale_id?: number;
+    shopping_id?: number;
     species: any[];
-
 };
 
 /**
@@ -24,4 +24,13 @@ interface PayMentValue {
     specie: string;
     amount: string;
     pix_key: string;
+};
+
+/**
+ * Usado para cancelamento tanto para venda quanto para compra
+ */
+interface CancelContract {
+    shopping_id?: number;
+    sale_id?: number;
+    route: string;
 };

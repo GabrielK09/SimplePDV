@@ -15,12 +15,14 @@ type ReportBody struct {
 }
 
 const (
-	cashRegister = "cash-register"
-	payMentForms = "pay-ment-forms"
-	saledItens   = "saled-itens"
+	cashRegister  = "cash-register"
+	payMentForms  = "pay-ment-forms"
+	saledItens    = "saled-itens"
+	shoppingItens = "shopping-itens"
+	shoppings     = "shoppings"
 )
 
-//go:embed sql/totalgroupByPayMentsForms.sql
+//go:embed sql/payMentForms/totalgroupByPayMentsForms.sql
 var payMentFormsReport string
 
 type PayMentsForms struct {
@@ -28,7 +30,7 @@ type PayMentsForms struct {
 	TotalPaid float64 `json:"total_paid"`
 }
 
-//go:embed sql/saledItens.sql
+//go:embed sql/itens/sale/saledItens.sql
 var saledItensReport string
 
 type SaledItens struct {
@@ -39,7 +41,7 @@ type SaledItens struct {
 	Qtde          int     `json:"qtde"`
 }
 
-//go:embed sql/cashRegister.sql
+//go:embed sql/cashRegister/cashRegister.sql
 var cashRegisterReport string
 
 type CashRegister struct {
@@ -50,6 +52,25 @@ type CashRegister struct {
 	ValoraSaida  float64 `json:"valora_saida"`
 	TotalEntrada float64 `json:"total_entrada"`
 	TotalSaida   float64 `json:"total_saida"`
+}
+
+//go:embed sql/shopping/shoppings.sql
+var shoppingsReport string
+
+type Shoppings struct {
+	Load          string  `json:"load"`
+	TotalShopping float64 `json:"total_shopping"`
+}
+
+//go:embed sql/itens/shopping/shoppingItens.sql
+var shoppingItensReport string
+
+type ShoppingItens struct {
+	ShoppingId     int     `json:"shopping_id"`
+	ProductId      int     `json:"product_id"`
+	Produto        string  `json:"produto"`
+	PurchasedValue float64 `json:"purchased_value"`
+	QtdePurchased  int     `json:"qtde_purchased"`
 }
 
 var conn *pgxpool.Pool
@@ -177,6 +198,78 @@ func (r *ReportBody) BuildDataReport() (map[string]interface{}, error) {
 
 		dataForReturn["data"] = saledItensData
 
+	case shoppingItens:
+		var shoppingItens []ShoppingItens
+
+		rows, err := conn.Query(
+			ctx,
+			shoppingItensReport,
+			r.StartDateStr,
+			r.EndDateStr,
+		)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao fazer a leitura dos dados: ", err)
+
+			return nil, err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			var si ShoppingItens
+
+			if err := rows.Scan(
+				&si.ShoppingId,
+				&si.ProductId,
+				&si.Produto,
+				&si.PurchasedValue,
+				&si.QtdePurchased,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao fazer a leitura dos dados: ", err)
+
+				return nil, err
+			}
+
+			shoppingItens = append(shoppingItens, si)
+		}
+
+		dataForReturn["data"] = shoppingItens
+
+	case shoppings:
+		var shoppinsData []Shoppings
+
+		rows, err := conn.Query(
+			ctx,
+			shoppingsReport,
+			r.StartDateStr,
+			r.EndDateStr,
+		)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao fazer a leitura dos dados: ", err)
+
+			return nil, err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			var si Shoppings
+
+			if err := rows.Scan(
+				&si.Load,
+				&si.TotalShopping,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao fazer a leitura dos dados: ", err)
+
+				return nil, err
+			}
+
+			shoppinsData = append(shoppinsData, si)
+		}
+
+		dataForReturn["data"] = shoppinsData
 	}
 
 	u.InfoLogger.Println("Tamanho do data:", len(dataForReturn))

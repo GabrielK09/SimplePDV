@@ -18,6 +18,7 @@
 
             <div>
                 <q-table
+                    v-model:pagination="pagination"
                     borded
                     :rows="products"
                     :columns="columns"
@@ -103,12 +104,15 @@
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
     import { onMounted, ref } from 'vue';
-    import camelcaseKeys from 'camelcase-keys';
     import { getAll, deleteProduct } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
 
     const $q = useQuasar();
     const { notify } = useNotify();
+
+    const pagination = ref({
+        sortBy: 'id' 
+    });
 
     const columns: QTableColumn[] = [
         {
@@ -146,10 +150,10 @@
         }
     ];
 
-    let allProducts = ref<ProductContract[]>([]);
-    let products = ref<ProductContract[]>([]);
+    const allProducts = ref<ProductContract[]>([]);
+    const products = ref<ProductContract[]>([]);
 
-    let searchInput = ref<string>('');
+    const searchInput = ref<string>('');
 
     const getAllProducts = async () => {
         const res = await getAll();
@@ -161,6 +165,8 @@
                 'negative',
                 res.message
             );
+
+            return;
         };
 
         products.value = data;
@@ -212,11 +218,8 @@
         getAllProducts();
     };
 
-    const filterProducts = () => {
-        console.log(searchInput.value);
-
+    const filterProducts = (): void => {
         products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
-        console.log(allProducts.value);
 
     };
 

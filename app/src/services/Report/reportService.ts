@@ -34,28 +34,3 @@ export async function generateReport(payLoad: ReportContract, fileName: string)
         );
     };
 };
-
-async function downloadReport() {
-  const response = await fetch('/reports', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      report_type: 'cash-register',
-      start_date: '2026-03-01',
-      end_date: '2026-03-08'
-    })
-  })
-
-  const blob = await response.blob()
-
-  const url = window.URL.createObjectURL(blob)
-
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'report.pdf'
-  a.click()
-
-  window.URL.revokeObjectURL(url)
-}

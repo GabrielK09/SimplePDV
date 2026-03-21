@@ -4,7 +4,7 @@ import apiResponse from "src/helpers/response/apiResponse";
 export async function getAll(): Promise<any>
 {
     try {
-        const res = await api.get('shopping/all');
+        const res = await api.get('/shopping/all');
         const data = res.data;
 
         return apiResponse(
@@ -41,10 +41,10 @@ export async function createshopping(payLoad: any): Promise<any>
     };
 };
 
-export async function deleteshopping(shoppingId: number): Promise<any>
+export async function cancelShopping(shoppingId: number): Promise<any>
 {
     try {
-        const res = await api.delete(`shopping/delete/${shoppingId}`);
+        const res = await api.put(`shopping/delete/${shoppingId}`);
         const data = res.data;
 
         return apiResponse(
@@ -60,3 +60,44 @@ export async function deleteshopping(shoppingId: number): Promise<any>
         );
     };
 };
+
+export async function getLastShoppingLoad(): Promise<any> 
+{
+    try {
+        const res = await api.get('/shopping/return-last-load');
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || 0
+        );
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
+
+export async function getShoppingById(id: number): Promise<any> 
+{
+    try {
+        const res = await api.get(`/shopping/details/${id}`);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || 0
+        );
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
+

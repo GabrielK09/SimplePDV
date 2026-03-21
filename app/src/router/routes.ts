@@ -96,6 +96,22 @@ const routes: RouteRecordRaw[] = [
                     }
                 ]
             },
+            {
+                path: 'shopping',
+                name: 'shopping',
+                children: [
+                    {
+                        path: '',
+                        name: 'shopping.index',
+                        component: () => import('src/modules/shopping/pages/IndexShopping.vue')
+                    },
+                    {
+                        path: 'create',
+                        name: 'shopping.create',
+                        component: () => import('src/modules/shopping/pages/create/CreateShopping.vue')
+                    },
+                ]
+            }
         ],
     },
 

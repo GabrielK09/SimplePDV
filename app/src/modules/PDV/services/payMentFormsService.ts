@@ -4,7 +4,7 @@ import apiResponse from "src/helpers/response/apiResponse";
 export async function getAllPayMentFormsService(): Promise<any>
 {
     try {
-        const res = await api.get('/sale/pay-ment-forms');
+        const res = await api.get('/pay-ment-forms/pay');
         const data = res.data;
 
         return apiResponse(
@@ -25,7 +25,7 @@ export async function getAllPayMentFormsService(): Promise<any>
 export async function updatePayMentFormService(payLoad: string): Promise<any>
 {
     try {
-        const res = await api.put('/sale/update/pay-ment-forms/pix-key', {
+        const res = await api.put('/pay-ment-forms/update/pix-key', {
             pix_key: payLoad
         });
 
@@ -43,5 +43,21 @@ export async function updatePayMentFormService(payLoad: string): Promise<any>
             error.response?.data?.message,
             error.response?.data
         );
+    };
+};
+
+export async function cancelShoppingOrSale(payLoad: CancelContract): Promise<any> 
+{
+    try {
+        const res = await api.put(`/${payLoad.route}/cancel`, payLoad);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );            
+    } catch (error) {
+        return false;      
     };
 };

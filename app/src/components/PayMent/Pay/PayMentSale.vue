@@ -2,7 +2,9 @@
     <q-dialog v-model="internalDialog" persistent>
         <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
             <div class="bg-white p-4">
-                <div class="text-h6">Formas de Pagamento - Venda: {{ props.saleId }}</div>
+                <div class="text-h6">
+                    Formas de Pagamento - {{ props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId ?? props.shoppingId }}
+                </div>
 
                 <q-list bordered separator class="bg-white text-black">
                     <q-item v-for="(payment, i) in payMentForms" :key="i">
@@ -80,7 +82,7 @@
                             label="Cancelar"
                             color="negative"
                             @click="emits('close', true)"
-
+                            :disable="disableBtn"
                         />
 
                         <q-btn
@@ -89,7 +91,7 @@
                             type="submit"
                             id="finallySale-btn"
                             @click="confirmValues"
-                            :disable="calculatePayMent.totalPaid < props.totalSale"
+                            :disable="calculatePayMent.totalPaid < props.totalSale || disableBtn"
                         />
                     </div>
                 </q-card-actions>
@@ -108,15 +110,15 @@
 
 <script setup lang="ts">
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { getAllPayMentFormsService } from 'src/modules/PDV/services/payMentFormsService';
     import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
     import QRCodePix from '../PIX/QRCodePix.vue';
-    import { paySaleService } from 'src/modules/PDV/services/pdvService';
+    import * as PayMentServiceFn from 'src/services/PayMent/abastractPayMent';
 
     const { notify } = useNotify();
 
     const props = defineProps<{
-        saleId: number,
+        saleId?: number,
+        shoppingId?: number,
         totalSale: number;
     }>();
 
@@ -130,6 +132,7 @@
     const payMentPayLoad = ref<any>();
 
     const internalDialog = ref<boolean>(true);
+    const disableBtn = ref<boolean>(false);
 
     // Necessidades do PIX
     const showQrCodePix = ref<boolean>(false);
@@ -142,25 +145,29 @@
         return props.totalSale - calculatePayMent.value.totalPaid > 0 ? 0 : calculatePayMent.value.totalPaid - props.totalSale;
     });
 
-    watch(payMentValues, (values) => {
-        const pixPayment = values.find(p =>
-            p.id === 2 && parseFloat(p.amount) > 0
-        );
+    watch(
+        payMentValues,
+        (values) => {
+            const pixPayment = values.find(p =>
+                p.id === 2 && parseFloat(p.amount) > 0
+            );
 
-        if(pixPayment)
-        {
-            havePix.value = true;
-            getPixKey.value = pixPayment.pix_key;
-            valueForPix.value = Number(pixPayment.amount.replace(',', '.'));
+            if(pixPayment)
+            {
+                havePix.value = true;
+                getPixKey.value = pixPayment.pix_key;
+                valueForPix.value = Number(pixPayment.amount.replace(',', '.'));
 
-        } else {
-            showQrCodePix.value = false;
-            havePix.value = false;
-            valueForPix.value = 0;
+            } else {
+                showQrCodePix.value = false;
+                havePix.value = false;
+                valueForPix.value = 0;
 
-        };
+            };
 
-    }, { deep: true });
+        },
+        { deep: true }
+    );
 
     const syncPayMent = () => {
         payMentValues.value = payMentForms.value.map((f) => ({
@@ -192,7 +199,7 @@
     };
 
     const getPayMentForms = async () => {
-        const res = await getAllPayMentFormsService();
+        const res = await PayMentServiceFn.getAllPayMentFormsService();
 
         if(res.success)
         {
@@ -237,13 +244,9 @@
     };
 
     const finallySale = async () => {
-        internalDialog.value = false;
-        showQrCodePix.value = false;
+        disableBtn.value = true;
 
-        payMentPayLoad.value = payMentValues.value;
-
-        const res = await paySaleService(payMentValues.value, props.saleId);
-        console.log(res);
+        const res = await PayMentServiceFn.payMentService(payMentValues.value, props.saleId ?? 0, props.shoppingId ?? 0);
 
         if(res.success)
         {
@@ -253,20 +256,54 @@
             );
 
             emits('paide', true);
+
+            internalDialog.value = false;
+            showQrCodePix.value = false;
+
+            payMentPayLoad.value = payMentValues.value;
+
+            disableBtn.value = false;
+
+            return;
         };
+
+        notify(
+            'negative',
+            res.message
+        );
+
+        disableBtn.value = false;
     };
 
     const onKeyDownEnter = (e: KeyboardEvent) => {
+        if(disableBtn.value) return;
+
         if(e.key.toLocaleLowerCase() !== 'enter') return;
         if(!internalDialog.value) return;
 
         confirmValues();
     };
 
+    const onKeyDownF3Money = (e: KeyboardEvent) =>
+    {
+        if(disableBtn.value) return;
+        if(e.key.toLocaleLowerCase() !== 'f3') return;
+        if(!internalDialog.value) return;
+
+        const payMent = payMentValues.value.find(p => p.specie === 'Dinheiro');
+
+        if (!payMent) return;
+
+        payMent.amount = props.totalSale.toString();
+
+        finallySale();
+    };
+
     onMounted(async () => {
         await getPayMentForms();
 
         document.addEventListener('keydown', onKeyDownEnter);
+        document.addEventListener('keydown', onKeyDownF3Money);
     });
 
     onUnmounted(() => {

@@ -15,7 +15,10 @@
         const res = await api.get('/ping');
         const data = res.data;
 
-        if (data.data !== 'pong') 
+        console.log(data);
+        
+
+        if (data.data !== 'pong' || data.data === '') 
         {
             notify(
                 'negative',

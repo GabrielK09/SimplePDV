@@ -1,7 +1,9 @@
 enum ReportTypes {
     CashRegister = "cash-register",
     PayMentForms = "pay-ment-forms",
-    SaledItens = "saled-itens"
+    SaledItens = "saled-itens",
+    ShoppingItens = "shopping-itens",
+    Shoppings = "shoppings"
 };
 
 interface ReportContract {

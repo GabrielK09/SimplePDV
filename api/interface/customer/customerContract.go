@@ -286,7 +286,7 @@ func CreateDefaultCustomer() error {
 		INSERT INTO customers 
 			(id, name, cpf_cnpj)
 		VALUES
-			(1, 'Consumidor padrão', '')
+			(1, 'CONSUMIDOR PADRÃO', '')
 	`
 
 	if _, err = tx.Exec(
@@ -297,9 +297,7 @@ func CreateDefaultCustomer() error {
 		return err
 	}
 
-	err = tx.Commit(ctx)
-
-	if err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Println("Erro ao fazer o commit: ", err)
 		return err
 	}

@@ -30,7 +30,7 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
 
         return apiResponse(
             true,
-            data.message,
+            data.message || 'Produto cadastrado com sucesso!',
             data.data || []
         );
     } catch (error) {
