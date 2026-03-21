@@ -680,7 +680,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 		querySelectItensShopping := `
 			SELECT
-				product_id
+				product_id,
+				qtde_purchased
 			FROM
 				shopping_itens
 			WHERE
@@ -708,6 +709,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 			if err := itensShoppingSelect.Scan(
 				&sp.ProductId,
+				&sp.Qtde,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
 				return err

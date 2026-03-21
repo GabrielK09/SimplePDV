@@ -66,7 +66,9 @@
     enum ReportTypes {
         CashRegister = "cash-register",
         PayMentForms = "pay-ment-forms",
-        SaledItens = "saled-itens"
+        SaledItens = "saled-itens",
+        ShoppingItens = "shopping-itens",
+        Shoppings = "shoppings"
     };
 
     const emits = defineEmits<{
@@ -117,6 +119,14 @@
 
                 case "saled-itens":
                     fileName = "Relatório_itens_vendidos.pdf"
+                    break;
+
+                case "shopping-itens":
+                    fileName = "Relatório_itens_comprados.pdf"
+                    break;
+
+                case "shoppings":
+                    fileName = "Relatório_compras.pdf"
                     break;
 
                 default:
