@@ -2,6 +2,7 @@ package cashRegister
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
 	"time"
@@ -103,14 +104,12 @@ func getLastBalance(tx pgx.Tx) (float64, error) {
 
 	var balance float64
 
-	err := tx.QueryRow(
+	if err := tx.QueryRow(
 		context.Background(),
 		query,
 	).Scan(
 		&balance,
-	)
-
-	if err != nil {
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao fazer a consulta do balanço: ", err)
 		return 0, err
 	}
@@ -221,9 +220,9 @@ func (c *CashRegisterContract) Create(
 
 	if c.ShoppingId > 0 {
 		if input_value > 0 {
-			description = fmt.Sprintf("Compra N° %d", c.ShoppingId)
-		} else {
 			description = fmt.Sprintf("Estorno da compra N° %d", c.ShoppingId)
+		} else {
+			description = fmt.Sprintf("Compra N° %d", c.ShoppingId)
 		}
 
 		shoppingId = c.ShoppingId
@@ -287,13 +286,11 @@ func (c *CashRegisterContract) Create(
 			id
 	`
 
-	err = tx.QueryRow(
+	if err = tx.QueryRow(
 		context.Background(),
 		query,
 		args...,
-	).Scan(&c.Id)
-
-	if err != nil {
+	).Scan(&c.Id); err != nil {
 		u.ErrorLogger.Println("Erro no create (cash-register-contract): ", err)
 		errorsField["database"] = err.Error()
 		return errorsField
