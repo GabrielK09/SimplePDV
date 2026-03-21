@@ -81,4 +81,3 @@ export async function payMentService(payMentValues: PayMentValue[], saleId: numb
         );
     };
 };
-
