@@ -13,7 +13,7 @@
                         </span>
                         {{ shoppingData.total_shopping.toFixed(2).toString().replace('.', ',') }}
                     </div>
-    
+
                     <div>
                         <span class="font-bold ml-2">
                             Produtos:
@@ -22,7 +22,7 @@
                         <div class="mt-4 p-2">
                             <q-table
                                 :rows="shoppingData.shopping_itens"
-                                :columns="columnsForSale"
+                                :columns="columnsForShoppingItens"
                                 :hide-bottom="shoppingData.shopping_itens.length < 10"
                                 row-key="name"
                             />
@@ -33,7 +33,7 @@
                         <span class="font-bold ml-2">
                             Status:
                         </span>
-                        
+
                         <span
                             :class="{
                                 'text-green-600': shoppingData.status === 'Concluída',
@@ -47,13 +47,13 @@
             </q-card-section>
 
             <q-card-actions align="right">
-                <q-btn 
+                <q-btn
                     color="black"
                     flat
                     icon="print"
                     @click="printer"
                 />
-                
+
                 <q-btn
                     color="red"
                     icon="close"
@@ -70,15 +70,6 @@
     import { QTableColumn } from 'quasar';
     import { getShoppingById } from '../../services/shoppingService';
 
-    interface DetailSaleContract {
-        readonly id: number;
-        readonly customer_id: number;
-        customer: string;
-        products: SaleItemContract[];
-        sale_value: number;
-        status: 'Pendente'|'Concluída'|'Cancelado'
-    };
-
     const printer = () => {
         window.print()
     };
@@ -90,7 +81,7 @@
         total_shopping: 0
     });
 
-    const columnsForSale: QTableColumn[] = [ 
+    const columnsForShoppingItens: QTableColumn[] = [
         {
             field: 'name',
             label: 'Produto',
@@ -98,9 +89,9 @@
             align: 'center'
         },
         {
-            field: 'price',
-            label: 'Valor da venda',
-            name: 'price',
+            field: 'purchased_value',
+            label: 'Valor da compra',
+            name: 'purchased_value',
             align: 'center',
             format(val): string {
                 return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
@@ -133,15 +124,17 @@
             emits('close', true);
         };
 
-        const data: ShoppingContract = res.data;
+        const shoppingDetails: ShoppingContract = res.data.shopping;
+        const shoppingWithProducts: ShoppingItemContract[] = res.data.shoppingWithProducts;
 
-        console.log(data);
+        console.log(res.data);
 
         shoppingData.value = {
-            id: data.id,
-            load: data.load,
-            shopping_itens: data.shopping_itens,
-            total_shopping: data.total_shopping
+            id: shoppingDetails.id,
+            load: shoppingDetails.load,
+            shopping_itens: shoppingWithProducts,
+            total_shopping: shoppingDetails.total_shopping,
+            status: shoppingDetails.status
         };
 
         showInternal.value = !showInternal.value;

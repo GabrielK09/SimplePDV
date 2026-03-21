@@ -17,9 +17,9 @@ type ShoppingContract struct {
 	Id            int                    `json:"id"`
 	Load          int                    `json:"load"`      // Carga - obrigatório
 	Operation     string                 `json:"operation"` // Operação - opcional
-	Status        string                 `json:"status"`
 	ShoppingItens []ShoppingItenContract `json:"shopping_itens"`
 	TotalShopping float64                `json:"total_shopping"`
+	Status        string                 `json:"status"`
 	CreatedAt     time.Time              `json:"created_at"`
 	UpdatedAt     time.Time              `json:"updated_at"`
 }
@@ -31,7 +31,6 @@ type ShoppingItenContract struct {
 	Name           string    `json:"name"`
 	QtdePurchased  int       `json:"qtde_purchased"`
 	PurchasedValue float64   `json:"purchased_value"`
-	Status         string    `json:"status"`
 	DeletedAt      time.Time `json:"deleted_at"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
@@ -105,8 +104,8 @@ func GetAll() ([]ShoppingContract, error) {
 			id,
 			load,
 			operation,
-			status,
-			total_shopping
+			total_shopping,
+			status
 
 		FROM			
 			shopping
@@ -131,8 +130,8 @@ func GetAll() ([]ShoppingContract, error) {
 			&s.Id,
 			&s.Load,
 			&s.Operation,
-			&s.Status,
 			&s.TotalShopping,
+			&s.Status,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao ler os dados da query: ", err)
 			return []ShoppingContract{}, err
@@ -291,13 +290,6 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 	var shoppingItens []ShoppingItenContract
 
-	/*shopping_id integer,
-	product_id integer,
-	name character varying NOT NULL,
-	qtde_purchased integer NOT NULL,
-	purchased_value double precision NOT NULL,
-	status character varying DEFAULT 'Associado'::character varying,*/
-
 	queryForSelectItens := `
 		SELECT
 			id,
@@ -305,8 +297,7 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 			product_id,
 			name,
 			qtde_purchased,
-			purchased_value,
-			status
+			purchased_value
 		FROM
 			shopping_itens
 
@@ -337,7 +328,6 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 			&item.Name,
 			&item.QtdePurchased,
 			&item.PurchasedValue,
-			&item.Status,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao executar a query: ", err)
 			return nil, err

@@ -1,8 +1,8 @@
 <template>
     <q-dialog v-model="internalDialog" persistent>
-        <q-card class="min-h-[60vh] flex flex-center text-xl overflow-hidden">
+        <q-card class="flex flex-center text-xl overflow-hidden">
             <q-card-section>
-                <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
+                <section class="w-[60vh] rounded-lg shadow px-4 bg-white">
                     <header class="flex justify-center">
                         <h2 class="text-gray-600 ">Cadastrar um novo produto</h2>
 
@@ -148,7 +148,7 @@
     const priceInput = ref<string>('');
 
     const product = ref<ProductContract>({
-        id: 0,
+        id: null,
         name: '',
         price: null,
         qtde: null,

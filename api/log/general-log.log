@@ -1,4 +1,7 @@
-General Logger: 	2026/03/20 12:45:56 cashRegisterContract.go:202: Dados: lastBalance - 0.000000|InputValue - 0.000000|OutputValue - 10.000000
-General Logger: 	2026/03/20 12:45:56 cashRegisterContract.go:254: Dados do insert:  [Estorno de venda N° 1 1 CONSUMIDOR PADRÃO 1 Dinheiro 0 10 -10 1 <nil>]
-General Logger: 	2026/03/20 12:45:56 response.go:9: Data recebido: <nil>
-General Logger: 	2026/03/20 12:45:56 response.go:9: Data recebido: [{1 1 Consumidor padrão 10 Cancelado [] 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC}]
+General Logger: 	2026/03/21 00:00:49 main.go:60: Banco de dados conectado com sucesso!
+Info Logger: 	2026/03/21 00:00:49 payMentFormContract.go:184: CreateDefaultPayMents started
+Info Logger: 	2026/03/21 00:00:49 payMentFormContract.go:216: Os pagamentos existem
+Info Logger: 	2026/03/21 00:00:49 customerContract.go:248: CreateDefaultCustomer started
+Info Logger: 	2026/03/21 00:00:49 customerContract.go:279: O cliente existe
+Error Logger: 	2026/03/21 00:00:53 processPayMent.go:733: Erro ao retornar a qtde dos produtos da venda para o estoque:  conn busy
+General Logger: 	2026/03/21 00:00:54 response.go:9: Data recebido: conn busy

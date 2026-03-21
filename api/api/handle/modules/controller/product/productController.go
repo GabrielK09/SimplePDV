@@ -7,6 +7,7 @@ import (
 	"myApi/interface/product"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v5"
@@ -66,7 +67,7 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := product.Delete(id); err != nil {
+	if err := product.Delete(id, time.Now()); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(
 			responsehelper.Response(false, err.Error(), "Erro ao deletar o produto."),
@@ -196,7 +197,7 @@ func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	resp := responsehelper.Response(true, payload, "Produto criado com sucesso!")
+	resp := responsehelper.Response(true, payload, "Produto cadastrado com sucesso!")
 
 	json.NewEncoder(w).Encode(resp)
 }

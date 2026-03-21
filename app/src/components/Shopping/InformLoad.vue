@@ -11,6 +11,9 @@
                         stack-label
                         label-slot
                         input-class="text-lg"
+                        :rules="[
+                            val => val > 0 || 'A carga da compra não pode ser menor zero.'
+                        ]"
                     >
                         <template v-slot:label>
                             <span class="font-bold text-lg">
@@ -53,7 +56,7 @@
     const props = defineProps<{
         lastShoppingId: number;
     }>();
-        
+
     const informedLoad = ref<number>(0);
     const internalDialog = ref<boolean>(true);
 </script>

@@ -46,12 +46,14 @@ func main() {
 
 	case "resetSite":
 		jobs.ResetSite(db, ctx)
+		jobs.CreateUser(db, ctx)
 		return
 	}
 
 	switch dbFlag {
 	case "seed":
 		dbaction.DBSeed(db, ctx)
+
 		return
 	}
 

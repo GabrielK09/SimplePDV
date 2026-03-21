@@ -17,6 +17,10 @@
                         :rows="productsStockData"
                         :columns="productsColumns"
                     >
+                        <template v-slot:top-selection>
+                            <span>a</span>
+                        </template>
+
                         <template v-slot:top-right>
                             <q-input
                                 outlined
@@ -91,7 +95,7 @@
                                     <template v-if="col.name === 'purchased_value'">
                                         <div
                                             class="text-center flex flex-center"
-                                        >                                        
+                                        >
                                             <q-input
                                                 v-model.number="props.row.purchased_value"
                                                 type="number"
@@ -106,7 +110,7 @@
                                     <template v-else-if="col.name === 'qtde_purchased'">
                                         <div
                                             class="text-center flex flex-center"
-                                        >                                        
+                                        >
                                             <q-input
                                                 v-model.number="props.row.qtde_purchased"
                                                 type="number"
@@ -117,19 +121,19 @@
                                             />
                                         </div>
                                     </template>
-                                    
+
                                     <template v-else-if="col.name === 'actions'">
                                         <div v-if="props.row.status === 'Concluída'">
-                                            <q-btn 
-                                                size="10px" 
-                                                color="red" 
-                                                icon="delete" 
-                                                flat 
+                                            <q-btn
+                                                size="10px"
+                                                color="red"
+                                                icon="delete"
+                                                flat
                                                 @click="disassociateCheckedProdutcs(props.row.product_id)"
                                             />
                                         </div>
                                     </template>
-                                
+
                                     <template v-else>
                                         <div class="text-center">
                                             {{ col.value }}
@@ -191,7 +195,7 @@
 
     <CreateProductComponent
         v-if="showCreateProductComponent"
-        @close="showCreateProductComponent = !$event"
+        @close="reloadProcuts(!$event)"
     />
 
     <InformLoad
@@ -290,7 +294,7 @@
             label: 'Qtde de entrada',
             field: 'qtde_purchased',
             align: 'center'
-        },        
+        },
         {
             name: 'actions',
             label: '',
@@ -306,7 +310,12 @@
     const isSavingRef = ref<boolean>(false);
     const lastShoppingId = ref<number | null>(null);
 
-    const shoppingPrePayLoad = ref<ShoppingContract>();
+    const shoppingPrePayLoad = ref<ShoppingContract>({
+        id: null,
+        load: null,
+        shopping_itens: [],
+        total_shopping: 0
+    });
 
     const selectedProducts = ref<ProductContract[]>([]);
 
@@ -384,14 +393,14 @@
     const disassociateCheckedProdutcs = (id: number) => {
         console.log('call disassociateCheckedProdutcs');
 
-        if(associateProdutcs.value.length <= 1) 
+        if(associateProdutcs.value.length <= 1)
         {
-            associateProdutcs.value = [] 
+            associateProdutcs.value = []
             return
         };
 
         console.log(`Deve remover o id: ${id}`);
-        
+
         associateProdutcs.value = associateProdutcs.value.filter(ap => ap.product_id !== id);
 
         selectedProducts.value = [];
@@ -423,6 +432,8 @@
 
         const existingLoad: number = SessionStorage.getItem('inform_load');
 
+        console.log(shoppingPrePayLoad.value);
+
         if(existingLoad || shoppingPrePayLoad.value.id)
         {
             saveShopping(existingLoad);
@@ -430,7 +441,7 @@
         };
 
         showInformLoadComponent.value = true;
-        
+
         const total_shopping = associateProdutcs.value.reduce((total, a) => total + (a.purchased_value * a.qtde_purchased), 0);
 
         shoppingPrePayLoad.value = {
@@ -441,21 +452,21 @@
         };
     };
 
-    const saveShopping = async (informLoad: number): Promise<void> => {        
+    const saveShopping = async (informLoad: number): Promise<void> => {
         let existingShoppingId: number;
-        
+
         if (routeShoppingId.value)
         {
             existingShoppingId = routeShoppingId.value;
         } else {
             existingShoppingId = SessionStorage.getItem('shopping_id');
         };
-        
+
         showInformLoadComponent.value = false;
         SessionStorage.set('inform_load', informLoad);
 
         const existingLoad: number = SessionStorage.getItem('inform_load');
-            
+
         const payload: ShoppingContract = {
             id: null,
             load: informLoad,
@@ -463,14 +474,14 @@
             total_shopping: shoppingPrePayLoad.value.total_shopping
         };
 
-        if (existingShoppingId && existingLoad) 
+        if (existingShoppingId && existingLoad)
         {
             console.log(`existingShoppingId = ${existingShoppingId} && existingLoad = ${existingLoad} foi true`);
             shoppingPrePayLoad.value.id = existingShoppingId;
             shoppingPrePayLoad.value.load = existingLoad;
 
             console.log('PayLoad: ', shoppingPrePayLoad.value);
-            
+
             if(!isSavingRef.value)
             {
                 showPayMentForms.value = true;
@@ -486,7 +497,7 @@
 
             return;
         };
- 
+
         const res = await createshopping(payload);
         const data: number = res.data;
 
@@ -513,7 +524,7 @@
             );
 
             replaceToShoppingIndex();
-            
+
             return;
         };
 
@@ -544,6 +555,11 @@
         return Number.isNaN(parsed) ? null : parsed;
     });
 
+    const reloadProcuts = async (event: boolean): Promise<void> => {
+        showCreateProductComponent.value = event;
+        await getAllProductsStock();
+    };
+
     onMounted(async () => {
         await getAllProductsStock();
 
@@ -552,7 +568,7 @@
         if(!res.success)
         {
             notify(
-                'negative', 
+                'negative',
                 res.message || 'Erro interno'
             );
 
@@ -574,7 +590,7 @@
                     'warning',
                     res.message || 'Erro ao carregar os dados da compra.'
                 );
-                
+
                 return;
             };
 
@@ -590,16 +606,16 @@
 
             };
 
-            lastShoppingId.value = shoppingData.id;    
+            lastShoppingId.value = shoppingData.id;
 
-            console.log(shoppingPrePayLoad.value);        
+            console.log(shoppingPrePayLoad.value);
 
             return;
         };
 
         lastShoppingId.value = res.data;
     });
-    
+
     onUnmounted(() => {
         removeSessionData('shopping_id');
         removeSessionData('inform_load');

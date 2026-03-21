@@ -281,10 +281,6 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 			return err
 		}
 
-		if s.Status == "Concluída" {
-			return fmt.Errorf("Essa compra já está finalizada.")
-		}
-
 		if totalPaide < s.TotalShopping {
 			return fmt.Errorf("Valor informado menor do que da compra.")
 		}
@@ -365,24 +361,6 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 			payMent.ShoppingId,
 		); err != nil {
 			u.ErrorLogger.Println("Erro no update da compra para Concluída: ", err)
-			return err
-		}
-
-		queryForShoppingItem := `
-			UPDATE
-				shopping_itens
-			SET
-				status = 'Concluída'	
-			WHERE 
-				shopping_id = $1
-		`
-
-		if _, err = tx.Exec(
-			ctx,
-			queryForShoppingItem,
-			payMent.SaleId,
-		); err != nil {
-			u.ErrorLogger.Println("Erro no update dos itens da compra para Concluída: ", err)
 			return err
 		}
 	}
@@ -702,8 +680,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 		querySelectItensShopping := `
 			SELECT
-				product_id,
-				status
+				product_id
 			FROM
 				shopping_itens
 			WHERE
@@ -727,23 +704,13 @@ func CancelSaleOrShopping(c CancelContract) error {
 			var sp struct {
 				ProductId int
 				Qtde      int
-				Status    string
 			}
 
 			if err := itensShoppingSelect.Scan(
 				&sp.ProductId,
-				&sp.Status,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
 				return err
-			}
-
-			if s.Status != "Cancelado" {
-				continue
-			}
-
-			if s.Status == "Cancelado" {
-				return fmt.Errorf("Produto ID %d, compra n° %d, lote %d, já cancelado", sp.ProductId, c.ShoppingId, s.Load)
 			}
 
 			queryUpdateDiscountQtdeStock := `
@@ -786,26 +753,6 @@ func CancelSaleOrShopping(c CancelContract) error {
 			s.Id,
 		); err != nil {
 			u.ErrorLogger.Printf("Erro no update shopping para cancelado - %s", err)
-			return err
-		}
-
-		queryCancelShoppingItem := `
-			UPDATE
-				shopping_itens
-
-			SET
-				status = 'Cancelado'
-
-			WHERE
-				shopping_id = $1
-		`
-
-		if _, err = tx.Exec(
-			ctx,
-			queryCancelShoppingItem,
-			s.Id,
-		); err != nil {
-			u.ErrorLogger.Printf("Erro no update shopping_itens para cancelado - %s", err)
 			return err
 		}
 

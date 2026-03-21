@@ -22,7 +22,7 @@
                     :rows="shopping"
                     :columns="columns"
                     row-key="name"
-                    class="rounded-xl"  
+                    class="rounded-xl"
                 >
                     <template v-slot:top-right>
                         <q-input
@@ -72,7 +72,8 @@
                                             size="10px"
                                             color="black"
                                             icon="visibility"
-                                            flat                                        
+                                            flat
+                                            @click="buildShowSaleDetails(props.row.id)"
                                         />
                                     </div>
                                 </template>
@@ -119,6 +120,12 @@
         @confirm="handleConfirmDialog($event)"
         @close="showConfirmDialog = !$event"
     />
+
+    <ShoppingDetails
+        v-if="showShoppingDetails"
+        :shopping-id="selectedShoppingId"
+        @close="showShoppingDetails = !$event"
+    />
 </template>
 
 <script setup lang="ts">
@@ -129,13 +136,14 @@
     import { cancelShoppingOrSale } from 'src/modules/PDV/services/payMentFormsService';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import { useRouter } from 'vue-router';
+    import ShoppingDetails from './Show/ShoppingDetails.vue';
 
     const { notify } = useNotify();
     const showConfirmDialog = ref<boolean>(false);
     const router = useRouter();
 
     const pagination = ref({
-        sortBy: 'id' 
+        sortBy: 'id'
     });
 
     const columns: QTableColumn[] = [
@@ -179,6 +187,7 @@
 
     const searchInput = ref<string>('');
     const selectedShoppingId = ref<number | null>(0);
+    const showShoppingDetails = ref<boolean>(false);
 
     const getAllshopping = async () => {
         const res = await getAll();
@@ -217,7 +226,7 @@
         );
 
         showConfirmDialog.value = false;
-        
+
         await getAllshopping();
 
         return;
@@ -225,6 +234,11 @@
 
     const showCancelShopping = (shoppingId: number): void => {
         showConfirmDialog.value = true;
+        selectedShoppingId.value = shoppingId;
+    };
+
+    const buildShowSaleDetails = (shoppingId: number): void => {
+        showShoppingDetails.value = !showShoppingDetails.value;
         selectedShoppingId.value = shoppingId;
     };
 
