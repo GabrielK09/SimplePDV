@@ -1,12 +1,10 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
-CREATE SCHEMA public;
-
-CREATE TABLE public.users (
+CREATE TABLE public.user (
   id SERIAL PRIMARY KEY,
   name character varying NOT NULL,
   cpf character varying NOT NULL,
-  login character varying NOT NULL unique,
+  login character varying NOT NULL,
   password character varying NOT NULL,
   is_admin boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -16,7 +14,6 @@ CREATE TABLE public.customers (
   id SERIAL PRIMARY KEY,
   name character varying NOT NULL,
   cpf_cnpj character varying NOT NULL,
-  deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -24,7 +21,6 @@ CREATE TABLE public.pay_ment_forms (
   id SERIAL PRIMARY KEY,
   specie character varying NOT NULL,
   pix_key character varying,
-  deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -36,7 +32,6 @@ CREATE TABLE public.products (
   qtde integer NOT NULL,
   returned integer DEFAULT 0,
   saled integer DEFAULT 0,
-  deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -52,20 +47,20 @@ CREATE TABLE public.sales (
 );
 CREATE TABLE public.shopping (
   id SERIAL PRIMARY KEY,
-  load integer unique,
+  load integer,
   operation character varying,
   status character varying DEFAULT 'Pendente'::character varying,
-  total_shopping double precision,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE public.shopping_itens (
   id SERIAL PRIMARY KEY,
-  shopping_id integer,
   product_id integer,
   name character varying NOT NULL,
   qtde_purchased integer NOT NULL,
   purchased_value double precision NOT NULL,
+  shopping_id bigint NOT NULL,
+  status character varying DEFAULT 'Associado'::character varying,
   deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -74,8 +69,6 @@ CREATE TABLE public.shopping_itens (
 );
 CREATE TABLE public.cash_registers (
   id SERIAL PRIMARY KEY,
-  sale_id integer,
-  shopping_id integer,
   description character varying NOT NULL,
   customer_id integer NOT NULL,
   customer character varying NOT NULL,
@@ -84,10 +77,12 @@ CREATE TABLE public.cash_registers (
   input_value double precision,
   output_value double precision,
   total_balance double precision NOT NULL,
+  sale_id integer,
+  shopping_id integer,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   
-  CONSTRAINT cash_registers_sale_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
+  CONSTRAINT cash_registers_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT cash_registers_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id),
   CONSTRAINT cash_registers_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT cash_registers_specie_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
@@ -113,19 +108,7 @@ CREATE TABLE public.sale_pay_ment (
   amount_paid double precision NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT sale_pay_ment_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
-  CONSTRAINT sale_pay_ment_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
-);
-CREATE TABLE public.shopping_pay_ment (
-  id SERIAL PRIMARY KEY,
-  shopping_id bigint NOT NULL,
-  specie_id bigint NOT NULL,
-  specie character varying NOT NULL,
-  amount_paid double precision NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT shopping_pay_ment_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id),
-  CONSTRAINT shopping_pay_ment_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id)
+  CONSTRAINT pay_ment_forms_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
 );
 CREATE TABLE public.config_pdv (
   id SERIAL PRIMARY KEY,

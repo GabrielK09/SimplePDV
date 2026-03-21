@@ -4,14 +4,16 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"myApi/db"
 	u "myApi/helpers/logger"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed sql/insert.sql
 var insertSql string
+
+var ctx = context.Background()
 
 func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword(
@@ -27,8 +29,15 @@ func hashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func CreateUser(db *pgxpool.Pool, ctx context.Context) {
+func CreateUser() {
 	fmt.Println("Executando job ...")
+	db, err := db.Init()
+
+	if err != nil {
+		u.ErrorLogger.Fatal("Erro ao iniciar o banco de dados no Job.")
+	}
+
+	defer db.Close()
 
 	tx, err := db.Begin(ctx)
 
@@ -44,7 +53,7 @@ func CreateUser(db *pgxpool.Pool, ctx context.Context) {
 		u.ErrorLogger.Fatal("Erro ao criptografar a senha.", err)
 	}
 
-	if _, err := tx.Exec(
+	if _, err := db.Exec(
 		ctx,
 		insertSql,
 		cryptedPass,
@@ -55,6 +64,8 @@ func CreateUser(db *pgxpool.Pool, ctx context.Context) {
 	if err := tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Fatal("Erro ao commitar o create do usuário.", err)
 	}
+
+	db.Close()
 
 	fmt.Println("Usuário criado com sucesso!")
 }

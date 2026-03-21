@@ -32,12 +32,6 @@ func CreateReport(data map[string]interface{}) ([]byte, error) {
 
 	case "saled-itens":
 		fileName = "Relatório_itens_vendidos.pdf"
-
-	case "shopping-itens":
-		fileName = "Relatório_itens_comprados.pdf"
-
-	case "shoppings":
-		fileName = "Relatório_compras.pdf"
 	}
 
 	u.InfoLogger.Println("InitReportProps started")
@@ -172,7 +166,6 @@ func getTransactions(data map[string]interface{}) []core.Row {
 
 			rows = append(rows, r)
 		}
-
 	case "saled-itens":
 		contents := data["data"].([]reportsdata.SaledItens)
 
@@ -204,61 +197,6 @@ func getTransactions(data map[string]interface{}) []core.Row {
 			rows = append(rows, r)
 		}
 
-	case "shopping-itens":
-		contents := data["data"].([]reportsdata.ShoppingItens)
-
-		rows = []core.Row{
-			row.New(5).Add(
-				text.NewCol(2, "ID da compra", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-				text.NewCol(2, "ID do produto", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-				text.NewCol(4, "Produto", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-				text.NewCol(2, "Valor do item", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-				text.NewCol(2, "Qtde comprada", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-			),
-		}
-
-		for i, item := range contents {
-			r := row.New(4).Add(
-				text.NewCol(2, fmt.Sprint(item.ShoppingId), props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(2, fmt.Sprint(item.ProductId), props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(4, item.Produto, props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(2, fmt.Sprintf("R$ %2.f", item.PurchasedValue), props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(2, fmt.Sprint(item.QtdePurchased), props.Text{Size: 8, Align: align.Center}),
-			)
-
-			if i%2 == 0 {
-				gray := getGrayColor()
-
-				r.WithStyle(&props.Cell{BackgroundColor: gray})
-			}
-
-			rows = append(rows, r)
-		}
-
-	case "shoppings":
-		contents := data["data"].([]reportsdata.Shoppings)
-
-		rows = []core.Row{
-			row.New(7).Add(
-				text.NewCol(6, "Carga", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-				text.NewCol(6, "Valor da compra", props.Text{Size: 9, Align: align.Center, Style: fontstyle.Bold}),
-			),
-		}
-
-		for i, item := range contents {
-			r := row.New(4).Add(
-				text.NewCol(6, item.Load, props.Text{Size: 8, Align: align.Center}),
-				text.NewCol(6, fmt.Sprintf("R$ %2.f", item.TotalShopping), props.Text{Size: 8, Align: align.Center}),
-			)
-
-			if i%2 == 0 {
-				gray := getGrayColor()
-
-				r.WithStyle(&props.Cell{BackgroundColor: gray})
-			}
-
-			rows = append(rows, r)
-		}
 	}
 
 	return rows
