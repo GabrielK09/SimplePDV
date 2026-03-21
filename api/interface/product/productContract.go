@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
 	"time"
@@ -23,7 +24,6 @@ type ProductContract struct {
 }
 
 var conn *pgxpool.Pool
-var ctx = context.Background()
 
 func SetConnection(db *pgxpool.Pool) {
 	conn = db
@@ -56,15 +56,6 @@ func (p ProductContract) Validate() map[string]string {
 }
 
 func (p *ProductContract) Create() error {
-	tx, err := conn.Begin(ctx)
-
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao iniciar a transação: ", err)
-		return err
-	}
-
-	defer tx.Rollback(ctx)
-
 	query := `	
 		INSERT INTO products
 			(name, price, qtde, commission, returned, saled)
@@ -76,7 +67,7 @@ func (p *ProductContract) Create() error {
 			id
 	`
 
-	err = conn.QueryRow(
+	err := conn.QueryRow(
 		context.Background(),
 		query,
 		p.Name,
@@ -254,9 +245,6 @@ func GetAll() ([]ProductContract, error) {
 			saled
 		FROM
 			products
-
-		WHERE
-			deleted_at IS NULL
 	`
 
 	rows, err := conn.Query(
@@ -293,46 +281,55 @@ func GetAll() ([]ProductContract, error) {
 	return products, nil
 }
 
-func Delete(id int, deletedAt time.Time) error {
-	tx, err := conn.Begin(ctx)
+func Delete(id int) error {
+	verify := `
+		SELECT
+			id
+		FROM
+			sale_itens
+		WHERE
+			product_id = $1
+		LIMIT
+			1
+	`
+
+	var saleItemId int
+
+	err := conn.QueryRow(
+		context.Background(),
+		verify,
+		saleItemId,
+	).Scan(
+		&saleItemId,
+	)
 
 	if err != nil {
-		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
-		return err
+		if !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se possui cadastro em vendas: ", err)
+			return err
+		}
+
+	} else {
+		return fmt.Errorf("Produto já cadastradao em uma venda.")
 	}
 
-	defer tx.Rollback(ctx)
-
-	product, err := Show(id)
-
-	if err != nil {
-		u.ErrorLogger.Println("Ocorreu um erro ao consultar o produto: ", err)
-		return err
-	}
-
-	if product == nil {
-		u.ErrorLogger.Println("Produto não localizado.")
-		return fmt.Errorf("Produto não localizado.")
-	}
-
-	queryUpdateDeletedAt := `
-		UPDATE
+	query := `
+		DELETE FROM
 			products
-
-		SET
-			deleted_at = $2
 
 		WHERE 
 			id = $1
+
 	`
 
-	if _, err = conn.Exec(
-		ctx,
-		queryUpdateDeletedAt,
+	_, err = conn.Exec(
+		context.Background(),
+		query,
 		id,
-		deletedAt,
-	); err != nil {
-		u.ErrorLogger.Println("Erro ao deletar o produto: ", err)
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao deletar: ", err)
 		return err
 	}
 
