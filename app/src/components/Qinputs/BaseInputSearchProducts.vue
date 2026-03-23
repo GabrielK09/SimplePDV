@@ -81,9 +81,13 @@
     const searchProduct = async (): Promise<void> => {
         let productQtde: number = 0;
 
+        const input = id.value?.toString().split('') ?? '';
+
         if(!id.value) return;
 
-        const product = await findById(Number(id.value));
+        if(input[1] === '*') productQtde = Number(input[0]);
+
+        const product = await findById(Number(input[2] ?? input[0]));
 
         if(!product)
         {
@@ -91,17 +95,15 @@
             return;
         };
 
-        const input = id.value?.toString().split('') ?? '';
-
-        if(input[1] === '*') productQtde = Number(input[0]) ?? 1;
-
         const productData: SaleItemContract = {
             id: product.data?.id,
             name: product.data?.name,
             price: product.data?.price,
-            product_id: product.data?.product_id,
-            qtde: productQtde
+            product_id: product.data?.id,
+            qtde: productQtde ?? 1
         };
+
+        console.log('Vai enviar: ', productData);
 
         emits('emit:selected-product', productData);
         id.value = '';
@@ -130,9 +132,13 @@
     );
 
     const getProductByName = async () => {
+        console.log('call getProductByName');
+
         if(!habilitStringSearchInput.value) return;
 
         const search = id.value.toString().slice(1);
+
+        console.log('Vai buscar por: ', search);
 
         if(!search) return;
 

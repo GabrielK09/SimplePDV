@@ -48,7 +48,35 @@ CREATE TABLE public.sales (
   status character varying DEFAULT 'Pendente'::character varying,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT sales_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+  CONSTRAINT sales_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id);
+
+  ALTER TABLE sale_itens
+  ADD CONSTRAINT unique_sale_product
+  UNIQUE (sale_id, product_id);
+);
+CREATE TABLE public.sale_itens (
+  id SERIAL PRIMARY KEY,
+  product_id integer NOT NULL,
+  name character varying NOT NULL,
+  qtde integer NOT NULL,
+  sale_value double precision NOT NULL,
+  sale_id bigint NOT NULL,
+  status character varying DEFAULT 'Pendente'::character varying,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT sales_itens_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
+  CONSTRAINT sales_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+CREATE TABLE public.sale_pay_ment (
+  id SERIAL PRIMARY KEY,
+  sale_id bigint NOT NULL,
+  specie_id bigint NOT NULL,
+  specie character varying NOT NULL,
+  amount_paid double precision NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT sale_pay_ment_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
+  CONSTRAINT sale_pay_ment_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
 );
 CREATE TABLE public.shopping (
   id SERIAL PRIMARY KEY,
@@ -91,30 +119,6 @@ CREATE TABLE public.cash_registers (
   CONSTRAINT cash_registers_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id),
   CONSTRAINT cash_registers_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT cash_registers_specie_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
-);
-CREATE TABLE public.sale_itens (
-  id SERIAL PRIMARY KEY,
-  product_id integer NOT NULL,
-  name character varying NOT NULL,
-  qtde integer NOT NULL,
-  sale_value double precision NOT NULL,
-  sale_id bigint NOT NULL,
-  status character varying DEFAULT 'Pendente'::character varying,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT sales_itens_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
-  CONSTRAINT sales_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
-);
-CREATE TABLE public.sale_pay_ment (
-  id SERIAL PRIMARY KEY,
-  sale_id bigint NOT NULL,
-  specie_id bigint NOT NULL,
-  specie character varying NOT NULL,
-  amount_paid double precision NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT sale_pay_ment_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
-  CONSTRAINT sale_pay_ment_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
 );
 CREATE TABLE public.shopping_pay_ment (
   id SERIAL PRIMARY KEY,

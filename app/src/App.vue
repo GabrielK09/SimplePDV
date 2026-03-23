@@ -15,17 +15,14 @@
         const res = await api.get('/ping');
         const data = res.data;
 
-        console.log(data);
-        
-
-        if (data.data !== 'pong' || data.data === '') 
+        if (data.data !== 'pong' || data.data === '')
         {
             notify(
                 'negative',
                 'Erro interno'
 
             );
-            
+
             router.replace({
                 path: '/auth/login'
             });

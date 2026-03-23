@@ -37,9 +37,11 @@
                             </template>
                         </q-input>
                     </header>
+
                     <q-table
                         :rows="products"
                         :columns="columns"
+                        v-model:pagination="pagination"
                     >
                         <template v-slot:body-cell-select="props">
                             <q-td :props="props">
@@ -97,6 +99,11 @@
     const confirm = ref<boolean>(true);
     const selectedProducts = ref<SaleItemContract[]>([]);
 
+    const pagination = ref<TPagination>({
+        rowsPerPage: 0,
+        sortBy: 'id'
+    });
+
     const columns: QTableColumn[] = [
         {
             name: 'select',
@@ -133,7 +140,7 @@
         }
     ];
 
-    let searchInput = ref<string>('');
+    const searchInput = ref<string>('');
 
     const getAllProducts = async () => {
         const res = await getAll();
@@ -150,7 +157,15 @@
     };
 
     const emitProducts = () => {
-        emits('emit:selected-products', selectedProducts.value);
+        const normalizedProducts =selectedProducts.value.map((p: SaleItemContract) => ({
+            id: p.id,
+            product_id: p.product_id,
+            name: p.name,
+            price: p.price,
+            qtde: 1
+        }));
+
+        emits('emit:selected-products', normalizedProducts);
         emits('close', true);
     };
 

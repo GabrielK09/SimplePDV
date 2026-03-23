@@ -137,8 +137,13 @@
         v-model:show="showConfirmDialog"
         :text="textOperation"
         :operation="operation"
+        :on-leave="onLeaveConfirmDialog"
         @close="showConfirmDialog = !$event"
         @confirm="handleConfirmDialog(operation, $event)"
+
+        @leave:cancel-and-leave="cancelAndLeave($event)"
+        @leave:save-and-leave="saveSaleForPay($event)"
+
     />
 
     <PayMentSale
@@ -157,7 +162,7 @@
 
 <script setup lang="ts">
     import { SessionStorage, QTableColumn } from 'quasar';
-    import { computed, onMounted, reactive, ref, watch } from 'vue';
+    import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
@@ -166,11 +171,7 @@
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { useRoute, useRouter } from 'vue-router';
-
-    type TPagination = {
-        rowsPerPage: number;
-    };
+    import { onBeforeRouteLeave, RouteLocationNormalizedLoadedGeneric, useRoute, useRouter } from 'vue-router';
 
     type DisableButtons = {
         editPayMentsForms: boolean;
@@ -179,7 +180,15 @@
         finallySale: boolean;
     };
 
+    const pagination = ref<TPagination>({
+        rowsPerPage: 0,
+        sortBy: 'product_id'
+    });
+
+    let nextRef: any = null
+
     const { notify } = useNotify();
+
     const registeredCustomer = ref<boolean>(false);
 
     const disableButtons = reactive<DisableButtons>({
@@ -241,13 +250,9 @@
 
     const returningSaleId = ref<number>();
     const showConfigPayMentForm = ref<boolean>(false);
-
-    const pagination = ref<TPagination>({
-        rowsPerPage: 0
-    });
-
     const showBaseSearchAllProducs = ref<boolean>(false);
     const showConfirmDialog = ref<boolean>(false);
+    const onLeaveConfirmDialog = ref<boolean>(false);
     const showPayMentForms = ref<boolean>(false);
     const textOperation = ref<string>('');
     const operation = ref<'save'|'delete'|''>('');
@@ -321,13 +326,13 @@
 
             if(exisit)
             {
-                exisit.qtde += 1;
+                exisit.qtde += p.qtde;
 
             } else {
-                console.log(p.qtde <= 0);
+                console.log(p);
 
                 productsSale.value.push({
-                    id: 0,
+                    id: null,
                     product_id: p.id,
                     name: p.name,
                     price: p.price,
@@ -366,20 +371,61 @@
         showConfirmDialog.value = true;
     };
 
+    const hasProductChanged = (): boolean => {
+        notify(
+            'info',
+            'Conferindo itens da venda.'
+        );
+
+        if (productsSale.value.length !== originalProductsSale.value.length) {
+            return true;
+        };
+
+        const currentMap = new Map(
+            productsSale.value.map(item => [
+                item.product_id,
+                { qtde: item.qtde, price: item.price }
+            ])
+        );
+
+        for (const oldItem of originalProductsSale.value) {
+            const current = currentMap.get(oldItem.product_id);
+
+            if (!current) return true;
+
+            console.log('Itens: ', {
+                current: current,
+                oldItem: oldItem
+            });
+
+            if (
+                current.qtde !== oldItem.qtde || current.price !== oldItem.price
+            ) return true;
+        };
+
+        return false;
+    };
+
     const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
         if(confirmed && operation === 'save')
         {
-            if(SessionStorage.getItem('sale'))
+            if(SessionStorage.getItem('sale') && routeSaleId.value !== 0)
             {
-                console.log('Tem uma venda ainda salva: ', SessionStorage.getItem('sale'));
+                console.log('Tem uma venda ainda salva: ', SessionStorage.getItem('sale'), ' e ou é uma venda importada: ', routeSaleId.value, ' valor: ', SessionStorage.getItem('sale') || routeSaleId.value !== 0);
 
                 notify(
                     'positive',
                     'Dados salvos com sucesso!'
                 );
 
-                removeSessionData('sale_id');
-                removeSessionData('sale');
+                if (SessionStorage.getItem('sale'))
+                {
+                    removeSessionData('sale_id');
+                    removeSessionData('sale');
+                };
+
+                if(routeSaleId.value !== 0) router.replace({query: {}});
+
                 productsSale.value = [];
                 showConfirmDialog.value = false;
 
@@ -391,7 +437,7 @@
                 return;
             };
 
-            console.log('Vai continuar');
+            console.log('Não tinha uma venda salva, vai salvar e resetar os dados do Session');
 
             saveSaleForPay(true);
             resetSale(false);
@@ -408,6 +454,12 @@
             productsSale.value = [];
             showConfirmDialog.value = false;
 
+            disableButtons.editPayMentsForms = false;
+            disableButtons.deleteSale = true;
+            disableButtons.saveSale = true;
+            disableButtons.finallySale = true;
+
+            return;
         };
 
         showConfirmDialog.value = false;
@@ -416,41 +468,76 @@
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
+        console.log('call saveSaleForPay');
+
         disableButtons.finallySale = true;
+
+        const payload: SaleContract = {
+            id: null,
+            customer_id: pdvData.value.customer_id,
+            customer: pdvData.value.customer,
+            specie: pdvData.value.specie,
+            products: productsSale.value,
+        };
 
         const existingSale = SessionStorage.getItem('sale_id');
         const saleId = routeSaleId.value;
 
         if(isSave)
         {
-            if(hasProductChanged()) {
-                const res = await insertNewItens({
-                    id: Number(existingSale || saleId),
-                    customer: pdvData.value.customer,
-                    customer_id: pdvData.value.customer_id,
-                    products: productsSale.value,
-                    specie: pdvData.value.specie
-                });
+            console.log('Foi apenas para salvar');
+            const res = await saveSaleService(payload);
 
-                if (!res.success) {
-                    notify('negative', res.message);
+            if(res.success)
+            {
+                if(hasProductChanged()) {
+                    const res = await insertNewItens({
+                        id: Number(existingSale || saleId),
+                        customer: pdvData.value.customer,
+                        customer_id: pdvData.value.customer_id,
+                        products: productsSale.value,
+                        specie: pdvData.value.specie
+                    });
+
+                    if (!res.success) {
+                        notify('negative', res.message);
+                        console.error('Erro no insertNewItens');
+
+                        resetBtns();
+
+                        return;
+                    };
+
+                    console.log('Possui alterações nos produtos.');
+                };
+
+                returningSaleId.value = res.data.id ?? routeSaleId.value;
+
+                SessionStorage.set('sale_id', returningSaleId.value);
+
+                if(!res.data.id || res.data.id === 0)
+                {
+                    notify(
+                        'negative',
+                        'Erro ao finalizar a venda. Identificador inválido!'
+                    );
+
                     return;
                 };
 
+                notify('positive', 'Dados salvos com sucesso!');
+
+                removeSessionData('sale_id');
+                removeSessionData('sale');
+
+                productsSale.value = [];
+
+                originalProductsSale.value = [];
+
+                router.replace({query: {}});
+
                 return;
             };
-
-            notify('positive', 'Dados salvos com sucesso!');
-            removeSessionData('sale_id');
-            removeSessionData('sale');
-
-            productsSale.value = [];
-
-            originalProductsSale.value = [];
-
-            router.replace({query: {}});
-
-            return;
         };
 
         // Confirma se a venda não foi reaberta / importada
@@ -464,7 +551,11 @@
             });
 
             if (!res.success) {
+                console.error('Erro no insertNewItens');
+
                 notify('negative', res.message);
+                resetBtns();
+
                 return;
             };
 
@@ -475,14 +566,6 @@
             showPayMentForms.value = true;
             returningSaleId.value = Number(saleId);
             return;
-        };
-
-        const payload: SaleContract = {
-            id: 0,
-            customer_id: pdvData.value.customer_id,
-            customer: pdvData.value.customer,
-            specie: pdvData.value.specie,
-            products: productsSale.value,
         };
 
         SessionStorage.set('sale', payload);
@@ -518,7 +601,9 @@
         } else {
             isSave
                 ? null
-                : notify('negative', `Erro ao finalizar a venda: ${res.message}`);
+                : notify('negative', res.message);
+
+            resetBtns();
         };
     };
 
@@ -547,30 +632,11 @@
         pdvData.value.customer = 'Consumidor padrão';
     };
 
-    const hasProductChanged = () => {
-        if (productsSale.value.length !== originalProductsSale.value.length) {
-            return true;
-        };
-
-        const currentMap = new Map(
-            productsSale.value.map(item => [
-                item.product_id,
-                { qtde: item.qtde, price: item.price }
-            ])
-        );
-
-        for (const oldItem of originalProductsSale.value) {
-            const current = currentMap.get(oldItem.product_id);
-
-            if (!current) return true;
-
-            if (
-                current.qtde !== oldItem.qtde ||
-                current.price !== oldItem.price
-            ) return true;
-        };
-
-        return false;
+    const resetBtns = (): void => {
+        disableButtons.editPayMentsForms = false;
+        disableButtons.deleteSale = true;
+        disableButtons.saveSale = true;
+        disableButtons.finallySale = true;
     };
 
     onMounted(async () => {
@@ -645,6 +711,32 @@
         disableButtons.saveSale = false;
         disableButtons.finallySale = false;
     };
+
+    const cancelAndLeave = (confirm: boolean) => {
+        if (confirm && nextRef)
+        {
+            nextRef();
+        } else if (nextRef){
+            nextRef(false);
+        };
+
+        nextRef = null;
+    };
+
+    onBeforeRouteLeave((to, from, next) => {
+        const hasOpenSale = SessionStorage.getItem('sale_id') || SessionStorage.getItem('sale') || productsSale.value?.length > 0
+
+        if (hasOpenSale) {
+            textOperation.value = 'Existe uma venda aberta!'
+            showConfirmDialog.value = true;
+            onLeaveConfirmDialog.value = true;
+
+            nextRef = next;
+            return;
+        };
+
+        next();
+    });
 </script>
 
 <style lang="scss">

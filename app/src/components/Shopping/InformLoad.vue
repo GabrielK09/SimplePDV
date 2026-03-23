@@ -22,7 +22,7 @@
                         </template>
                     </q-input>
 
-                    <div class="mt-4">
+                    <div class="mt-4 flex gap-4">
                         <q-btn
                             color="red"
                             label="Fechar"

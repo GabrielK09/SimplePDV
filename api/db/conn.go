@@ -12,6 +12,7 @@ import (
 )
 
 var Pool *pgxpool.Pool
+var ctx = context.Background()
 
 func Init() (*pgxpool.Pool, error) {
 	godotenv.Load()
@@ -24,7 +25,7 @@ func Init() (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("DB_URL não definida")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	config, err := pgxpool.ParseConfig(dsn)
@@ -35,7 +36,7 @@ func Init() (*pgxpool.Pool, error) {
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
