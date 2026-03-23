@@ -17,9 +17,8 @@ func HandleProcessGetDashBoard(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	}
 
@@ -29,9 +28,7 @@ func HandleProcessGetDashBoard(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao processar os dados:", err)
 
-		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
-
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
 		return
 	}
 
@@ -39,17 +36,14 @@ func HandleProcessGetDashBoard(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, nil, "Erro ao processar os dados do DashBoard.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Erro ao processar os dados do DashBoard."))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, dashBoardData, "Dados do período!")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, dashBoardData, "Dados do período!"))
 }
 
 func HandleProcessGetDashBoardPopularItens(w http.ResponseWriter, r *http.Request) {
@@ -57,9 +51,8 @@ func HandleProcessGetDashBoardPopularItens(w http.ResponseWriter, r *http.Reques
 
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	}
 
@@ -69,9 +62,7 @@ func HandleProcessGetDashBoardPopularItens(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao processar os dados:", err)
 
-		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
-
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
 		return
 	}
 
@@ -79,15 +70,12 @@ func HandleProcessGetDashBoardPopularItens(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, nil, "Erro ao processar os dados do DashBoard.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Erro ao processar os dados do DashBoard."))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, popularItensData, "Dados do período!")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, popularItensData, "Dados do período!"))
 }
