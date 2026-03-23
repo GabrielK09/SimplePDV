@@ -10,16 +10,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-//go:embed sql/report.sql
+//go:embed sql/dashBoardQuery.sql
 var reportSQL string
 
 type DashBoardContract struct {
-	Commission   float64 `json:"commission"`
-	TotalSales   float64 `json:"total_saled"`
-	BestCustomer string  `json:"best_customer"`
-	AmountSaled  float64 `json:"amount_saled"`
-	StartDateStr string  `json:"start_date"`
-	EndDateStr   string  `json:"end_date"`
+	TotalSales          float64 `json:"total_saled"`
+	Commission          float64 `json:"commission"`
+	AmountSaled         float64 `json:"amount_saled"`
+	BestCustomer        string  `json:"best_customer"`
+	TotalShopping       float64 `json:"total_shopping"`
+	AmountShoppingItens float64 `json:"amount_shopping_itens"`
+	AmountShopping      float64 `json:"amount_shopping"`
+	StartDateStr        string  `json:"start_date"`
+	EndDateStr          string  `json:"end_date"`
 }
 
 //go:embed sql/popularItens.sql
@@ -88,17 +91,23 @@ func (ds *DashBoardContract) ShowDashBoard() (DashBoardContract, error) {
 	).Scan(
 		&d.TotalSales,
 		&d.Commission,
-		&d.BestCustomer,
 		&d.AmountSaled,
+		&d.BestCustomer,
+		&d.TotalShopping,
+		&d.AmountShoppingItens,
+		&d.AmountShopping,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao ler os dados da query: ", err)
 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return DashBoardContract{
-				TotalSales:   0,
-				Commission:   0,
-				BestCustomer: "",
-				AmountSaled:  0,
+				TotalSales:          0,
+				Commission:          0,
+				AmountSaled:         0,
+				BestCustomer:        "",
+				TotalShopping:       0,
+				AmountShoppingItens: 0,
+				AmountShopping:      0,
 			}, nil
 		}
 
