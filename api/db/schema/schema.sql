@@ -24,7 +24,6 @@ CREATE TABLE public.pay_ment_forms (
   id SERIAL PRIMARY KEY,
   specie character varying NOT NULL,
   pix_key character varying,
-  deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -94,7 +93,6 @@ CREATE TABLE public.shopping_itens (
   name character varying NOT NULL,
   qtde_purchased integer NOT NULL,
   purchased_value double precision NOT NULL,
-  deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT shopping_itens_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id),
