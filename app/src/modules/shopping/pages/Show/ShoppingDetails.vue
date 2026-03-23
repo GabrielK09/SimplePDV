@@ -89,6 +89,11 @@
             align: 'center'
         },
         {
+            field: 'qtde_purchased',
+            label: 'Qtde comprada',
+            name: 'qtde_purchased',
+        },
+        {
             field: 'purchased_value',
             label: 'Valor da compra',
             name: 'purchased_value',
@@ -126,8 +131,6 @@
 
         const shoppingDetails: ShoppingContract = res.data.shopping;
         const shoppingWithProducts: ShoppingItemContract[] = res.data.shoppingWithProducts;
-
-        console.log(res.data);
 
         shoppingData.value = {
             id: shoppingDetails.id,
