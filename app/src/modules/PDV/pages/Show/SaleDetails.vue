@@ -127,6 +127,12 @@
             align: 'center'
         },
         {
+            field: 'qtde',
+            label: 'Qtde vendida',
+            name: 'qtde',
+            align: 'center'
+        },
+        {
             field: 'price',
             label: 'Valor da venda',
             name: 'price',
@@ -214,8 +220,6 @@
         };
 
         const data = res.data;
-
-        console.log(data);
 
         saleData.value = data.sale || [];
         commissionData.value = data.commission || [];
