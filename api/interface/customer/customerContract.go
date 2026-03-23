@@ -154,7 +154,16 @@ func (c *CustomerContract) Create() error {
 	return nil
 }
 
-func Delete(id int) error {
+func Delete(id int, deletedAt time.Time) error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
 	verify := `
 		SELECT
 			id
@@ -168,7 +177,7 @@ func Delete(id int) error {
 
 	var saleCustomerId int
 
-	err := conn.QueryRow(
+	err = conn.QueryRow(
 		ctx,
 		verify,
 		saleCustomerId,
@@ -187,20 +196,22 @@ func Delete(id int) error {
 	}
 
 	query := `
-		DELETE FROM
+		UPDATE
 			customers
 
-		WHERE 
+		SET
+			deleted_at = $2
+
+		WHERE
 			id = $1
 	`
 
-	_, err = conn.Exec(
+	if _, err = conn.Exec(
 		ctx,
 		query,
 		id,
-	)
-
-	if err != nil {
+		deletedAt,
+	); err != nil {
 		u.ErrorLogger.Println("Erro ao deletar: ", err)
 		return err
 	}
