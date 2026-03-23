@@ -17,7 +17,7 @@ const routes: RouteRecordRaw[] = [
         children: [
             {
                 path: '',
-                component: () => import('src/modules/dashBoard/pages/IndexPage.vue')
+                component: () => import('src/modules/dashBoard/pages/DashBoard.vue'),
             },
             {
                 path: 'api',

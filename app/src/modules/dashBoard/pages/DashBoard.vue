@@ -16,18 +16,17 @@
 
                         <div class="my-auto">
                             <q-btn
-                                color="primary"
                                 type="submit"
                                 no-caps
                                 label="Filtrar"
-                                class="full-width"
+                                class="full-width bg-[#2563EB] text-white"
                             />
                         </div>
 
                         <div class="my-auto">
                             <q-btn
-                                color="primary"
                                 no-caps
+                                class="full-width bg-[#1D4ED8] text-white"
                                 label="Relatórios"
                                 @click="showReports = !showReports"
                             />
@@ -39,11 +38,84 @@
             <div class="row q-col-gutter-md mr-6">
                 <div class="col-12 col-md-3">
                     <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Total vendido</div>
+                        <div class="text-h5 text-[#2563EB]">
+                            R$ {{ dashBoardData?.total_saled.toFixed(2).toString().replace('.', ',') || '0,00' }}
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Comissão</div>
+                        <div class="text-h5 text-[#16A34A]">
+                            R$ {{ dashBoardData?.commission.toFixed(2).toString().replace('.', ',') || '0,00' }}
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Quantidade de vendas</div>
+                        <div class="text-h5 text-[#7C3AED]">
+                            {{ dashBoardData?.amount_saled.toString().replace('.', ',') || '0' }}
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Melhor cliente</div>
+                        <div class="text-h6 text-[#111827]">
+                            <span class="text-[#9CA3AF]">
+                                {{ dashBoardData?.best_customer || '-' }}
+                            </span>
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Total comprado</div>
+                        <div class="text-h5 text-[#3B82F6]">
+                            R$ {{ dashBoardData?.total_shopping.toFixed(2).toString().replace('.', ',') || '0,00' }}
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Total de itens comprados</div>
+                        <div class="text-h5 text-[#3B82F6]">
+                           {{ dashBoardData?.amount_shopping_itens.toString().replace('.', ',') || '0' }}
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
+                        <div class="text-grey">Quantidade de compras</div>
+                        <div class="text-h5 text-blue-800">
+                            {{ dashBoardData?.amount_shopping.toString().replace('.', ',') || '0' }}
+                        </div>
+                    </q-card>
+                </div>
+
+                <div class="col-12 col-md-3">
+                    <q-card class="q-pa-md shadow-2">
                         <div class="text-grey">Saldo total do caixa</div>
 
                         <div class="flex justify-between">
                             <div class="text-h5 text-primary">
-                                R$ {{ totalBalance.toFixed(2).toString().replace('.', ',') || '0,00' }}
+                                <span
+                                    :class="{
+                                        'text-[#16A34A]': totalBalance > 0,
+                                        'text-[#DC2626]': totalBalance < 0
+                                    }"
+                                >
+                                    R$ {{ totalBalance.toFixed(2).toString().replace('.', ',') || '0,00' }}
+
+                                </span>
                             </div>
 
                             <div
@@ -68,42 +140,6 @@
                         </div>
                     </q-card>
                 </div>
-
-                <div class="col-12 col-md-3">
-                    <q-card class="q-pa-md shadow-2">
-                        <div class="text-grey">Total Vendido</div>
-                        <div class="text-h5 text-blue-800">
-                            R$ {{ dashBoardData?.total_saled.toFixed(2).toString().replace('.', ',') || '0,00' }}
-                        </div>
-                    </q-card>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-card class="q-pa-md shadow-2">
-                        <div class="text-grey">Comissão</div>
-                        <div class="text-h5 text-green">
-                            R$ {{ dashBoardData?.commission.toFixed(2).toString().replace('.', ',') || '0,00' }}
-                        </div>
-                    </q-card>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-card class="q-pa-md shadow-2">
-                        <div class="text-grey">Quantidade de Vendas</div>
-                        <div class="text-h5 text-indigo">
-                            {{ dashBoardData?.amount_saled.toFixed(2).toString().replace('.', ',') || '0,00' }}
-                        </div>
-                    </q-card>
-                </div>
-
-                <div class="col-12 col-md-3">
-                    <q-card class="q-pa-md shadow-2">
-                        <div class="text-grey">Melhor Cliente</div>
-                        <div class="text-h6 text-deep-orange">
-                            {{ dashBoardData?.best_customer || '-' }}
-                        </div>
-                    </q-card>
-                </div>
             </div>
 
             <div class="mr-6">
@@ -112,8 +148,7 @@
                         title="Itens mais vendidos"
                         :rows="popularItensTableData"
                         :columns="popularItensTableColumn"
-
-                        row-key="name"
+                        row-key="product_id"
                     />
                 </q-card>
             </div>
@@ -171,9 +206,6 @@
     ];
 
     const popularItensTableData = ref<any[]>([]);
-    const popularItensFilter = ref<PopularItensFilterContract>({
-        per_page: null
-    });
 
     const filterPopularItens = async () => {
         const res = await filterPopularItensData(20);
