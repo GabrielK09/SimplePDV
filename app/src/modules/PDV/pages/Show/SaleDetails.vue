@@ -43,12 +43,12 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div v-if="commissionData.length > 0">
                         <span class="font-bold ml-2">
                             Dados da comissão:
                         </span>
 
-                        <div class="mt-4 p-2" v-if="commissionData.length > 0">
+                        <div class="mt-4 p-2">
                             <q-table
                                 :rows="commissionData"
                                 :columns="columnsForCommission"
@@ -62,7 +62,7 @@
                         <span class="font-bold ml-2">
                             Status:
                         </span>
-                        
+
                         <span
                             :class="{
                                 'text-green-600': saleData.status === 'Concluída',
@@ -76,13 +76,13 @@
             </q-card-section>
 
             <q-card-actions align="right">
-                <q-btn 
+                <q-btn
                     color="black"
                     flat
                     icon="print"
                     @click="printer"
                 />
-                
+
                 <q-btn
                     color="red"
                     icon="close"
@@ -119,7 +119,7 @@
         commission_generated: number;
     };
 
-    const columnsForSale: QTableColumn[] = [ 
+    const columnsForSale: QTableColumn[] = [
         {
             field: 'name',
             label: 'Produto',

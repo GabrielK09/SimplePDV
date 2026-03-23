@@ -3,7 +3,6 @@ package sale
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
@@ -383,7 +382,7 @@ func (s *SaleContract) Create() (int, error) {
 
 func (s *SaleContract) InsertNewItens() error {
 	if s.Id <= 0 {
-		return nil
+		return fmt.Errorf("Identificador da venda inválido.")
 	}
 
 	u.InfoLogger.Println("InsertNewItens started")
@@ -397,92 +396,78 @@ func (s *SaleContract) InsertNewItens() error {
 
 	defer tx.Rollback(ctx)
 
-	queryForCheckItens := `
-		SELECT
-			qtde,
-			sale_value,
-			id
-		FROM
-			sale_itens
-		WHERE
-			sale_id = $1
-			AND product_id = $2
-	`
-
-	queryForInsertNewItem := `
+	queryForInsertOrUpdateNewItem := `
 		INSERT INTO sale_itens
 			(product_id, name, qtde, sale_value, sale_id)
 
 		VALUES
 			($1, $2, $3, $4, $5)
+
+		ON CONFLICT (sale_id, product_id)
+		DO UPDATE SET
+			name = EXCLUDED.name,
+			qtde = EXCLUDED.qtde, 
+			sale_value = EXCLUDED.sale_value
 	`
 
 	for _, p := range s.Products {
-		var itens struct {
-			qtde      int
-			saleValue float64
-			id        int
-		}
+		var oldQtdeSaleItem int
 
-		err := tx.QueryRow(
-			ctx,
-			queryForCheckItens,
-			s.Id,
-			p.ProductId,
-		).Scan(
-			&itens.qtde,
-			&itens.saleValue,
-			&itens.id,
-		)
-
-		if err == nil {
-			u.InfoLogger.Println("Produto já existente na venda.")
-			continue
-		}
-
-		// Usar p.ProductId
-		if _, err := tx.Exec(
+		if err := tx.QueryRow(
 			ctx,
 			`
-				UPDATE 
+				SELECT 
+					qtde
+				FROM
 					sale_itens
-				SET	
-					qtde = $3,
-					sale_value = $4
 				WHERE
-					sale_id = $1
-					AND product_id = $2
+					sale_id = $1 AND
+					product_id = $2
+
 			`,
 			s.Id,
 			p.ProductId,
-			p.Qtde,
-			p.SaleValue,
-		); err != nil {
-			u.ErrorLogger.Println("Erro ao atualizar o item com qtde maior: ", err)
-
+		).Scan(&oldQtdeSaleItem); err != nil && err != pgx.ErrNoRows {
+			u.ErrorLogger.Println("Erro ao localizar a qtde anterior do produto da venda")
 			return err
 		}
 
-		if !errors.Is(err, pgx.ErrNoRows) {
-			u.ErrorLogger.Println("Erro ao conferir se o item existe: ", err)
-
-			return err
+		if err == pgx.ErrNoRows {
+			oldQtdeSaleItem = 0
 		}
 
-		u.InfoLogger.Println("Novos produto não existentes na venda.")
+		diff := p.Qtde - oldQtdeSaleItem
 
 		if _, err := tx.Exec(
 			ctx,
-			queryForInsertNewItem,
+			queryForInsertOrUpdateNewItem,
 			p.ProductId,
 			p.Name,
 			p.Qtde,
 			p.SaleValue,
 			s.Id,
 		); err != nil {
-			u.ErrorLogger.Println("Erro ao inserir os novos itens: ", err)
-
+			u.ErrorLogger.Println("Erro ao inserir/atualizar item: ", err)
 			return err
+		}
+
+		if diff != 0 {
+			if _, err := tx.Exec(
+				ctx,
+				`
+					UPDATE
+						products	
+					SET 
+						qtde = qtde - $2
+					WHERE
+						id = $1
+				`,
+				p.ProductId,
+				diff,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao fazer o update no estoque: ", err)
+				return err
+			}
 		}
 	}
 

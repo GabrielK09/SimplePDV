@@ -93,6 +93,7 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePutCancelSaleOrShopping(w http.ResponseWriter, r *http.Request) {
+	u.InfoLogger.Println("Called HandlePutCancelSaleOrShopping")
 
 	var label string
 	var cancelBody processpayment.CancelContract

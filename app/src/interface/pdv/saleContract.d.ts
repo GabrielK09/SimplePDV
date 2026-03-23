@@ -8,7 +8,7 @@ interface SaleContract {
 
 interface SaleItemContract {
     readonly id: number;
-    readonly product_id: number;
+    product_id: number;
     name: string;
     price: number;
     qtde: number;
@@ -20,7 +20,8 @@ interface PaySaleContract {
     amount_paid: number
 };
 
-type StatusSale = 'Pendente'|'Concluída';
+type StatusSale = 'Pendente'|'Concluída'|'Cancelada';
+
 interface PDVContract {
     readonly id: number;
     customer: string;

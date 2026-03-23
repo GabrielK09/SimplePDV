@@ -37,6 +37,51 @@ type CancelContract struct {
 	ShoppingId int `json:"shopping_id"`
 }
 
+func createInCashRegister(
+	tx pgx.Tx,
+	inputValue,
+	outputValue float64,
+	saleId,
+	shoppingId int,
+	customer customer.CustomerContract,
+	specie PayMentBody,
+) map[string]string {
+	errorsField := make(map[string]string)
+	var c cashRegister.CashRegisterContract
+
+	c.SpecieId = specie.SpecieId
+	c.Specie = specie.Specie
+
+	c.SaleId = saleId
+	c.ShoppingId = shoppingId
+
+	c.CustomerId = customer.Id
+	c.Customer = customer.Name
+
+	if inputValue > 0 && outputValue > 0 {
+		u.ErrorLogger.Println("Um registro no caixa não pode ter um valor de entrada e um de saída no mesmo registro.")
+
+		errorsField["input_value"] = "Um registro no caixa não pode ter um valor de entrada no mesmo registro de uma saída."
+		errorsField["output_value"] = "Um registro no caixa não pode ter um valor de saída no mesmo registro de uma entrada."
+
+		return errorsField
+	}
+
+	if inputValue > 0 {
+		if err := c.Create(tx, inputValue, 0.0); len(err) > 0 {
+			return err
+		}
+	}
+
+	if outputValue > 0 {
+		if err := c.Create(tx, 0.0, outputValue); len(err) > 0 {
+			return err
+		}
+	}
+
+	return errorsField
+}
+
 func (p PayContract) ValidatePay(id int) map[string]string {
 	errorsField := make(map[string]string)
 
@@ -373,52 +418,9 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 	return nil
 }
 
-func createInCashRegister(
-	tx pgx.Tx,
-	inputValue,
-	outputValue float64,
-	saleId,
-	shoppingId int,
-	customer customer.CustomerContract,
-	specie PayMentBody,
-) map[string]string {
-	errorsField := make(map[string]string)
-	var c cashRegister.CashRegisterContract
-
-	c.SpecieId = specie.SpecieId
-	c.Specie = specie.Specie
-
-	c.SaleId = saleId
-	c.ShoppingId = shoppingId
-
-	c.CustomerId = customer.Id
-	c.Customer = customer.Name
-
-	if inputValue > 0 && outputValue > 0 {
-		u.ErrorLogger.Println("Um registro no caixa não pode ter um valor de entrada e um de saída no mesmo registro.")
-
-		errorsField["input_value"] = "Um registro no caixa não pode ter um valor de entrada no mesmo registro de uma saída."
-		errorsField["output_value"] = "Um registro no caixa não pode ter um valor de saída no mesmo registro de uma entrada."
-
-		return errorsField
-	}
-
-	if inputValue > 0 {
-		if err := c.Create(tx, inputValue, 0.0); len(err) > 0 {
-			return err
-		}
-	}
-
-	if outputValue > 0 {
-		if err := c.Create(tx, 0.0, outputValue); len(err) > 0 {
-			return err
-		}
-	}
-
-	return errorsField
-}
-
 func CancelSaleOrShopping(c CancelContract) error {
+	u.InfoLogger.Println("called CancelSaleOrShopping")
+
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
@@ -429,6 +431,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 	defer tx.Rollback(ctx)
 
 	if c.SaleId > 0 {
+		u.InfoLogger.Println("Cancelando uma venda")
+
 		var s sale.SaleContract
 
 		querySelectSale := `
@@ -461,7 +465,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 		var payMentFormsFromSale []PayMentBody
 
-		if s.Status == "Cancelado" {
+		if s.Status == "Cancelada" {
 			u.ErrorLogger.Printf("Essa venda n° %d já está cancelada", s.Id)
 			return fmt.Errorf("Essa venda n° %d já está cancelada", s.Id)
 		}
@@ -471,16 +475,18 @@ func CancelSaleOrShopping(c CancelContract) error {
 				product_id,
 				qtde,
 				status
+
 			FROM
 				sale_itens
+
 			WHERE
-				id = $1
+				sale_id = $1
 		`
 
-		itensSaleSelect, err := tx.Query(
+		itensSaleRows, err := tx.Query(
 			ctx,
 			querySelectItensSale,
-			s.Id,
+			c.SaleId,
 		)
 
 		if err != nil {
@@ -488,32 +494,34 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return err
 		}
 
-		defer itensSaleSelect.Close()
+		defer itensSaleRows.Close()
 
-		for itensSaleSelect.Next() {
-			var s struct {
+		var saleProducts []struct {
+			ProductId int
+			Qtde      int
+			Status    string
+		}
+
+		for itensSaleRows.Next() {
+			var p struct {
 				ProductId int
 				Qtde      int
 				Status    string
 			}
 
-			if err := itensSaleSelect.Scan(
-				&s.ProductId,
-				&s.Qtde,
-				&s.Status,
+			if err := itensSaleRows.Scan(
+				&p.ProductId,
+				&p.Qtde,
+				&p.Status,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
 				return err
 			}
 
-			if s.Status != "Cancelado" {
-				continue
-			}
+			saleProducts = append(saleProducts, p)
+		}
 
-			if s.Status == "Cancelado" {
-				return fmt.Errorf("Produto ID %d, venda n° %d, já cancelado", s.ProductId, c.SaleId)
-			}
-
+		for _, p := range saleProducts {
 			queryUpdateReturnQtdeStock := `
 				UPDATE
 					products
@@ -525,11 +533,13 @@ func CancelSaleOrShopping(c CancelContract) error {
 					id = $1
 			`
 
+			u.InfoLogger.Println("Vai fazer o update dos item: ", p)
+
 			if _, err := tx.Exec(
 				ctx,
 				queryUpdateReturnQtdeStock,
-				s.ProductId,
-				s.Qtde,
+				p.ProductId,
+				p.Qtde,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
 				return err
@@ -542,7 +552,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 				sales
 
 			SET
-				status = 'Cancelado'
+				status = 'Cancelada'
 
 			WHERE
 				id = $1
@@ -562,7 +572,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 				sale_itens
 
 			SET
-				status = 'Cancelado'
+				status = 'Cancelada'
 
 			WHERE
 				sale_id = $1
@@ -688,7 +698,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 				id = $1
 		`
 
-		itensShoppingSelect, err := tx.Query(
+		itensShoppingRows, err := tx.Query(
 			ctx,
 			querySelectItensShopping,
 			s.Id,
@@ -699,15 +709,20 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return err
 		}
 
-		defer itensShoppingSelect.Close()
+		defer itensShoppingRows.Close()
 
-		for itensShoppingSelect.Next() {
+		var shoppingProducts []struct {
+			ProductId int
+			Qtde      int
+		}
+
+		for itensShoppingRows.Next() {
 			var sp struct {
 				ProductId int
 				Qtde      int
 			}
 
-			if err := itensShoppingSelect.Scan(
+			if err := itensShoppingRows.Scan(
 				&sp.ProductId,
 				&sp.Qtde,
 			); err != nil {
@@ -715,6 +730,10 @@ func CancelSaleOrShopping(c CancelContract) error {
 				return err
 			}
 
+			shoppingProducts = append(shoppingProducts, sp)
+		}
+
+		for _, p := range shoppingProducts {
 			queryUpdateDiscountQtdeStock := `
 				UPDATE
 					products
@@ -729,8 +748,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 			if _, err := tx.Exec(
 				ctx,
 				queryUpdateDiscountQtdeStock,
-				sp.ProductId,
-				sp.Qtde,
+				p.ProductId,
+				p.Qtde,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
 				return err
@@ -743,7 +762,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 				shopping
 
 			SET
-				status = 'Cancelado'
+				status = 'Cancelada'
 
 			WHERE
 				id = $1

@@ -40,7 +40,7 @@
                                             />
                                         </div>
 
-                                        <div v-else-if="props.row.status !== 'Concluída' && props.row.status !== 'Cancelado'">
+                                        <div v-else-if="props.row.status !== 'Concluída' && props.row.status !== 'Cancelada'">
                                             <q-btn
                                                 size="10px"
                                                 no-caps
@@ -59,13 +59,14 @@
                                             flat
                                             @click="buildShowSaleDetails(props.row.id)"
                                         />
+
                                     </template>
 
                                     <template v-if="col.name === 'status'">
                                         <div
                                             :class="{
                                                 'text-green-600': props.row.status === 'Concluída',
-                                                'text-red-600': props.row.status === 'Cancelado'
+                                                'text-red-600': props.row.status === 'Cancelada'
                                             }"
                                         >
                                             {{ col.value }}
@@ -122,8 +123,9 @@
     const { notify } = useNotify();
     const router = useRouter();
 
-    const pagination = ref({
-        sortBy: 'id' 
+    const pagination = ref<TPagination>({
+        sortBy: 'id',
+        rowsPerPage: 10
     });
 
     const columns: QTableColumn[] = [
@@ -218,7 +220,7 @@
         );
 
         showConfirmDialog.value = false;
-        
+
         await getAllPdv();
 
         return;
