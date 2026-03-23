@@ -35,9 +35,23 @@ CREATE TABLE public.products (
   qtde integer NOT NULL,
   returned integer DEFAULT 0,
   saled integer DEFAULT 0,
+  use_grid BOOLEAN DEFAULT 'true',
   deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TYPE sizes AS ENUM ('PP', 'P', 'M', 'G', 'GG', 'XG', 'XGG', 'EG', 'EGG', 'O')
+
+CREATE TABLE public.product_grids (
+  id SERIAL PRIMARY KEY,
+  product_id integer NOT NULL,
+  size sizes NOT NULL,
+  grid_qtde integer NOT NULL,
+  deleted_at timestamp without time zone,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT products_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
 CREATE TABLE public.sales (
   id SERIAL PRIMARY KEY,
@@ -47,11 +61,7 @@ CREATE TABLE public.sales (
   status character varying DEFAULT 'Pendente'::character varying,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT sales_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id);
-
-  ALTER TABLE sale_itens
-  ADD CONSTRAINT unique_sale_product
-  UNIQUE (sale_id, product_id);
+  CONSTRAINT sales_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
 CREATE TABLE public.sale_itens (
   id SERIAL PRIMARY KEY,
@@ -65,7 +75,12 @@ CREATE TABLE public.sale_itens (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT sales_itens_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT sales_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
+
+  ALTER TABLE sale_itens
+  ADD CONSTRAINT unique_sale_product
+  UNIQUE (sale_id, product_id);
 );
+
 CREATE TABLE public.sale_pay_ment (
   id SERIAL PRIMARY KEY,
   sale_id bigint NOT NULL,

@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
 	"time"
@@ -18,6 +19,8 @@ type ProductContract struct {
 	Commission float64   `json:"commission"`
 	Returned   int       `json:"returned"`
 	Saled      int       `json:"saled"`
+	UseGrid    bool      `json:"use_grid"`
+	DeletedAt  time.Time `json:"deleted_at"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
@@ -67,79 +70,75 @@ func (p *ProductContract) Create() error {
 
 	query := `	
 		INSERT INTO products
-			(name, price, qtde, commission, returned, saled)
+			(name, price, qtde, commission, use_grid)
 
 		VALUES
-			($1, $2, $3, $4, $5, $6)
-		
-		RETURNING 
-			id
+			($1, $2, $3, $4, $5)
 	`
 
-	err = conn.QueryRow(
-		context.Background(),
+	if _, err := tx.Exec(
+		ctx,
 		query,
 		p.Name,
 		p.Price,
 		p.Qtde,
 		p.Commission,
-		p.Returned,
-		p.Saled,
-	).Scan(&p.Id)
+		p.UseGrid,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao inserir o novo produto: ", err)
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao commitar: ", err)
+		return err
+	}
 
 	return err
 }
 
-func (p *ProductContract) Update() (ProductContract, error) {
-	quey := `
-		UPDATE
-			products
-		SET
-			name = $2, 
-			price = $3, 
-			qtde = $4, 
-			commission = $5, 
-			returned = $6, 
-			saled = $7
+func (p *ProductContract) Update() error {
+	tx, err := conn.Begin(ctx)
 
-		WHERE
-			id = $1
-		
-		RETURNING
-			id,
-			name,
-			price,
-			qtde,
-			commission,
-			returned,
-			saled
-	`
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
+		return err
+	}
 
-	err := conn.QueryRow(
-		context.Background(),
-		quey,
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE
+				products
+			SET
+				name = $2, 
+				price = $3, 
+				qtde = $4, 
+				commission = $5,
+				use_grid = $6
+
+			WHERE
+				id = $1
+		`,
 		p.Id,
 		p.Name,
 		p.Price,
 		p.Qtde,
 		p.Commission,
-		p.Returned,
-		p.Saled,
-	).Scan(
-		&p.Id,
-		&p.Name,
-		&p.Price,
-		&p.Qtde,
-		&p.Commission,
-		&p.Returned,
-		&p.Saled,
-	)
-
-	if err != nil {
-		return ProductContract{}, err
+		p.UseGrid,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o update do produto: ", err)
+		return err
 	}
 
-	return *p, nil
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao commitar: ", err)
+		return err
+	}
+
+	return nil
 }
 
 func Show(id int) (*ProductContract, error) {
@@ -150,8 +149,7 @@ func Show(id int) (*ProductContract, error) {
 			price, 
 			qtde, 
 			commission, 
-			returned, 
-			saled
+			use_grid 
 		FROM
 			products
 
@@ -161,7 +159,7 @@ func Show(id int) (*ProductContract, error) {
 
 	var p ProductContract
 
-	err := conn.QueryRow(
+	if err := conn.QueryRow(
 		context.Background(),
 		query,
 		id,
@@ -171,11 +169,8 @@ func Show(id int) (*ProductContract, error) {
 		&p.Price,
 		&p.Qtde,
 		&p.Commission,
-		&p.Returned,
-		&p.Saled,
-	)
-
-	if err != nil {
+		&p.UseGrid,
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
 
@@ -250,8 +245,7 @@ func GetAll() ([]ProductContract, error) {
 			price,
 			qtde,           
 			commission,
-			returned,
-			saled
+			use_grid
 		FROM
 			products
 
@@ -280,8 +274,7 @@ func GetAll() ([]ProductContract, error) {
 			&p.Price,
 			&p.Qtde,
 			&p.Commission,
-			&p.Returned,
-			&p.Saled,
+			&p.UseGrid,
 		); err != nil {
 			u.ErrorLogger.Println("Erro: ", err)
 			return nil, err
@@ -333,6 +326,11 @@ func Delete(id int, deletedAt time.Time) error {
 		deletedAt,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao deletar o produto: ", err)
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao commitar: ", err)
 		return err
 	}
 

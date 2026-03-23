@@ -16,6 +16,7 @@ import (
 	paymentform "myApi/interface/payMentForm"
 	"myApi/interface/pdv"
 	"myApi/interface/product"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
 	"myApi/interface/shopping"
 	"myApi/interface/user"
@@ -60,6 +61,7 @@ func main() {
 	loggerHelper.GeneralLogger.Println("Banco de dados conectado com sucesso!")
 
 	product.SetConnection(db)
+	productcharacteristics.SetConnection(db)
 	cashregisterController.SetConnection(db) // For manual insert
 	cashRegister.SetConnection(db)
 	sale.SetConnection(db)

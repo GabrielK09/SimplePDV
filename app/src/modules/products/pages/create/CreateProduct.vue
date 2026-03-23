@@ -143,11 +143,12 @@
     const priceInput = ref<string>('');
 
     const product = ref<ProductContract>({
-        id: 0,
-        name: '',
+        id: null,
+        name: null,
         price: null,
         qtde: null,
-        commission: 0
+        commission: 0,
+        use_grid: false
     });
 
     const formErrors = ref<Record<string, string>>({});

@@ -4,4 +4,9 @@ interface ProductContract {
     price: number|null;
     qtde: number|null;
     commission: number|null;
+    use_grid?: boolean;
 };
+
+interface ProductCharacteristicsContract {
+
+}
