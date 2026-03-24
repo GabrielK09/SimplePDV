@@ -93,7 +93,7 @@
                                 </template>
                             </q-input>
 
-                            <div class="mx-auto flex gap-4">
+                            <div class="mx-auto flex gap-4">                                
                                 <q-btn
                                     color="primary"
                                     no-caps
@@ -114,6 +114,32 @@
                                     @click="product.commission = 35"
                                     label="35%"
                                 />
+
+                                <q-checkbox 
+                                    v-model="product.use_grid" label="Usa grade" 
+                                    
+                                />
+                            </div>
+                        </div>
+
+                        <div v-if="!product.use_grid" class="mx-2 my-4">
+                            <div class="border p-4">
+                                <q-table
+                                    title="Grade"
+                                    :rows="product.productWithCharacteristics"
+                                    hide-bottom
+                                    :columns="gridTableColumn"
+                                    row-key="name"
+                                >
+                                    <template v-slot:top-right>
+                                        <q-btn 
+                                            color="primary" 
+                                            no-caps
+                                            label="Cadastar uma grade" 
+                                            @click="showCreateGrid = !showCreateGrid" 
+                                        />
+                                    </template>
+                                </q-table>
                             </div>
                         </div>
 
@@ -130,15 +156,48 @@
                 </q-form>
             </section>
         </main>
+        <pre>{{ product }}</pre>
     </q-page>
+
+    <CreateGridProduct
+        v-if="showCreateGrid"
+        :registred-grids="[]"
+        @return:grids="getReturnedGrid($event)"
+        @close="showCreateGrid = !$event"
+    />  
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import * as Yup from 'yup';
-    import { createProduct } from '../../services/productsService';
+    import { createProduct, createProductCharacteristics } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import { QTableColumn } from 'quasar';
+    import CreateGridProduct from 'src/components/Products/UseGrid/CreateGridProduct.vue';
+
+    const gridTableColumn: QTableColumn[] = [
+        {
+            name: 'id',
+            label: 'ID',
+            field: 'id'
+        },
+        {
+            name: 'grid_qtde',
+            label: 'Qtde',
+            field: 'grid_qtde',
+        },
+        {
+            name: 'size',
+            label: 'Tamanho',
+            field: 'size',
+        },
+        {
+            name: 'action',
+            label: '',
+            field: 'action'
+        }
+    ];
 
     const priceInput = ref<string>('');
 
@@ -148,7 +207,8 @@
         price: null,
         qtde: null,
         commission: 0,
-        use_grid: false
+        use_grid: false,
+        productWithCharacteristics: []
     });
 
     const formErrors = ref<Record<string, string>>({});
@@ -156,7 +216,8 @@
     const router = useRouter();
     const { notify } = useNotify();
 
-    let loadingLogin = ref<boolean>(false);
+    const loadingLogin = ref<boolean>(false);
+    const showCreateGrid = ref<boolean>(false);
 
     const nameUpper = computed({
         get: () => product.value.name,
@@ -202,7 +263,6 @@
                 .number()
                 .min(0, 'O valor de comissão não pode ser menor que zero.')
                 .max(100, 'O valor de comissão não pode ser maior que 100%.')
-                .required('A quantia do produto é obrigatório!')
         })
     );
 
@@ -222,7 +282,7 @@
             });
 
             const payLoad: ProductContract = {
-                id: 0,
+                id: null,
                 name: validated.name,
                 price: Number(validated.price.toFixed(2)),
                 commission: Number(validated.commission),
@@ -239,10 +299,14 @@
 
                 );
 
-                router.replace({
+                if(product.value.use_grid)
+                {
+                };
+                
+                /*router.replace({
                     name: 'products.index'
 
-                });
+                });*/
 
                 return;
             };
@@ -277,5 +341,17 @@
                 );
             };
         };
+    };
+
+    const getReturnedGrid = (grid: ProductCharacteristicsContract) => {
+        console.log('getReturnedGrid call', grid);
+        console.log('product.value.productWithCharacteristics', product.value.productWithCharacteristics);
+        
+        product.value.productWithCharacteristics.push({
+            grid_qtde: grid.grid_qtde,
+            id: null,
+            product_id: null,
+            size: grid.size
+        });
     };
 </script>

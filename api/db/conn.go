@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	u "myApi/helpers/logger"
 	"os"
 	"time"
 
@@ -15,7 +16,10 @@ var Pool *pgxpool.Pool
 var ctx = context.Background()
 
 func Init() (*pgxpool.Pool, error) {
+	u.InfoLogger.Println("Conectando ao db ...")
+
 	godotenv.Load()
+
 	if Pool != nil {
 		return Pool, nil
 	}
@@ -31,6 +35,7 @@ func Init() (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(dsn)
 
 	if err != nil {
+		u.ErrorLogger.Println("Erro na configuração: ", err)
 		return nil, err
 	}
 
@@ -38,11 +43,13 @@ func Init() (*pgxpool.Pool, error) {
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
+		u.ErrorLogger.Println("Erro na configuração: ", err)
 		return nil, err
 	}
 
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
+		u.ErrorLogger.Println("Erro na configuração: ", err)
 		return nil, err
 	}
 

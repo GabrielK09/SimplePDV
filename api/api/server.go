@@ -12,6 +12,7 @@ import (
 	paymentcontroller "myApi/api/handle/modules/controller/payMent"
 	paymentFormscontroller "myApi/api/handle/modules/controller/payMentForms"
 	productController "myApi/api/handle/modules/controller/product"
+	productcharacteristicscontroller "myApi/api/handle/modules/controller/product/productCharacteristics"
 	reportController "myApi/api/handle/modules/controller/report"
 	root "myApi/api/handle/modules/controller/root"
 	saleController "myApi/api/handle/modules/controller/sale"
@@ -115,6 +116,8 @@ func StartServer() {
 	proteced.HandleFunc("/products/find/{id}", productController.HandleGetByIdProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/find-by-name", productController.HandleGetByNameProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/create", productController.HandlePostProduct).Methods(http.MethodPost, http.MethodOptions)
+	proteced.HandleFunc("/products/create/characteristics", productcharacteristicscontroller.HandlePostCreateProduct).Methods(http.MethodPost, http.MethodOptions)
+	proteced.HandleFunc("/products/update/characteristics", productcharacteristicscontroller.HandlePutUpdateProduct).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/products/update/{id}", productController.HandlePutProduct).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct).Methods(http.MethodDelete, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\

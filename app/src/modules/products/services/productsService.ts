@@ -27,6 +27,38 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
     try {
         const res = await api.post('products/create', payLoad);
         const data = res.data;
+        
+        if(data.id && payLoad.qtde)
+        {   
+            const formatedCharacteristics = payLoad.productWithCharacteristics.map(p => ({
+                id: null,
+                product_id: data.id,
+                grid_qtde: p.grid_qtde,
+                size: p.size
+            }));
+
+            createProductCharacteristics(formatedCharacteristics)
+        };
+    
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
+
+export async function createProductCharacteristics(payLoad: ProductCharacteristicsContract[]): Promise<any>
+{
+    try {
+        const res = await api.post('products/create', payLoad);
+        const data = res.data;
 
         return apiResponse(
             true,

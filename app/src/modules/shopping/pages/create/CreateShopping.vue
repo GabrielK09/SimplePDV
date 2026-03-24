@@ -220,7 +220,7 @@
     import * as ProductsService from 'src/modules/products/services/productsService';
     import { computed, onMounted, onUnmounted, ref } from 'vue';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import CreateProductComponent from 'src/components/Products/CreateProductComponent.vue';
+    import CreateProductComponent from 'src/components/Products/CreateComponent/CreateProductComponent.vue';
     import InformLoad from 'src/components/Shopping/InformLoad.vue';
     import { useRoute, useRouter } from 'vue-router';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';

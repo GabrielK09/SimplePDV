@@ -1,7 +1,6 @@
 package loggerHelper
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,34 +11,21 @@ var InfoLogger *log.Logger
 var ErrorLogger *log.Logger
 
 func Logger() {
-	absPath, err := filepath.Abs("../api/log")
+	logDir := "log"
 
-	if err != nil {
-		fmt.Println("Erro ao pegar o caminho: ", err)
+	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+		log.Fatal("Erro ao criar o direiatório de log: ", err)
 	}
 
-	generalLog, err := os.OpenFile(absPath+"/general-log.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	logPath := filepath.Join(logDir, "general-log.log")
+
+	file, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
 	if err != nil {
-		log.Println("Erro ao abrir:", err)
-		os.Exit(1)
+		log.Fatal("Erro ao abrir a log:", err)
 	}
 
-	errorLog, err := os.OpenFile(absPath+"/general-log.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-
-	if err != nil {
-		log.Println("Erro ao abrir:", err)
-		os.Exit(1)
-	}
-
-	infoLog, err := os.OpenFile(absPath+"/general-log.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-
-	if err != nil {
-		log.Println("Erro ao abrir:", err)
-		os.Exit(1)
-	}
-
-	GeneralLogger = log.New(generalLog, "General Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
-	ErrorLogger = log.New(errorLog, "Error Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
-	InfoLogger = log.New(infoLog, "Info Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
+	GeneralLogger = log.New(file, "General Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
+	ErrorLogger = log.New(file, "Error Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
+	InfoLogger = log.New(file, "Info Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
 }
