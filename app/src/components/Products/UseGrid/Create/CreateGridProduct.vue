@@ -8,32 +8,44 @@
             </div>
             
             <div class="flex flex-col p-4 ">
-                <BaseSelectGridTypes
-                    v-model="productCharacteristics.size"
-                    :selected-sizes="props.registredGrids"
-                    :error="!!formErrors.size"
-                    :error-message="formErrors.size"
-                />
-
-                <q-input 
-                    v-model="productCharacteristics.grid_qtde" 
-                    type="text" 
-                    class="my-6"
-                    label="Qtde da grade" 
-                    stack-label
-                    label-slot
-                />
-                
-                <div>
-                    <q-btn label="Submit" color="primary" @click="submitGrid"/>
-
-                    <q-btn 
-                        color="red"
-                        no-caps 
-                        icon="close"
-                        @click="emits('close', true)"
+                <q-form
+                    @submit="submitGrid"
+                    class="q-gutter-md"
+                >
+                    <BaseSelectGridTypes
+                        v-model="productCharacteristics.size"
+                        :selected-sizes="props.selectedSizes"
+                        :error="!!formErrors.size"
+                        :error-message="formErrors.size"
                     />
-                </div>
+
+                    <q-input 
+                        v-model="productCharacteristics.grid_qtde" 
+                        type="text" 
+                        class="mt-7 mb-4"
+                        label="Qtde da grade" 
+                        stack-label
+                        label-slot
+                        outlined
+                        dense
+                    />
+                    
+                    <div class="flex flex-center gap-4">
+                        <q-btn 
+                            color="red"
+                            label="Cancelar"
+                            no-caps
+                            @click="emits('close', true)"
+                        />
+
+                        <q-btn 
+                            label="Gravar" 
+                            color="primary" 
+                            no-caps
+                            type="submit"
+                        />
+                    </div>
+                </q-form>
             </div>
         </q-card>
     </q-dialog>
@@ -41,7 +53,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import BaseSelectGridTypes from './QSelectGridTypes/BaseSelectGridTypes.vue';
+    import BaseSelectGridTypes from '../QSelectGridTypes/BaseSelectGridTypes.vue';
     import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';  
 
@@ -68,7 +80,7 @@
 
     const props = defineProps<{
         productId?: number;
-        registredGrids: ProductCharacteristicsContract[]
+        selectedSizes: any[]
     }>();
 
     const gridSchema = computed(() =>
@@ -88,15 +100,13 @@
     const formErrors = ref<Record<string, string>>({});
 
     const productCharacteristics = ref<ProductCharacteristicsContract>({
-        grid_qtde: 0,
+        grid_qtde: null,
         id: null,
         product_id: props.productId || null,
         size: null
     });
 
-    const submitGrid = async (): Promise<any> => {
-        console.log('called submitGrid');
-        
+    const submitGrid = async (): Promise<any> => {        
         try {
             await gridSchema.value.validate(productCharacteristics.value, { abortEarly: false });
 

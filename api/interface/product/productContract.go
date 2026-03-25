@@ -58,12 +58,12 @@ func (p ProductContract) Validate() map[string]string {
 	return errorsField
 }
 
-func (p *ProductContract) Create() error {
+func (p *ProductContract) Create() (id int, err error) {
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao iniciar a transação: ", err)
-		return err
+		return 0, err
 	}
 
 	defer tx.Rollback(ctx)
@@ -74,9 +74,12 @@ func (p *ProductContract) Create() error {
 
 		VALUES
 			($1, $2, $3, $4, $5)
+
+		RETURNING 
+			id
 	`
 
-	if _, err := tx.Exec(
+	if err := tx.QueryRow(
 		ctx,
 		query,
 		p.Name,
@@ -84,17 +87,19 @@ func (p *ProductContract) Create() error {
 		p.Qtde,
 		p.Commission,
 		p.UseGrid,
+	).Scan(
+		&id,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao inserir o novo produto: ", err)
-		return err
+		return 0, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Println("Erro ao commitar: ", err)
-		return err
+		return 0, err
 	}
 
-	return err
+	return id, nil
 }
 
 func (p *ProductContract) Update() error {

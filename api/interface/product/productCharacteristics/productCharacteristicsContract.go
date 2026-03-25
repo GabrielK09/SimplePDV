@@ -165,7 +165,7 @@ func (p *ProductCharacteristicsContract) Create() error {
 
 }
 
-func (p *ProductCharacteristicsContract) Update() error {
+func (p *ProductCharacteristicsContract) Update(gridId, productGridId int) error {
 	tx, err := conn.Begin(ctx)
 
 	if err != nil {
@@ -182,13 +182,17 @@ func (p *ProductCharacteristicsContract) Update() error {
 				product_grids
 			
 			SET
-				size,
-				grid_qtde
+				size = $3,
+				grid_qtde = $4
 
 			WHERE	
-				product_id = $1
+				product_id = $1 AND
+				id = $2
 		`,
-		p.Id,
+		productGridId,
+		gridId,
+		p.Size,
+		p.GridQtde,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao fazer o update da grade: ", err)
 		return err
@@ -215,7 +219,7 @@ func (p *ProductCharacteristicsContract) Update() error {
 			WHERE
 				id = $1
 		`,
-		p.Id,
+		productGridId,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao atualizar a nova qtde do produto da grade: ", err)
 		return err
@@ -229,12 +233,14 @@ func (p *ProductCharacteristicsContract) Update() error {
 	return nil
 }
 
-func Show(productId int) (*ProductCharacteristicsContract, error) {
-	var p ProductCharacteristicsContract
-	if err := conn.QueryRow(
+func Show(productId int) (*[]ProductCharacteristicsContract, error) {
+	var productCharacteristics []ProductCharacteristicsContract
+
+	characteristicsRows, err := conn.Query(
 		ctx,
 		`
 			SELECT
+				id,
 				size,
 				grid_qtde
 
@@ -245,13 +251,71 @@ func Show(productId int) (*ProductCharacteristicsContract, error) {
 				product_id = $1
 		`,
 		productId,
-	).Scan(
-		&p.Size,
-		&p.GridQtde,
-	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	)
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao fazer o select da grade: ", err)
 		return nil, err
 	}
 
-	return &p, nil
+	defer characteristicsRows.Close()
+
+	for characteristicsRows.Next() {
+		var c ProductCharacteristicsContract
+
+		if err := characteristicsRows.Scan(
+			&c.Id,
+			&c.Size,
+			&c.GridQtde,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao fazer a leitura dos dados: ", err)
+			return nil, err
+		}
+
+		productCharacteristics = append(productCharacteristics, c)
+	}
+
+	u.InfoLogger.Println("Dados a serem retornados: ", &productCharacteristics)
+	return &productCharacteristics, nil
+}
+
+func ShowById(gridId, productId int) (ProductCharacteristicsContract, error) {
+	var productCharacteristic ProductCharacteristicsContract
+
+	err := conn.QueryRow(
+		ctx,
+		`
+			SELECT
+				id,
+				product_id,
+				size,
+				grid_qtde
+
+			FROM
+				product_grids
+				
+			WHERE	
+				id = $1 AND
+				product_id = $2
+		`,
+		gridId,
+		productId,
+	).Scan(
+		&productCharacteristic.Id,
+		&productCharacteristic.ProductId,
+		&productCharacteristic.Size,
+		&productCharacteristic.GridQtde,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o select da grade: ", err)
+		return ProductCharacteristicsContract{}, err
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Nada foi localizado", err)
+		return ProductCharacteristicsContract{}, fmt.Errorf("Nem uma grade localizada para esses IDs.")
+	}
+
+	return productCharacteristic, nil
 }

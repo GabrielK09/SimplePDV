@@ -2,6 +2,7 @@
     <q-select
         outlined
         v-model="size"
+        :disable="props.isUpdate"
         :options="filterSizeOptions"
         option-label="name"
         emit-value
@@ -13,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed } from 'vue';
+    import { computed, onMounted } from 'vue';
 
     type SizeOption = {
         name: string;
@@ -21,7 +22,8 @@
     };
 
     const props = defineProps<{
-        selectedSizes: any[]
+        selectedSizes: any[],
+        isUpdate?: boolean
     }>();
 
     const size = defineModel<string | null>();
@@ -39,7 +41,12 @@
     ];
 
     const filterSizeOptions = computed(() => {
-        return sizeOptions.filter(o => !props.selectedSizes.includes(o.name));
+        const formated = sizeOptions.filter(o => !props.selectedSizes.includes(o.name));
 
+        return formated;
+    });
+
+    onMounted(() => {
+        console.log('props.selectedSizes: ', props.selectedSizes);
     });
 </script>

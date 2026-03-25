@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
 	"net/http"
 )
@@ -17,7 +16,6 @@ func HandleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.ErrorLogger.Println("Ping")
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(responsehelper.Response(true, "pong", "pong"))

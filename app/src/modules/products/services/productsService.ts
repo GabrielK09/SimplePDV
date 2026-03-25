@@ -28,18 +28,6 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
         const res = await api.post('products/create', payLoad);
         const data = res.data;
         
-        if(data.id && payLoad.qtde)
-        {   
-            const formatedCharacteristics = payLoad.productWithCharacteristics.map(p => ({
-                id: null,
-                product_id: data.id,
-                grid_qtde: p.grid_qtde,
-                size: p.size
-            }));
-
-            createProductCharacteristics(formatedCharacteristics)
-        };
-    
         return apiResponse(
             true,
             data.message,
@@ -54,17 +42,32 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
     };
 };
 
-export async function createProductCharacteristics(payLoad: ProductCharacteristicsContract[]): Promise<any>
+export async function createProductCharacteristics(payLoads: ProductCharacteristicsContract[], isUpdate?: boolean): Promise<any>
 {
     try {
-        const res = await api.post('products/create', payLoad);
-        const data = res.data;
+        let data;
+        let res;
+
+        for (let i = 0; i < payLoads.length; i++) {
+            const payLoad = payLoads[i];
+
+
+            if(!isUpdate)
+            {
+                res = await api.post('products/create/characteristics', payLoad);
+            } else {
+                res = await api.put('products/update/characteristics', payLoad);
+            };
+
+            data = res.data;
+        };
 
         return apiResponse(
             true,
-            data.message || 'Produto cadastrado com sucesso!',
+            data.message || 'Grade do produto cadastrada com sucesso!',
             data.data || []
         );
+
     } catch (error) {
         return apiResponse(
             false,
@@ -72,6 +75,31 @@ export async function createProductCharacteristics(payLoad: ProductCharacteristi
             error.response
         );
     };
+};
+
+export async function getProductCharacteristicsById({gridId, productGridId}): Promise<any>
+{
+    try {
+        const res = await api.post('products/find/characteristics', {
+            grid_id: gridId,
+            product_grid_id: productGridId
+        });
+
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message || 'Grade do produto localizada com sucesso!',
+            data.data || []
+        );
+
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };  
 };
 
 export async function updateProduct(payLoad: ProductContract): Promise<any>
@@ -123,8 +151,6 @@ export async function findById(id: number): Promise<any>
     try {
         const res = await api.get(`products/find/${id}`);
         const data = res.data.data;
-
-        console.log(data);
 
         return apiResponse(
             true,

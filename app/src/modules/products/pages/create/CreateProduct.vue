@@ -63,6 +63,7 @@
                             stack-label
                             outlined
                             dense
+                            :disable="product.use_grid"
                             class="mb-4"
                             :error="!!formErrors.qtde"
                             :error-message="formErrors.qtde"
@@ -116,13 +117,12 @@
                                 />
 
                                 <q-checkbox 
-                                    v-model="product.use_grid" label="Usa grade" 
-                                    
+                                    v-model="product.use_grid" label="Usa grade"     
                                 />
                             </div>
                         </div>
 
-                        <div v-if="!product.use_grid" class="mx-2 my-4">
+                        <div v-if="product.use_grid" class="mx-2 my-4">
                             <div class="border p-4">
                                 <q-table
                                     title="Grade"
@@ -156,32 +156,26 @@
                 </q-form>
             </section>
         </main>
-        <pre>{{ product }}</pre>
     </q-page>
 
     <CreateGridProduct
         v-if="showCreateGrid"
-        :registred-grids="[]"
+        :selected-sizes="product.productWithCharacteristics.map(c => (c.size))"
         @return:grids="getReturnedGrid($event)"
         @close="showCreateGrid = !$event"
     />  
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { computed, ref, watch } from 'vue';
     import { useRouter } from 'vue-router';
     import * as Yup from 'yup';
     import { createProduct, createProductCharacteristics } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { QTableColumn } from 'quasar';
-    import CreateGridProduct from 'src/components/Products/UseGrid/CreateGridProduct.vue';
+    import CreateGridProduct from 'src/components/Products/UseGrid/Create/CreateGridProduct.vue';
 
     const gridTableColumn: QTableColumn[] = [
-        {
-            name: 'id',
-            label: 'ID',
-            field: 'id'
-        },
         {
             name: 'grid_qtde',
             label: 'Qtde',
@@ -266,7 +260,31 @@
         })
     );
 
+    watch(
+        () => product.value.use_grid,
+        (use) => {
+            if(use) return product.value.qtde = null;
+        }
+    );
+
+    const calculateQtde = computed(() => {
+        if(!product.value.use_grid) return product.value.qtde;
+        
+        const list = product.value.productWithCharacteristics;
+
+        if (!list || list.length === 0) return null;
+
+        return list.reduce((total, a) => total + (a.grid_qtde || 0), 0);
+    });
+
+    watch(calculateQtde, (value) => {
+        if (value !== null) {
+            product.value.qtde = value;
+        };
+    });
+
     const submitProduct = async () => {
+        loadingLogin.value = true;
         try {
             const formData = {
                 id: product.value.id,
@@ -291,42 +309,59 @@
 
             const res = await createProduct(payLoad);
 
+            const productId = res.data;
+
             if(res.success)
             {
+                console.log('Data: ', {
+                    productId: productId,
+                    productUseGrid: product.value.use_grid
+                });
+                
+                if(product.value.use_grid && productId > 0)
+                {
+                    const newProductCharacteristics = product.value.productWithCharacteristics.map(c => ({
+                        id: null,
+                        product_id: productId,
+                        grid_qtde: c.grid_qtde,
+                        size: c.size
+                    }));
+
+                    const resCharacteristics = await createProductCharacteristics(newProductCharacteristics);
+                    
+                    if(!resCharacteristics.success)
+                    {
+                        notify(
+                            'negative',
+                            resCharacteristics.data.message
+                        );  
+                    };
+                };
+                
                 notify(
                     'positive',
                     res.data.message
-
                 );
 
-                if(product.value.use_grid)
-                {
-                };
-                
-                /*router.replace({
+                router.replace({
                     name: 'products.index'
 
-                });*/
+                });
 
-                return;
+            } else {
+                    notify(
+                    'negative',
+                    res.message
+
+                );
             };
-
-            notify(
-                'negative',
-                res.message
-
-            );
         } catch (error: any) {
-            console.error('Erro:', error);
-            console.error('Erro:', error?.inner);
-
             if(error.inner)
             {
                 formErrors.value = {};
 
                 error.inner.forEach((err: any) => {
                     formErrors.value[err.path] = err.message;
-
 
                     notify(
                         'negative',
@@ -340,15 +375,14 @@
                     error.response?.data?.message || 'Erro na criação do produto!'
                 );
             };
+        } finally {
+            loadingLogin.value = false;
         };
     };
 
     const getReturnedGrid = (grid: ProductCharacteristicsContract) => {
-        console.log('getReturnedGrid call', grid);
-        console.log('product.value.productWithCharacteristics', product.value.productWithCharacteristics);
-        
         product.value.productWithCharacteristics.push({
-            grid_qtde: grid.grid_qtde,
+            grid_qtde: Number(grid.grid_qtde) || 0,
             id: null,
             product_id: null,
             size: grid.size

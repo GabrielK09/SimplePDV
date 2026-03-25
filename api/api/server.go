@@ -116,8 +116,9 @@ func StartServer() {
 	proteced.HandleFunc("/products/find/{id}", productController.HandleGetByIdProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/find-by-name", productController.HandleGetByNameProduct).Methods(http.MethodGet, http.MethodOptions)
 	proteced.HandleFunc("/products/create", productController.HandlePostProduct).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/products/create/characteristics", productcharacteristicscontroller.HandlePostCreateProduct).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/products/update/characteristics", productcharacteristicscontroller.HandlePutUpdateProduct).Methods(http.MethodPut, http.MethodOptions)
+	proteced.HandleFunc("/products/create/characteristics", productcharacteristicscontroller.HandlePostCreateProductCharacteristics).Methods(http.MethodPost, http.MethodOptions)
+	proteced.HandleFunc("/products/update/characteristics", productcharacteristicscontroller.HandlePutUpdateProductCharacteristics).Methods(http.MethodPut, http.MethodOptions)
+	proteced.HandleFunc("/products/find/characteristics", productcharacteristicscontroller.HandleGetProductCharacteristicsByIds).Methods(http.MethodPost, http.MethodOptions)
 	proteced.HandleFunc("/products/update/{id}", productController.HandlePutProduct).Methods(http.MethodPut, http.MethodOptions)
 	proteced.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct).Methods(http.MethodDelete, http.MethodOptions)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\

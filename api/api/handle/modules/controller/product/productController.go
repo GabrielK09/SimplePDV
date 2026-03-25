@@ -8,7 +8,6 @@ import (
 	_ "myApi/interface/product/productCharacteristics"
 	productcharacteristics "myApi/interface/product/productCharacteristics"
 
-	// productcharacteristics
 	"net/http"
 	"strconv"
 	"time"
@@ -137,6 +136,8 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	var productsWithCharacteristics ProductWithCharacteristics
+
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 
@@ -145,7 +146,7 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
+	productId, err := strconv.Atoi(params["id"])
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -158,7 +159,23 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	products, err := product.Show(id)
+	if productId <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Id inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, nil, "Id inválido."),
+		)
+
+		return
+	}
+
+	productData, err := product.Show(productId)
+
+	productsWithCharacteristics = ProductWithCharacteristics{
+		Product:         *productData,
+		Characteristics: nil,
+	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -167,9 +184,27 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if productData.UseGrid {
+		productCharacteristicsData, err := productcharacteristics.Show(productId)
+
+		u.InfoLogger.Println("productCharacteristics: ", productCharacteristicsData)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produtos."))
+			return
+		}
+
+		productsWithCharacteristics = ProductWithCharacteristics{
+			Product:         *productData,
+			Characteristics: *productCharacteristicsData,
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(responsehelper.Response(true, products, "Produto"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, productsWithCharacteristics, "Produto"))
 }
 
 func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +235,9 @@ func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := payload.Create(); err != nil {
+	id, err := payload.Create()
+
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao gravar o produto: ", err)
 
@@ -210,7 +247,7 @@ func HandlePostProduct(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(responsehelper.Response(true, payload, "Produto cadastrado com sucesso!"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, id, "Produto cadastrado com sucesso!"))
 }
 
 func HandlePutProduct(w http.ResponseWriter, r *http.Request) {

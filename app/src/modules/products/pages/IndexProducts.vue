@@ -157,6 +157,7 @@
 
     const getAllProducts = async () => {
         const res = await getAll();
+    
         const data = res.data;
 
         if(!res.success)
@@ -169,9 +170,10 @@
             return;
         };
 
-        products.value = data;
-        allProducts.value = [...products.value];
+        const productsData = data.map(c => c.product);
 
+        products.value = productsData;
+        allProducts.value = [...products.value];
     };
 
     const showDialogDeleteProduct = (productId: number) => {
@@ -225,5 +227,6 @@
 
     onMounted(() => {
         getAllProducts();
+        
     });
 </script>

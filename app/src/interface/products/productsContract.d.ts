@@ -22,8 +22,8 @@ enum Sizes {
 };
 
 interface ProductCharacteristicsContract {
-    readonly id: number;
-    product_id: number;
-    grid_qtde: number;
+    readonly id: number|null;
+    product_id: number|null;
+    grid_qtde: number|null;
     size: Sizes|null;
 };
