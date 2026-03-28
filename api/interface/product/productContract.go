@@ -334,6 +334,27 @@ func Delete(id int, deletedAt time.Time) error {
 		return err
 	}
 
+	queryUpdateGridDeletedAt := `
+		UPDATE
+			product_grids
+
+		SET
+			deleted_at = $2
+
+		WHERE 
+			product_id = $1
+	`
+
+	if _, err = conn.Exec(
+		ctx,
+		queryUpdateGridDeletedAt,
+		id,
+		deletedAt,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao deletar a grade do produto: ", err)
+		return err
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Println("Erro ao commitar: ", err)
 		return err

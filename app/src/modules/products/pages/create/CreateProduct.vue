@@ -123,24 +123,10 @@
                         </div>
 
                         <div v-if="product.use_grid" class="mx-2 my-4">
-                            <div class="border p-4">
-                                <q-table
-                                    title="Grade"
-                                    :rows="product.productWithCharacteristics"
-                                    hide-bottom
-                                    :columns="gridTableColumn"
-                                    row-key="name"
-                                >
-                                    <template v-slot:top-right>
-                                        <q-btn 
-                                            color="primary" 
-                                            no-caps
-                                            label="Cadastar uma grade" 
-                                            @click="showCreateGrid = !showCreateGrid" 
-                                        />
-                                    </template>
-                                </q-table>
-                            </div>
+                            <QGridTable
+                                :product-with-characteristics="product.productWithCharacteristics"
+                                @show-create-grid="showCreateGrid = $event"
+                            />
                         </div>
 
                         <div class="flex flex-center">
@@ -172,26 +158,8 @@
     import * as Yup from 'yup';
     import { createProduct, createProductCharacteristics } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { QTableColumn } from 'quasar';
     import CreateGridProduct from 'src/components/Products/UseGrid/Create/CreateGridProduct.vue';
-
-    const gridTableColumn: QTableColumn[] = [
-        {
-            name: 'grid_qtde',
-            label: 'Qtde',
-            field: 'grid_qtde',
-        },
-        {
-            name: 'size',
-            label: 'Tamanho',
-            field: 'size',
-        },
-        {
-            name: 'action',
-            label: '',
-            field: 'action'
-        }
-    ];
+    import QGridTable from 'src/components/Products/UseGrid/QTable/QGridTable.vue';
 
     const priceInput = ref<string>('');
 
@@ -291,7 +259,8 @@
                 name: product.value.name,
                 price: priceInput.value,
                 qtde: product.value.qtde,
-                commission: product.value.commission
+                commission: product.value.commission,
+                use_grid: product.value.use_grid
             };
 
             const validated = await productSchema.value.validate(formData, {
@@ -304,7 +273,9 @@
                 name: validated.name,
                 price: Number(validated.price.toFixed(2)),
                 commission: Number(validated.commission),
-                qtde: Number(validated.qtde)
+                qtde: Number(validated.qtde),
+                use_grid: product.value.use_grid,
+                productWithCharacteristics: product.value.productWithCharacteristics
             };
 
             const res = await createProduct(payLoad);
@@ -313,11 +284,6 @@
 
             if(res.success)
             {
-                console.log('Data: ', {
-                    productId: productId,
-                    productUseGrid: product.value.use_grid
-                });
-                
                 if(product.value.use_grid && productId > 0)
                 {
                     const newProductCharacteristics = product.value.productWithCharacteristics.map(c => ({

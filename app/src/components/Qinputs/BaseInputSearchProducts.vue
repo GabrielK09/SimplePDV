@@ -5,7 +5,7 @@
     >
         <q-input
             outlined
-            v-model="id"
+            v-model="searchInput"
             type="text"
             stack-label
             label-slot
@@ -42,7 +42,7 @@
     import { findById, findByName } from 'src/modules/products/services/productsService';
     import { ref, watch } from 'vue';
 
-    const id = ref<number | string | null>(null);
+    const searchInput = ref<number | string | null>(null);
 
     const habilitStringSearchInput = ref<boolean>(false);
 
@@ -79,16 +79,37 @@
     }>();
 
     const searchProduct = async (): Promise<void> => {
-        let productQtde: number = 0;
+        if (habilitStringSearchInput.value) return; // Se for busca pelo nome, não valida busca pelo qtde/código
 
-        const input = id.value?.toString().split('') ?? '';
+        if(!searchInput.value) return; // Se não for busca pelo nome, precisa possuir algum valor inserido no campo de busca
 
-        if(!id.value) return;
+        let productQtde = [];
+    
+        const splitedSearchInput = searchInput.value?.toString().split('');
 
-        if(input[1] === '*') productQtde = Number(input[0]);
+        if(splitedSearchInput.includes('*'))
+        {
+            //const removeSpaces = splitedSearchInput.join('');
+            splitedSearchInput.map(s => {
+                console.log(s);
+        
+                if(s !== "*")
+                {
+                    productQtde.push(s);
+                    return;
+                };
+            });
+            
+            console.log('productQtde: ', productQtde);
+            return;
+        };
 
-        const product = await findById(Number(input[2] ?? input[0]));
+        console.log('Number(searchInput.value): ', searchInput.value);
+        
+        const product = await findById(Number(searchInput.value));
 
+        console.log('product localizado: ', product);
+    
         if(!product)
         {
             notify('warning', 'Produto não localizado');
@@ -96,21 +117,21 @@
         };
 
         const productData: SaleItemContract = {
-            id: product.data?.id,
-            name: product.data?.name,
-            price: product.data?.price,
-            product_id: product.data?.id,
+            id: product.data.product?.id,
+            name: product.data.product?.name,
+            price: product.data.product?.price,
+            product_id: product.data.product?.id,
             qtde: productQtde ?? 1
         };
 
         console.log('Vai enviar: ', productData);
 
         emits('emit:selected-product', productData);
-        id.value = '';
+        searchInput.value = '';
     };
 
     watch(
-        () => id.value,
+        () => searchInput.value,
         async (idValue) => {
             const input = idValue?.toString().split('') ?? '';
 
@@ -136,7 +157,7 @@
 
         if(!habilitStringSearchInput.value) return;
 
-        const search = id.value.toString().slice(1);
+        const search = searchInput.value.toString().slice(1);
 
         console.log('Vai buscar por: ', search);
 
@@ -154,7 +175,7 @@
 
         emits('emit:selected-product', row);
 
-        id.value = null;
+        searchInput.value = null;
         habilitStringSearchInput.value = false;
         itensData.value = [];
     };

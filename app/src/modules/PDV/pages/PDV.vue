@@ -171,7 +171,7 @@
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { onBeforeRouteLeave, RouteLocationNormalizedLoadedGeneric, useRoute, useRouter } from 'vue-router';
+    import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
     type DisableButtons = {
         editPayMentsForms: boolean;
@@ -303,7 +303,6 @@
             disableButtons.deleteSale = true;
             disableButtons.saveSale = true;
             disableButtons.finallySale = true;
-
         };
     };
 
