@@ -123,8 +123,9 @@
                         </div>
 
                         <div v-if="product.use_grid" class="mx-2 my-4">
+                            {{ product }}
                             <QGridTable
-                                :product-with-characteristics="product.productWithCharacteristics"
+                                :product-data="product"
                                 @show-create-grid="showCreateGrid = $event"
                             />
                         </div>
@@ -134,6 +135,7 @@
                                 color="primary"
                                 type="submit"
                                 label="Cadastrar produto"
+                                :disable="product.use_grid && product.productWithCharacteristics.length <= 0"
                                 no-caps
                                 :loading="loadingLogin"
                             />
@@ -253,7 +255,17 @@
 
     const submitProduct = async () => {
         loadingLogin.value = true;
+
         try {
+            if(product.value.use_grid && product.value.productWithCharacteristics.length <= 0)
+            {
+                notify(
+                    'info',
+                    'Caso seja usado grade, ao menos uma grade precisa ser cadastrada!'
+                );
+                return;
+            };
+
             const formData = {
                 id: product.value.id,
                 name: product.value.name,

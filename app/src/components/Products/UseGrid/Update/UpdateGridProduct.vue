@@ -57,7 +57,7 @@
     import BaseSelectGridTypes from 'src/components/Products/UseGrid/QSelectGridTypes/BaseSelectGridTypes.vue';
     import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';  
-    import { getProductCharacteristicsById } from 'src/modules/products/services/productsService';
+    import { getProductCharacteristicsByIds } from 'src/modules/products/services/productsService';
 
     const internalDialog = ref<boolean>(true);
     const { notify } = useNotify();
@@ -126,7 +126,7 @@
     onMounted(async () => {
         if(props.gridId && props.productId)
         {
-            const res = await getProductCharacteristicsById({gridId: props.gridId, productGridId: props.productId});
+            const res = await getProductCharacteristicsByIds({gridId: props.gridId, productGridId: props.productId});
         
             if (!res.success)
             {

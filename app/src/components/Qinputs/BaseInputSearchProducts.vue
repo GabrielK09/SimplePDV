@@ -83,22 +83,14 @@
 
         if(!searchInput.value) return; // Se não for busca pelo nome, precisa possuir algum valor inserido no campo de busca
 
-        let productQtde = [];
+        let productQtde: number;
     
         const splitedSearchInput = searchInput.value?.toString().split('');
 
         if(splitedSearchInput.includes('*'))
         {
             //const removeSpaces = splitedSearchInput.join('');
-            splitedSearchInput.map(s => {
-                console.log(s);
-        
-                if(s !== "*")
-                {
-                    productQtde.push(s);
-                    return;
-                };
-            });
+            
             
             console.log('productQtde: ', productQtde);
             return;

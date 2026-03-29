@@ -5,7 +5,8 @@ interface ProductContract {
     qtde: number|null;
     commission: number|null;
     use_grid?: boolean;
-    productWithCharacteristics?: ProductCharacteristicsContract[]|null
+    productWithCharacteristics?: ProductCharacteristicsContract[]|null;
+    deleted_at: Date;
 };
 
 enum Sizes {

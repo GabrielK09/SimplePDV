@@ -28,6 +28,8 @@
                         label-slot
                         outlined
                         dense
+                        :error="!!formErrors.grid_qtde"
+                        :error-message="formErrors.grid_qtde"
                     />
                     
                     <div class="flex flex-center gap-4">

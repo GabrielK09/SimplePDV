@@ -3,7 +3,7 @@
         <main class="min-h-[60vh] flex flex-center text-xl">
             <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                 <header class="border-gray-100 flex">
-                    <span class="text-black cursor-pointer">
+                    <span class="text-black cursor-pointer my-auto">
                         <router-link to="/admin/products">
                             <q-avatar size="30px" icon="arrow_back" />
 
@@ -59,7 +59,7 @@
                         </q-input>
 
                         <q-input
-                            v-model="product.qtde"
+                            v-model.number="product.qtde"
                             type="text"
                             label-slot
                             stack-label
@@ -81,14 +81,11 @@
                             <q-input
                                 v-model.number="product.commission"
                                 type="number"
+                                mask="##,##"
                                 label-slot
                                 stack-label
                                 outlined
                                 dense
-                                placeholder="0,00"
-                                mask="##,##"
-                                fill-mask="0"
-                                reverse-fill-mask
                                 :error="!!formErrors.commission"
                                 :error-message="formErrors.commission"
                             >
@@ -131,44 +128,11 @@
                         </div>
 
                         <div v-if="product.use_grid" class="mx-2 my-4">
-                            <div class="p-4">
-                                <q-table
-                                    title="Grade"
-                                    :rows="product.productWithCharacteristics"
-                                    hide-bottom
-                                    :columns="gridTableColumn"
-                                    row-key="name"
-                                >
-                                    <template v-slot:top-right>
-                                        <q-btn 
-                                            color="primary" 
-                                            no-caps
-                                            label="Cadastar uma grade" 
-                                            @click="showCreateGrid = !showCreateGrid" 
-                                        />
-                                    </template>
-
-                                    <template v-slot:body="props">
-                                        <q-tr :props="props">
-                                            <q-td v-for="col in props.cols">
-                                                <div class="flex flex-center">
-                                                    <template v-if="col.name === 'actions'">
-                                                        <q-btn 
-                                                            color="primary" 
-                                                            icon="edit"
-                                                            @click="buildUpdateGrid(props.row)"
-                                                        />
-                                                    </template>
-
-                                                    <template v-else>
-                                                        {{ col.value }}
-                                                    </template>
-                                                </div>
-                                            </q-td>
-                                        </q-tr>
-                                    </template>
-                                </q-table>
-                            </div>
+                            <QGridTable
+                                :product-data="product"
+                                @show-create-grid="showCreateGrid = $event"
+                                :product-id="productId"
+                            />
                         </div>
 
                         <div class="flex flex-center">
@@ -177,28 +141,19 @@
                                 type="submit"
                                 label="Salvar dados do produto"
                                 no-caps
+                                :disable="product.use_grid && product.productWithCharacteristics.length <= 0"
                                 :loading="loadingLogin"
                             />
                         </div>
                     </div>
                 </q-form>
             </section>
-        </main>
-
-        <UpdateGridProduct
-            v-if="showUpdateGrid"
-            :grid-id="selectedGridId"
-            :product-id="Number(route.params.id)"
-            :grid-full-object="gridFullObject"
-            :selected-sizes="product.productWithCharacteristics"
-            @return:grids="handleUpdateGrid($event)"
-            @close="showUpdateGrid = !$event"
-        />  
+        </main>         
 
         <CreateGridProduct
             v-if="showCreateGrid"
             :selected-sizes="product.productWithCharacteristics.map(c => (c.size))"
-            @return:grids="getReturnedGrid($event)"
+            @return:grids="product.productWithCharacteristics.push(formatGridDataForPush($event))"
             @close="showCreateGrid = !$event"
         />  
     </q-page>
@@ -208,47 +163,11 @@
     import { computed, onMounted, ref, watch } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
     import * as Yup from 'yup';
-    import { createProductCharacteristics, findById, updateProduct } from '../../services/productsService';
+    import { createProductCharacteristics, getProductCharacteristicsById, findById, updateProduct } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { QTableColumn } from 'quasar';
-    import UpdateGridProduct from 'src/components/Products/UseGrid/Update/UpdateGridProduct.vue';
+    import QGridTable from 'src/components/Products/UseGrid/QTable/QGridTable.vue';
     import CreateGridProduct from 'src/components/Products/UseGrid/Create/CreateGridProduct.vue';
-
-    function formatGridDataForPush(gridData: ProductCharacteristicsContract): ProductCharacteristicsContract {
-        return {
-            grid_qtde: Number(gridData.grid_qtde) || 0,
-            id: gridData.id ?? null,
-            product_id: gridData.product_id ?? null,
-            size: gridData.size
-        };
-    };
-
-    const gridTableColumn: QTableColumn[] = [
-        {
-            name: 'id',
-            label: 'ID',
-            field: 'id',
-            align: 'center'
-        },
-        {
-            name: 'grid_qtde',
-            label: 'Qtde',
-            field: 'grid_qtde',
-            align: 'center'
-        },
-        {
-            name: 'size',
-            label: 'Tamanho',
-            field: 'size',
-            align: 'center'
-        },
-        {
-            name: 'actions',
-            label: 'Ações',
-            field: 'actions',
-            align: 'center'
-        }
-    ];
+    import formatGridDataForPush from 'src/helpers/FormatValue/Grid/formatGridDataForPush';
 
     const productSchema = computed(() =>
         Yup.object({
@@ -262,38 +181,33 @@
 
             qtde: Yup
                 .number()
+                .min(1, 'A qtde do produto não pode ser menor que zero.')
                 .required('A quantia do produto é obrigatório!'),
 
             commission: Yup
                 .number()
                 .min(0, 'O valor de comissão não pode ser menor que zero.')
                 .max(100, 'O valor de comissão não pode ser maior que 100%.')
-                .required('A quantia do produto é obrigatório!'),
         })
     );
 
+    const router = useRouter();
+    const route = useRoute();
+    const productId = Number(route.params.id);
+
     const product = ref<ProductContract>({
-        id: 0,
-        name: '',
+        id: productId,
+        name: null,
         price: null,
-        qtde: 0,
+        qtde: null,
         commission: 0,
         use_grid: false,
         productWithCharacteristics: []
     });
 
     const formErrors = ref<Record<string, string>>({});
-
-    const showUpdateGrid = ref<boolean>(false);
     const showCreateGrid = ref<boolean>(false);
 
-    const selectedGridId = ref<number | null>(); // Usado quando for feito a edição de uma grade já cadsatrada.
-    const gridFullObject = ref<any>(); // Usado quando for cadastrado uma nova grade.
-
-    const router = useRouter();
-    const route = useRoute();
-
-    const productId = Number(route.params.id);
     const { notify } = useNotify();
 
     const loadingLogin = ref<boolean>(false);
@@ -308,7 +222,7 @@
     const submitProduct = async () => {
         try {
             await productSchema.value.validate(product.value, { abortEarly: false });
-
+            
             const res = await updateProduct(product.value);
 
             if(res.success)
@@ -375,77 +289,48 @@
         };
     };
 
-    const handleUpdateGrid = (newGrid: ProductCharacteristicsContract) => {
-        const oldGrid = product.value.productWithCharacteristics.find(c => c.id === newGrid.id);
-
-        if (!oldGrid)
-        {
-            notify(
-                'negative',
-                'Ocorreu um erro ao alterar a grade.'
-            );
-            return;
-        };
-
-        const index = product.value.productWithCharacteristics.indexOf(oldGrid);
-
-        if (index > -1)
-        {
-            product.value.productWithCharacteristics.splice(index, 1);
-            product.value.productWithCharacteristics.push(formatGridDataForPush(newGrid));
-            
-        } else {
-            return;  
-        };
-    };
-
-    const buildUpdateGrid = (row: any) => {        
-        showUpdateGrid.value = true;
-        if(!row?.id) {
-            console.warn('Grid não encontrada:', row?.id);
-
-            const newGrid = {
-                id: null,
-                product_id: productId,
-                grid_qtde: row.grid_qtde,
-                size: row.size,
-                have_register: false
-            };
-
-            gridFullObject.value = newGrid;
-
-        } else {
-            selectedGridId.value = row?.id;
-        };
-    };
-
     watch(
         () => product.value.use_grid,
-        (use) => {
-            if(use) return product.value.qtde = null;
+        async (use) => {
+            if(use)  
+            {
+                product.value.qtde = null;
+
+                const res = await getProductCharacteristicsById(productId);
+
+                if(!res.success)
+                {
+                    product.value.use_grid = false;
+                    notify(
+                        'negative',
+                        res.message
+                    );
+
+                    return;
+                };
+
+                console.log(res);
+                
+                product.value.productWithCharacteristics = res.data;
+            };
         }
     );
 
-    const calculateQtde = computed(() => {
+    const calculateQtde = computed((): number => {
         if(!product.value.use_grid) return product.value.qtde;
 
         const list = product.value.productWithCharacteristics;
+        
+        if (!list || list.length === 0) return 0;
 
-        if (!list || list.length === 0) return null;
-    
         return list.reduce((total, a) => total + (a.grid_qtde || 0), 0);
     });
 
-    watch(calculateQtde, (value) => {
+    watch(calculateQtde, (value) => {        
         if (value !== null) {
             product.value.qtde = value;
         };
     });
-
-    const getReturnedGrid = (grid: ProductCharacteristicsContract) => {            
-        product.value.productWithCharacteristics.push(formatGridDataForPush(grid));
-
-    };
 
     onMounted(async() => {
         if(!productId) return;
@@ -462,7 +347,7 @@
         };
 
         const productData: ProductContract = res.data.product;
-        const productCharacteristicsData: ProductCharacteristicsContract[] = res.data.characteristics;
+        const productCharacteristicsData: ProductCharacteristicsContract[] = res.data.characteristics || [];
 
         product.value = {
             id: productData.id,

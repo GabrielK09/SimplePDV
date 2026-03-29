@@ -53,6 +53,10 @@ CREATE TABLE public.product_grids (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT products_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
+ALTER TABLE public.product_grids
+ADD CONSTRAINT unique_product_grid_size
+UNIQUE (size, product_id);
+
 CREATE TABLE public.sales (
   id SERIAL PRIMARY KEY,
   customer_id integer,
@@ -75,11 +79,11 @@ CREATE TABLE public.sale_itens (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT sales_itens_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT sales_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
-
-  ALTER TABLE sale_itens
-  ADD CONSTRAINT unique_sale_product
-  UNIQUE (sale_id, product_id);
 );
+
+ALTER TABLE sale_itens
+ADD CONSTRAINT unique_sale_product
+UNIQUE (sale_id, product_id);
 
 CREATE TABLE public.sale_pay_ment (
   id SERIAL PRIMARY KEY,

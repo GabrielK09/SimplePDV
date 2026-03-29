@@ -98,7 +98,7 @@ func GetAllByProductId(productId int) ([]ProductCharacteristicsContract, error) 
 			WHERE
 				product_id = $1
 		`,
-		productGrids,
+		productId,
 	)
 
 	if err != nil {
@@ -143,6 +143,13 @@ func (p *ProductCharacteristicsContract) Create() error {
 
 		VALUES
 			($1, $2, $3)
+
+		ON CONFLICT (size, product_id)
+		DO UPDATE SET
+			size = EXCLUDED.size, 
+			grid_qtde = EXCLUDED.grid_qtde,
+			deleted_at = NULL,
+			updated_at = now()
 	`
 
 	if _, err := tx.Exec(
@@ -241,6 +248,7 @@ func Show(productId int) (*[]ProductCharacteristicsContract, error) {
 		`
 			SELECT
 				id,
+				product_id,
 				size,
 				grid_qtde
 
@@ -248,7 +256,8 @@ func Show(productId int) (*[]ProductCharacteristicsContract, error) {
 				product_grids
 				
 			WHERE	
-				product_id = $1
+				product_id = $1 AND
+				deleted_at IS NULL
 		`,
 		productId,
 	)
@@ -265,6 +274,7 @@ func Show(productId int) (*[]ProductCharacteristicsContract, error) {
 
 		if err := characteristicsRows.Scan(
 			&c.Id,
+			&c.ProductId,
 			&c.Size,
 			&c.GridQtde,
 		); err != nil {
@@ -318,4 +328,45 @@ func ShowById(gridId, productId int) (ProductCharacteristicsContract, error) {
 	}
 
 	return productCharacteristic, nil
+}
+
+func Delete(id, productId int, deletedAt time.Time) error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	queryUpdateGridDeletedAt := `
+		UPDATE
+			product_grids
+
+		SET
+			deleted_at = $1
+
+		WHERE 
+			product_id = $2 AND
+			id = $3
+	`
+
+	if _, err = conn.Exec(
+		ctx,
+		queryUpdateGridDeletedAt,
+		deletedAt,
+		productId,
+		id,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao deletar a grade do produto: ", err)
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao commitar: ", err)
+		return err
+	}
+
+	return nil
 }

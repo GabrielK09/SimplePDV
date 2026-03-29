@@ -77,7 +77,29 @@ export async function createProductCharacteristics(payLoads: ProductCharacterist
     };
 };
 
-export async function getProductCharacteristicsById({gridId, productGridId}): Promise<any>
+export async function getProductCharacteristicsById(productGridId: number): Promise<any>
+{
+    try {
+        const res = await api.get(`products/find/characteristics/${productGridId}`);
+
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message || 'Grade do produto localizada com sucesso!',
+            data.data    || []
+        );
+
+    } catch (error) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };  
+};
+
+export async function getProductCharacteristicsByIds({gridId, productGridId}): Promise<any>
 {
     try {
         const res = await api.post('products/find/characteristics', {
@@ -127,6 +149,29 @@ export async function deleteProduct(id: number): Promise<any>
 {
     try {
         const res = await api.delete(`products/delete/${id}`)
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+
+    } catch (error) {
+        console.error(error.response.data);
+
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
+        );
+    };
+};
+
+export async function deleteProductCharacteristics({gridId, productGridId}): Promise<any>
+{
+    try {
+        const res = await api.delete(`products/${productGridId}/delete/characteristics/${gridId}`);
         const data = res.data;
 
         return apiResponse(

@@ -42,6 +42,14 @@
                         </q-input>
                     </template>
 
+                    <template v-slot:top-left>
+                        <div class="flex gap-2 text-base">
+                            <q-radio v-model="filterProduct" val="all" label="Todos" />
+                            <q-radio v-model="filterProduct" val="actived" label="Ativos" />
+                            <q-radio v-model="filterProduct" val="disabled" label="Inativos" />
+                        </div>
+                    </template>
+
                     <template v-slot:body="props">
                         <q-tr
                             :props="props"
@@ -103,9 +111,11 @@
 
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
-    import { onMounted, ref } from 'vue';
+    import { onMounted, ref, watch } from 'vue';
     import { getAll, deleteProduct } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+
+    type FilterProductsOptions = 'all'|'actived'|'disabled'|null;
 
     const $q = useQuasar();
     const { notify } = useNotify();
@@ -113,6 +123,8 @@
     const pagination = ref({
         sortBy: 'id' 
     });
+
+    const filterProduct = ref<FilterProductsOptions>('all');
 
     const columns: QTableColumn[] = [
         {
@@ -222,8 +234,31 @@
 
     const filterProducts = (): void => {
         products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
-
     };
+
+    watch(
+        () => filterProduct.value,
+        (option: FilterProductsOptions) => {
+            switch (option) {
+                case 'all':
+                    products.value = allProducts.value;
+                    
+                    break;
+                    
+                case 'actived':
+                    products.value = allProducts.value.filter(product => product.deleted_at === null);
+                        
+                    break;
+
+                case 'disabled':
+                    products.value = allProducts.value.filter(product => product.deleted_at !== null);
+                    break;
+            
+                default:
+                    break;
+            }
+        }
+    );
 
     onMounted(() => {
         getAllProducts();

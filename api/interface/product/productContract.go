@@ -250,12 +250,10 @@ func GetAll() ([]ProductContract, error) {
 			price,
 			qtde,           
 			commission,
-			use_grid
+			use_grid,
+			deleted_at
 		FROM
 			products
-
-		WHERE
-			deleted_at IS NULL
 	`
 
 	rows, err := conn.Query(
@@ -280,6 +278,7 @@ func GetAll() ([]ProductContract, error) {
 			&p.Qtde,
 			&p.Commission,
 			&p.UseGrid,
+			&p.DeletedAt,
 		); err != nil {
 			u.ErrorLogger.Println("Erro: ", err)
 			return nil, err

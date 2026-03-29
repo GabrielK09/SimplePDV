@@ -6,6 +6,10 @@ import (
 	responsehelper "myApi/helpers/response"
 	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type FindByIds struct {
@@ -44,6 +48,59 @@ func HandlePostCreateProductCharacteristics(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(responsehelper.Response(true, productCharacteristics, "Característica do produto cadastrada com sucesso!"))
+}
+
+func HandleDeleteProductCharacteristics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
+
+		return
+	}
+
+	params := mux.Vars(r)
+
+	productId, err := strconv.Atoi(params["product_id"])
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Id do produto inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id do produto inválido."),
+		)
+
+		return
+	}
+
+	id, err := strconv.Atoi(params["id"])
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Id inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id inválido."),
+		)
+
+		return
+	}
+
+	if err := productcharacteristics.Delete(id, productId, time.Now()); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err.Error(), "Erro ao deletar o produto."),
+		)
+
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto deletado com sucesso!"))
 }
 
 func HandlePutUpdateProductCharacteristics(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +183,45 @@ func HandleGetProductCharacteristicsByIds(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao alterar os dados da característica. ", err)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao localizar os dados da característica."))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, productcharacteristicData, "Característica do produto localizada com sucesso!"))
+}
+
+func HandleGetShowProductCharacteristics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
+
+		return
+	}
+
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Id inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id inválido."),
+		)
+
+		return
+	}
+
+	productcharacteristicData, err := productcharacteristics.Show(id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao localizar os dados da característica. ", err)
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao localizar os dados da característica."))
 		return
