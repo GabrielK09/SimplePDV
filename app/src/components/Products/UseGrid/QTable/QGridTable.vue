@@ -16,7 +16,7 @@
                 />
             </template>
 
-             <template v-slot:body="props">
+            <template v-slot:body="props">
                 <q-tr :props="props">
                     <q-td v-for="col in props.cols">
                         <div class="flex flex-center">
@@ -66,15 +66,16 @@
     import { ref } from 'vue';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import formatGridDataForPush from 'src/helpers/FormatValue/Grid/formatGridDataForPush';
-import { deleteProductCharacteristics } from 'src/modules/products/services/productsService';
+    import { deleteProductCharacteristics } from 'src/modules/products/services/productsService';
 
     const props = defineProps<{
-        productData: ProductContract,
+        productData?: ProductContract,
         productId?: number
     }>();
 
     const emists = defineEmits<{
-        (e: 'showCreateGrid', value: boolean)
+        (e: 'showCreateGrid', value: boolean),
+        (e: 'return:selected-grid', value: any)
     }>();
 
     const showUpdateGrid = ref<boolean>(false);
@@ -125,7 +126,6 @@ import { deleteProductCharacteristics } from 'src/modules/products/services/prod
 
     const deleteGrid = async (row: any) => {
         const index = props.productData.productWithCharacteristics.indexOf(row);
-        console.log(index);
         
         if(index > -1)
         {

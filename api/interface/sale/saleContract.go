@@ -3,11 +3,13 @@ package sale
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
 	"myApi/interface/customer"
 	"myApi/interface/product"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	saleitem "myApi/interface/saleItem"
 	"time"
 
@@ -181,16 +183,19 @@ func Show(id int) (*SaleContract, error) {
 	defer rows.Close()
 
 	for rows.Next() {
+		var productCharacteristic productcharacteristics.ProductCharacteristicsContract
+
 		var p struct {
-			Id        int       `json:"id"`
-			SaleId    int       `json:"sale_id"`
-			ProductId int       `json:"product_id"`
-			Name      string    `json:"name"`
-			Qtde      int       `json:"qtde"`
-			SaleValue float64   `json:"price"`
-			Status    string    `json:"status"`
-			CreatedAt time.Time `json:"created_at"`
-			UpdatedAt time.Time `json:"cpdated_at"`
+			Id                         int                                                    `json:"id"`
+			SaleId                     int                                                    `json:"sale_id"`
+			ProductId                  int                                                    `json:"product_id"`
+			Name                       string                                                 `json:"name"`
+			Qtde                       int                                                    `json:"qtde"`
+			SaleValue                  float64                                                `json:"price"`
+			Status                     string                                                 `json:"status"`
+			ProductWithCharacteristics *productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+			CreatedAt                  time.Time                                              `json:"created_at"`
+			UpdatedAt                  time.Time                                              `json:"cpdated_at"`
 		}
 
 		if err := rows.Scan(
@@ -204,6 +209,44 @@ func Show(id int) (*SaleContract, error) {
 		); err != nil {
 			u.ErrorLogger.Printf("Erro no select dos itens da venda - %s", err)
 			return nil, err
+		}
+
+		err := conn.QueryRow(
+			ctx,
+			`
+				SELECT
+					product_id,
+					sale_id,
+					product_grid_id,
+					size_saled,
+					grid_qtde
+
+				FROM
+					sale_itens_grid
+
+				WHERE
+					sale_id = $1 AND
+					product_id = $2
+			`,
+			id,
+			p.ProductId,
+		).Scan(
+			&productCharacteristic.ProductId,
+			&productCharacteristic.SaleId,
+			&productCharacteristic.Id,
+			&productCharacteristic.Size,
+			&productCharacteristic.GridQtde,
+		)
+
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao pegar os dados da sale_itens_grid:", err)
+			return nil, err
+		}
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.ProductWithCharacteristics = nil
+		} else {
+			p.ProductWithCharacteristics = &productCharacteristic
 		}
 
 		s.Products = append(s.Products, p)
@@ -299,81 +342,140 @@ func (s *SaleContract) Create() (int, error) {
 
 	s.Id = saleId
 
-	querySaleItem := `
-		INSERT INTO sale_itens
-			(product_id, name, qtde, sale_value, sale_id)
-
-		VALUES
-			($1, $2, $3, $4, $5)
-			
-		RETURNING 
-			id,
-			name,
-			status
-	`
-
-	queryForProduct := `
-		SELECT
-			id,
-			name,
-			qtde
-
-		FROM	
-			products
-		WHERE
-			id = $1
-
-		FOR UPDATE
-	`
-
 	for idx := range s.Products {
 		i := &s.Products[idx]
 
 		var p product.ProductContract
 
 		if err := tx.QueryRow(
-			context.Background(),
-			queryForProduct,
+			ctx,
+			`
+				SELECT
+					id,
+					name,
+					qtde,
+					use_grid
+
+				FROM	
+					products
+				WHERE
+					id = $1
+
+				FOR UPDATE
+			`,
 			i.ProductId,
 		).Scan(
 			&p.Id,
 			&p.Name,
 			&p.Qtde,
+			&p.UseGrid,
 		); err != nil {
+			u.ErrorLogger.Println("Erro no select:", err)
 			return 0, err
 		}
 
 		totalSale := calchelper.CalculateTotalSale(i.SaleValue, i.Qtde)
 
-		if err != nil {
-			return 0, err
+		if !p.UseGrid {
+			u.InfoLogger.Println("O produto da venda não tem grade, vai gravar normal")
+
+			if err = tx.QueryRow(
+				ctx,
+				`
+					INSERT INTO sale_itens
+						(product_id, name, qtde, sale_value, sale_id)
+
+					VALUES
+						($1, $2, $3, $4, $5)
+						
+					RETURNING 
+						id,
+						name,
+						status
+				`,
+				i.ProductId,
+				p.Name,
+				i.Qtde,
+				totalSale,
+				saleId,
+			).Scan(
+				&i.Id,
+				&i.Name,
+				&i.Status,
+			); err != nil {
+				u.ErrorLogger.Println("Erro no insert no sale_itens:", err)
+				return 0, err
+			}
+
+			i.Name = p.Name
+			i.SaleId = saleId
+
+			if err = p.DiscountedQtde(ctx, tx, i.Qtde); err != nil {
+				u.ErrorLogger.Println("Erro no insert no DiscountedQtde:", err)
+				return 0, err
+			}
+		} else {
+			u.InfoLogger.Println("O produto da venda tem grade, vai gravar na sale_itens_grid também")
+
+			if err = tx.QueryRow(
+				ctx,
+				`
+					INSERT INTO sale_itens
+						(product_id, name, qtde, sale_value, sale_id)
+
+					VALUES
+						($1, $2, $3, $4, $5)
+						
+					RETURNING 
+						id,
+						name,
+						status
+				`,
+				i.ProductId,
+				p.Name,
+				i.Qtde,
+				totalSale,
+				saleId,
+			).Scan(
+				&i.Id,
+				&i.Name,
+				&i.Status,
+			); err != nil {
+				u.ErrorLogger.Println("Erro no insert no sale_itens:", err)
+				return 0, err
+			}
+
+			i.SaleId = saleId
+
+			u.InfoLogger.Printf("Vai descontar a qtde %d da grade %s do produto", i.Qtde, i.ProductWithCharacteristics.Size)
+			if err = i.ProductWithCharacteristics.DiscountedGridQtde(ctx, tx, i.Qtde, productcharacteristics.Size(i.ProductWithCharacteristics.Size)); err != nil {
+				u.ErrorLogger.Println("Erro ao descontar a qtde da grade do produto:", err)
+				return 0, err
+			}
 		}
 
-		if err = tx.QueryRow(
-			context.Background(),
-			querySaleItem,
+		if _, err = tx.Exec(
+			ctx,
+			`
+				INSERT INTO sale_itens_grid
+					(product_id, sale_id, product_grid_id, size_saled, grid_qtde)
+
+				VALUES
+					($1, $2, $3, $4, $5)
+				
+			`,
 			i.ProductId,
-			p.Name,
-			i.Qtde,
-			totalSale,
 			saleId,
-		).Scan(
-			&i.Id,
-			&i.Name,
-			&i.Status,
+			i.ProductWithCharacteristics.Id,
+			i.ProductWithCharacteristics.Size,
+			i.Qtde,
 		); err != nil {
-			return 0, err
-		}
-
-		i.Name = p.Name
-		i.SaleId = saleId
-
-		if err = p.DiscountedQtde(context.Background(), tx, i.Qtde); err != nil {
+			u.ErrorLogger.Println("Erro no insert no sale_itens_grid:", err)
 			return 0, err
 		}
 	}
 
-	if err = tx.Commit(context.Background()); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return 0, err
 	}
 
@@ -396,102 +498,290 @@ func (s *SaleContract) InsertNewItens() error {
 
 	defer tx.Rollback(ctx)
 
-	queryForInsertOrUpdateNewItem := `
-		INSERT INTO sale_itens
-			(product_id, name, qtde, sale_value, sale_id)
-
-		VALUES
-			($1, $2, $3, $4, $5)
-
-		ON CONFLICT (sale_id, product_id)
-		DO UPDATE SET
-			name = EXCLUDED.name,
-			qtde = EXCLUDED.qtde, 
-			sale_value = EXCLUDED.sale_value
-	`
-
 	for _, p := range s.Products {
+		u.InfoLogger.Println("Produto: ", p)
+		u.InfoLogger.Println("ProductWithCharacteristics: ", p.ProductWithCharacteristics)
+
+		var useGrid bool
 		var oldQtdeSaleItem int
 
 		if err := tx.QueryRow(
 			ctx,
 			`
-				SELECT 
-					qtde
+				SELECT
+					use_grid
 				FROM
-					sale_itens
+					products
 				WHERE
-					sale_id = $1 AND
-					product_id = $2
-
+					id = $1
 			`,
-			s.Id,
 			p.ProductId,
-		).Scan(&oldQtdeSaleItem); err != nil && err != pgx.ErrNoRows {
-			u.ErrorLogger.Println("Erro ao localizar a qtde anterior do produto da venda")
-			return err
-		}
-
-		if err == pgx.ErrNoRows {
-			oldQtdeSaleItem = 0
-		}
-
-		diff := p.Qtde - oldQtdeSaleItem
-
-		if _, err := tx.Exec(
-			ctx,
-			queryForInsertOrUpdateNewItem,
-			p.ProductId,
-			p.Name,
-			p.Qtde,
-			p.SaleValue,
-			s.Id,
+		).Scan(
+			&useGrid,
 		); err != nil {
-			u.ErrorLogger.Println("Erro ao inserir/atualizar item: ", err)
+			u.ErrorLogger.Println("Erro ao conferir se o produto usa grade:", err)
 			return err
 		}
 
-		if diff != 0 {
+		if useGrid {
+			if p.ProductWithCharacteristics == nil {
+				u.ErrorLogger.Println("Produto utiliza grade mas a grade está ausente.", p)
+				return fmt.Errorf("Produto utiliza grade mas a grade está ausente.")
+			}
+
+			u.InfoLogger.Println("O produto usa grade")
+			u.InfoLogger.Println("1 - Vai atualizar a qtde do item na venda")
+
 			if _, err := tx.Exec(
 				ctx,
 				`
 					UPDATE
-						products	
-					SET 
-						qtde = qtde - $2
+						sale_itens
+	
+					SET
+						qtde = $1
+	
 					WHERE
-						id = $1
+						sale_id = $2 AND
+						product_id = $3
+				`,
+				p.Qtde,
+				s.Id,
+				p.ProductId,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao atualizar a qtde do item: ", err)
+				return err
+			}
+
+			u.InfoLogger.Println("2 - Vai atualizar a qtde da grade do item na venda")
+
+			if _, err := tx.Exec(
+				ctx,
+				`
+					UPDATE
+						sale_itens_grid
+	
+					SET
+						grid_qtde = $1
+	
+					WHERE
+						sale_id = $2 AND
+						product_id = $3
+				`,
+				p.Qtde,
+				s.Id,
+				p.ProductId,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao atualizar a grade do item: ", err)
+				return err
+			}
+
+			u.InfoLogger.Println("Vai pegar a qtde que foi passada na venda")
+
+			err := tx.QueryRow(
+				ctx,
+				`
+					SELECT
+						grid_qtde
+	
+					FROM
+						sale_itens_grid
+	
+					WHERE
+						size_saled = $1 AND
+						product_id = $2 AND
+						sale_id = $3
+	
+				`,
+				p.ProductWithCharacteristics.Size,
+				p.ProductId,
+				s.Id,
+			).Scan(
+				&oldQtdeSaleItem,
+			)
+
+			if errors.Is(err, pgx.ErrNoRows) {
+				u.InfoLogger.Println("Não possui essa grade inserida, vai inserir uma nova grade")
+				if _, err = tx.Exec(
+					ctx,
+					`
+						INSERT INTO sale_itens_grid
+							(product_id, sale_id, product_grid_id, size_saled, grid_qtde)
+
+						VALUES
+							($1, $2, $3, $4, $5)
+						
+					`,
+					p.ProductId,
+					s.Id,
+					p.ProductWithCharacteristics.Id,
+					p.ProductWithCharacteristics.Size,
+					p.Qtde,
+				); err != nil {
+					u.ErrorLogger.Println("Erro no insert no sale_itens_grid:", err)
+					return err
+				}
+			}
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao localizar a qtde anterior da grade do produto da venda:", err)
+				return err
+			}
+
+			u.InfoLogger.Println("Qtde que foi passada na venda: ", oldQtdeSaleItem)
+
+			if err == pgx.ErrNoRows {
+				u.InfoLogger.Println("Não foi localizado qtde anterior")
+				oldQtdeSaleItem = 0
+			}
+
+			u.InfoLogger.Println("p.ProductWithCharacteristics.GridQtde:", p.ProductWithCharacteristics.GridQtde)
+			diff := p.ProductWithCharacteristics.GridQtde - oldQtdeSaleItem
+
+			u.InfoLogger.Println("Diferença:", diff)
+			u.InfoLogger.Println("Vai alterar a qtde passada na venda.")
+
+			if diff != 0 {
+				u.InfoLogger.Printf("Vai alterar a qtde da grade do produto: id - %d, diferença: %d, grade - %s", p.ProductId, diff, p.ProductWithCharacteristics.Size)
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							product_grids	
+						SET 
+							grid_qtde = grid_qtde - $2
+						WHERE
+							product_id = $1 AND
+							size = $3
+					`,
+					p.ProductId,
+					diff,
+					p.ProductWithCharacteristics.Size,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao fazer o update na grade do produto: ", err)
+					return err
+				}
+
+				u.InfoLogger.Printf("Vai alterar a qtde do produto: id - %d", p.ProductId)
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							products
+						SET 
+							qtde = (
+								SELECT
+									COALESCE(SUM(grid_qtde), 0)
+
+								FROM
+									product_grids
+
+								WHERE
+									product_id = $1
+							)
+						WHERE
+							id = $1
+					`,
+					p.ProductId,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao fazer o update na grade do produto: ", err)
+					return err
+				}
+			}
+		} else {
+			if err := tx.QueryRow(
+				ctx,
+				`
+					SELECT 
+						qtde
+	
+					FROM
+						sale_itens
+	
+					WHERE
+						sale_id = $1 AND
+						product_id = $2
+	
+				`,
+				s.Id,
+				p.ProductId,
+			).Scan(&oldQtdeSaleItem); err != nil && err != pgx.ErrNoRows {
+				u.ErrorLogger.Println("Erro ao localizar a qtde anterior do produto da venda")
+				return err
+			}
+
+			if err == pgx.ErrNoRows {
+				oldQtdeSaleItem = 0
+			}
+
+			diff := p.Qtde - oldQtdeSaleItem
+
+			if _, err := tx.Exec(
+				ctx,
+				`
+					INSERT INTO sale_itens
+						(product_id, name, qtde, sale_value, sale_id)
+	
+					VALUES
+						($1, $2, $3, $4, $5)
+	
+					ON CONFLICT (sale_id, product_id)
+					DO UPDATE SET
+						name = EXCLUDED.name,
+						qtde = EXCLUDED.qtde, 
+						sale_value = EXCLUDED.sale_value
 				`,
 				p.ProductId,
-				diff,
+				p.Name,
+				p.Qtde,
+				p.SaleValue,
+				s.Id,
 			); err != nil {
-				u.ErrorLogger.Println("Erro ao fazer o update no estoque: ", err)
+				u.ErrorLogger.Println("Erro ao inserir/atualizar item: ", err)
 				return err
+			}
+
+			if diff != 0 {
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							products	
+						SET 
+							qtde = qtde - $2
+						WHERE
+							id = $1
+					`,
+					p.ProductId,
+					diff,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao fazer o update no estoque: ", err)
+					return err
+				}
 			}
 		}
 	}
 
-	queryForUpdateNewTotalSale := `
-		UPDATE 
-			sales
-		SET
-			sale_value = (
-				SELECT
-					COALESCE(SUM(qtde * sale_value), 0)
-
-				FROM
-					sale_itens
-
-				WHERE
-					sale_id = $1
-			)
-		WHERE
-			id = $1
-	`
-
+	u.InfoLogger.Println("Vai alterar o valor total da venda")
 	if _, err := tx.Exec(
 		ctx,
-		queryForUpdateNewTotalSale,
+		`
+			UPDATE 
+				sales
+			SET
+				sale_value = (
+					SELECT
+						COALESCE(SUM(qtde * sale_value), 0)
+
+					FROM
+						sale_itens
+
+					WHERE
+						sale_id = $1
+				)
+			WHERE
+				id = $1
+		`,
 		s.Id,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao alterar o total da venda depois da inserção/alteração dos itens: ", err)

@@ -62,7 +62,6 @@ func HandleDeleteProductCharacteristics(w http.ResponseWriter, r *http.Request) 
 	}
 
 	params := mux.Vars(r)
-
 	productId, err := strconv.Atoi(params["product_id"])
 
 	if err != nil {
@@ -149,10 +148,10 @@ func HandlePutUpdateProductCharacteristics(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Característica do produto alterada com sucesso!"))
 }
 
-func HandleGetProductCharacteristicsByIds(w http.ResponseWriter, r *http.Request) {
+func HandleGetProductCharacteristicsByGridId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
@@ -160,17 +159,34 @@ func HandleGetProductCharacteristicsByIds(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var findBody FindByIds
+	params := mux.Vars(r)
+	productId, err := strconv.Atoi(params["product_id"])
 
-	if err := json.NewDecoder(r.Body).Decode(&findBody); err != nil {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		u.ErrorLogger.Println("Erro ao processar os dados: ", err)
 
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
+		u.ErrorLogger.Println("Id do produto inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id do produto inválido."),
+		)
+
 		return
 	}
 
-	if findBody.GridId <= 0 || findBody.ProductGridId <= 0 {
+	gridId, err := strconv.Atoi(params["grid_id"])
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Id da grade inválida: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id da grade inválido."),
+		)
+
+		return
+	}
+
+	if productId <= 0 || gridId <= 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		u.ErrorLogger.Println("Ids inválidos.")
 
@@ -178,7 +194,7 @@ func HandleGetProductCharacteristicsByIds(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	productcharacteristicData, err := productcharacteristics.ShowById(findBody.GridId, findBody.ProductGridId)
+	productcharacteristicData, err := productcharacteristics.ShowById(gridId, productId)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

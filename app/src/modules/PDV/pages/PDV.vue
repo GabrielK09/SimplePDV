@@ -131,6 +131,7 @@
         @close="showBaseSearchAllProducs = !$event"
         @emit:selected-products="pushProducts($event)"
     />
+    <!--@emit:selected-products="pushProducts($event)"-->
 
     <QDialogConfirm
         v-if="showConfirmDialog"
@@ -158,16 +159,17 @@
         v-if="showConfigPayMentForm"
         @close="showConfigPayMentForm = !$event"
     />
+
 </template>
 
 <script setup lang="ts">
     import { SessionStorage, QTableColumn } from 'quasar';
-    import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+    import { computed, onMounted, reactive, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
-    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
+    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';    
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
@@ -185,7 +187,7 @@
         sortBy: 'product_id'
     });
 
-    let nextRef: any = null
+    let nextRef: any = null;
 
     const { notify } = useNotify();
 
@@ -200,7 +202,7 @@
 
     /**data is products for sale */
     const productsSale = ref<SaleItemContract[]>([]);
-
+    
     const originalProductsSale = ref<SaleItemContract[]>([]);
 
     const route = useRoute();
@@ -318,8 +320,9 @@
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
         if(!Array.isArray(productsSale.value)) {
             productsSale.value = [];
+            return;
         };
-
+        
         selectedProducts.forEach(p => {
             const exisit = productsSale.value.find(i => i.product_id === p.id);
 
@@ -328,14 +331,14 @@
                 exisit.qtde += p.qtde;
 
             } else {
-                console.log(p);
-
                 productsSale.value.push({
                     id: null,
                     product_id: p.id,
                     name: p.name,
                     price: p.price,
-                    qtde: p.qtde <= 0 ? 1 : p.qtde
+                    qtde: p.qtde ?? 1,
+                    product_with_characteristics: p.product_with_characteristics
+                    
                 });
             };
         });
@@ -467,49 +470,120 @@
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
-        console.log('call saveSaleForPay');
-
         disableButtons.finallySale = true;
 
-        const payload: SaleContract = {
-            id: null,
-            customer_id: pdvData.value.customer_id,
-            customer: pdvData.value.customer,
-            specie: pdvData.value.specie,
-            products: productsSale.value,
-        };
+        try {
+            const payload: SaleContract = {
+                id: null,
+                customer_id: pdvData.value.customer_id,
+                customer: pdvData.value.customer,
+                specie: pdvData.value.specie,
+                products: productsSale.value,
+            };
 
-        const existingSale = SessionStorage.getItem('sale_id');
-        const saleId = routeSaleId.value;
+            const existingSale = SessionStorage.getItem('sale_id');
+            const saleId = routeSaleId.value;
 
-        if(isSave)
-        {
-            console.log('Foi apenas para salvar');
-            const res = await saveSaleService(payload);
-
-            if(res.success)
+            if(isSave)
             {
-                if(hasProductChanged()) {
-                    const res = await insertNewItens({
-                        id: Number(existingSale || saleId),
-                        customer: pdvData.value.customer,
-                        customer_id: pdvData.value.customer_id,
-                        products: productsSale.value,
-                        specie: pdvData.value.specie
-                    });
+                console.log('Foi apenas para salvar');
+                const res = await saveSaleService(payload);
 
-                    if (!res.success) {
-                        notify('negative', res.message);
-                        console.error('Erro no insertNewItens');
+                if(res.success)
+                {
+                    if(hasProductChanged()) {
+                        const res = await insertNewItens({
+                            id: Number(existingSale || saleId),
+                            customer: pdvData.value.customer,
+                            customer_id: pdvData.value.customer_id,
+                            products: productsSale.value,
+                            specie: pdvData.value.specie
+                        });
 
-                        resetBtns();
+                        if (!res.success) {
+                            notify('negative', res.message);
+                            console.error('Erro no insertNewItens');
+
+                            resetBtns();
+
+                            return;
+                        };
+
+                        console.log('Possui alterações nos produtos.');
+                    };
+
+                    returningSaleId.value = res.data.id ?? routeSaleId.value;
+
+                    SessionStorage.set('sale_id', returningSaleId.value);
+
+                    if(!res.data.id || res.data.id === 0)
+                    {
+                        notify(
+                            'negative',
+                            'Erro ao finalizar a venda. Identificador inválido!'
+                        );
 
                         return;
                     };
 
-                    console.log('Possui alterações nos produtos.');
+                    notify('positive', 'Dados salvos com sucesso!');
+
+                    removeSessionData('sale_id');
+                    removeSessionData('sale');
+
+                    productsSale.value = [];
+
+                    originalProductsSale.value = [];
+
+                    router.replace({query: {}});
+
+                    return;
+                };
+            };
+
+            // Confirma se a venda não foi reaberta / importada
+            if((existingSale || saleId) && hasProductChanged()) {
+                const res = await insertNewItens({
+                    id: Number(existingSale || saleId),
+                    customer: pdvData.value.customer,
+                    customer_id: pdvData.value.customer_id,
+                    products: productsSale.value,
+                    specie: pdvData.value.specie
+                });
+
+                if (!res.success) {
+                    console.error('Erro no insertNewItens');
+
+                    notify('negative', res.message);
+                    resetBtns();
+
+                    return;
                 };
 
+                originalProductsSale.value = cloneProducts(productsSale.value)
+            };
+
+            if (saleId) {
+                showPayMentForms.value = true;
+                returningSaleId.value = Number(saleId);
+                return;
+            };
+
+            SessionStorage.set('sale', payload);
+
+            if(!isSave && existingSale)
+            {
+                returningSaleId.value = Number(existingSale);
+                showPayMentForms.value = true;
+                return;
+            };
+
+            notify('positive', 'Processando dados da venda.');
+
+            const res = await saveSaleService(payload);
+
+            if(res.success)
+            {
                 returningSaleId.value = res.data.id ?? routeSaleId.value;
 
                 SessionStorage.set('sale_id', returningSaleId.value);
@@ -520,89 +594,27 @@
                         'negative',
                         'Erro ao finalizar a venda. Identificador inválido!'
                     );
-
                     return;
                 };
 
-                notify('positive', 'Dados salvos com sucesso!');
+                showPayMentForms.value = true;
 
-                removeSessionData('sale_id');
-                removeSessionData('sale');
+            } else {
+                isSave
+                    ? null
+                    : notify('negative', res.message);
 
-                productsSale.value = [];
-
-                originalProductsSale.value = [];
-
-                router.replace({query: {}});
-
-                return;
-            };
-        };
-
-        // Confirma se a venda não foi reaberta / importada
-        if((existingSale || saleId) && hasProductChanged()) {
-            const res = await insertNewItens({
-                id: Number(existingSale || saleId),
-                customer: pdvData.value.customer,
-                customer_id: pdvData.value.customer_id,
-                products: productsSale.value,
-                specie: pdvData.value.specie
-            });
-
-            if (!res.success) {
-                console.error('Erro no insertNewItens');
-
-                notify('negative', res.message);
                 resetBtns();
-
-                return;
             };
-
-            originalProductsSale.value = cloneProducts(productsSale.value)
-        };
-
-        if (saleId) {
-            showPayMentForms.value = true;
-            returningSaleId.value = Number(saleId);
-            return;
-        };
-
-        SessionStorage.set('sale', payload);
-
-        if(!isSave && existingSale)
-        {
-            returningSaleId.value = Number(existingSale);
-            showPayMentForms.value = true;
-            return;
-        };
-
-        notify('positive', 'Processando dados da venda.');
-
-        const res = await saveSaleService(payload);
-
-        if(res.success)
-        {
-            returningSaleId.value = res.data.id ?? routeSaleId.value;
-
-            SessionStorage.set('sale_id', returningSaleId.value);
-
-            if(!res.data.id || res.data.id === 0)
-            {
-                notify(
-                    'negative',
-                    'Erro ao finalizar a venda. Identificador inválido!'
-                );
-                return;
-            };
-
-            showPayMentForms.value = true;
-
-        } else {
-            isSave
-                ? null
-                : notify('negative', res.message);
-
-            resetBtns();
+        } catch (error) {
+            notify(
+                'negative', 
+                error.message
+            );
+            
+        } finally {
+            disableButtons.finallySale = false;
+            
         };
     };
 

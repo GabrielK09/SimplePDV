@@ -3,19 +3,21 @@ package saleitem
 import (
 	"fmt"
 	"myApi/interface/product"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"time"
 )
 
 type SaleItemContract []struct {
-	Id        int       `json:"id"`
-	SaleId    int       `json:"sale_id"`
-	ProductId int       `json:"product_id"`
-	Name      string    `json:"name"`
-	Qtde      int       `json:"qtde"`
-	SaleValue float64   `json:"price"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"cpdated_at"`
+	Id                         int                                                    `json:"id"`
+	SaleId                     int                                                    `json:"sale_id"`
+	ProductId                  int                                                    `json:"product_id"`
+	Name                       string                                                 `json:"name"`
+	Qtde                       int                                                    `json:"qtde"`
+	SaleValue                  float64                                                `json:"price"`
+	Status                     string                                                 `json:"status"`
+	ProductWithCharacteristics *productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+	CreatedAt                  time.Time                                              `json:"created_at"`
+	UpdatedAt                  time.Time                                              `json:"cpdated_at"`
 }
 
 func (i SaleItemContract) Validate() map[string]string {

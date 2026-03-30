@@ -80,10 +80,26 @@ CREATE TABLE public.sale_itens (
   CONSTRAINT sales_itens_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT sales_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
-
 ALTER TABLE sale_itens
 ADD CONSTRAINT unique_sale_product
 UNIQUE (sale_id, product_id);
+
+CREATE TABLE public.sale_itens_grid (
+  id SERIAL PRIMARY KEY,
+  product_id integer NULL,
+  sale_id integer NULL,
+  product_grid_id integer NULL,
+  size_saled sizes NULL,
+  grid_qtde integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT sale_itens_grid_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
+  CONSTRAINT sale_itens_grid_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id),
+  CONSTRAINT sale_itens_grid_product_grids_id_foreign FOREIGN KEY (product_grid_id) REFERENCES public.product_grids(id)
+);
+ALTER TABLE sale_itens_grid
+ADD CONSTRAINT unique_sale_grid
+UNIQUE (sale_id, size_saled, product_grid_id);
 
 CREATE TABLE public.sale_pay_ment (
   id SERIAL PRIMARY KEY,

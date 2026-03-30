@@ -42,21 +42,22 @@
                         :rows="products"
                         :columns="columns"
                         v-model:pagination="pagination"
+                        row-key="id"
                     >
                         <template v-slot:body-cell-select="props">
                             <q-td :props="props">
                                 <div v-if="propsComponent.typeSearch === 'single'">
                                     <q-radio
-                                        v-model="selectedProducts"
-                                        :val="props.row"
+                                        v-model="selectedProductsId"
+                                        :val="props.row.id"
                                         dense
                                     />
                                 </div>
 
                                 <div v-else>
                                     <q-checkbox
-                                        v-model="selectedProducts"
-                                        :val="props.row"
+                                        v-model="selectedProductsIds"
+                                        :val="props.row.id"
                                         dense
                                     />
                                 </div>
@@ -76,12 +77,20 @@
             </div>
         </q-card>
     </q-dialog>
+
+    <QSelectGridTable
+        v-if="showSizeGrid"
+        :is-just-list="true"
+        :product-data="productFullData"
+        @return:selected-grid="handelSelectedGrid($event)"
+    />
 </template>
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
     import { getAll } from 'src/modules/products/services/productsService';
-    import { onMounted, ref } from 'vue';
+    import { computed, onMounted, ref, watch } from 'vue';
+    import QSelectGridTable from '../Products/UseGrid/QTable/QSelectGridTable.vue';
 
     type TypeSearch = 'multiple' | 'single';
 
@@ -89,19 +98,34 @@
         typeSearch: TypeSearch;
     }>();
 
+    const pagination = ref<TPagination>({
+        rowsPerPage: 10,
+        sortBy: 'id'
+    });
+
     const emits = defineEmits<{
-        (e: 'close', value: boolean): void,
-        (e: 'emit:selected-products', value: SaleItemContract[]): void
+        (e: 'close', value: boolean): void;
+        (e: 'emit:selected-products', value: SaleItemContract[]): void;
     }>();
 
     const products = ref<ProductContract[]>([]);
     const allProducts = ref<ProductContract[]>([]);
-    const confirm = ref<boolean>(true);
-    const selectedProducts = ref<SaleItemContract[]>([]);
 
-    const pagination = ref<TPagination>({
-        rowsPerPage: 0,
-        sortBy: 'id'
+    const selectedProductsIds = ref<number[]>([]);
+    const selectedProductsId = ref<number | null>(null);
+    const indexOfProductHaveCharacteristics = ref<number | null>();
+    
+    const confirm = ref<boolean>(true);
+    const showSizeGrid = ref<boolean>(false);
+    
+    const productFullData = ref<ProductContract>({
+        id: null,
+        commission: null,
+        name: null,
+        price: null,
+        qtde: null,
+        productWithCharacteristics: null,
+        use_grid: null,
     });
 
     const columns: QTableColumn[] = [
@@ -142,30 +166,100 @@
 
     const searchInput = ref<string>('');
 
-    const getAllProducts = async () => {
-        const res = await getAll();
-        const data = res.data;
+    const normalizeProduct = (p: ProductContract): SaleItemContract => ({
+        id: p.id,
+        product_id: p.id,
+        name: p.name,
+        price: p.price,
+        //@ts-ignore
+        product_with_characteristics: p.product_with_characteristics,
+        qtde: 1
+    });
 
-        products.value = data;
+    const getAllProducts = async () => {
+        const res: any[] = (await getAll()).data;
+
+        const formatedProducts: ProductContract[] = res.map(r => ({
+            id: r.product.id,
+            name: r.product.name,
+            commission: r.product.commission,
+            price: r.product.price,
+            qtde: 1,
+            deleted_at: r.product.deleted_at,
+            use_grid: r.product.use_grid,
+            product_with_characteristics: r.characteristics,
+
+        })).filter((r: ProductContract) => r.deleted_at === null);
+
+        products.value = formatedProducts;
+
         allProducts.value = [...products.value];
     };
 
     const filterProducts = () => {
-        console.log(searchInput.value);
-
         products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
     };
 
-    const emitProducts = () => {
-        const normalizedProducts =selectedProducts.value.map((p: SaleItemContract) => ({
-            id: p.id,
-            product_id: p.product_id,
-            name: p.name,
-            price: p.price,
-            qtde: 1
-        }));
+    const selectedProducts = computed<SaleItemContract[]>(() => {
+        if (propsComponent.typeSearch === 'single') 
+        {
+            const product = products.value.find(p => p.id === selectedProductsId.value);
 
-        emits('emit:selected-products', normalizedProducts);
+            return product ? [normalizeProduct(product)] : [];
+        };
+
+        return products.value
+            .filter(p => selectedProductsIds.value.includes(p.id))
+            .map(normalizeProduct);
+    });
+
+    watch(selectedProducts, (newProducts) => {
+        newProducts.forEach(p => {
+            if(p.product_with_characteristics !== null) 
+            {   
+                const index = newProducts.findIndex(item => item.id === p.id);
+
+                if (index > -1)
+                {
+                    indexOfProductHaveCharacteristics.value = index;
+                };
+
+                productFullData.value = {
+                    commission: 0,
+                    id: p.id,
+                    name: p.name,
+                    price: p.price,
+                    qtde: 1,
+                    //@ts-ignore
+                    productWithCharacteristics: p.product_with_characteristics
+                };
+
+                showSizeGrid.value = true;
+                };
+        });
+    }, {    
+        immediate: true 
+    });
+
+    const handelSelectedGrid = (grid: any) => {
+        const oldProductData = selectedProducts.value[indexOfProductHaveCharacteristics.value];
+
+        const normalizedProduct: SaleItemContract = {
+            id: oldProductData.id,
+            name: oldProductData.name,
+            price: oldProductData.price,
+            product_id: oldProductData.product_id,
+            qtde: oldProductData.qtde,
+            product_with_characteristics: grid
+        };
+
+        selectedProducts.value[indexOfProductHaveCharacteristics.value] = normalizedProduct;
+
+        showSizeGrid.value = false;
+    };
+
+    const emitProducts = () => {
+        emits('emit:selected-products', selectedProducts.value);
         emits('close', true);
     };
 

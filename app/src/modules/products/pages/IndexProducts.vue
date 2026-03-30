@@ -41,15 +41,7 @@
                             </template>
                         </q-input>
                     </template>
-
-                    <template v-slot:top-left>
-                        <div class="flex gap-2 text-base">
-                            <q-radio v-model="filterProduct" val="all" label="Todos" />
-                            <q-radio v-model="filterProduct" val="actived" label="Ativos" />
-                            <q-radio v-model="filterProduct" val="disabled" label="Inativos" />
-                        </div>
-                    </template>
-
+                    
                     <template v-slot:body="props">
                         <q-tr
                             :props="props"
@@ -61,7 +53,7 @@
                                     <div
                                         class="text-center flex flex-center"
                                     >
-                                        <div>
+                                        <div v-if="props.row.deleted_at === null">
                                             <q-btn
                                                 size="10px"
                                                 no-caps
@@ -70,16 +62,25 @@
                                                 flat
                                                 :to="`products/edit/${props.row.id}`"
                                             />
-                                        </div>
 
-                                        <div>
                                             <q-btn
                                                 size="10px"
                                                 no-caps
                                                 color="red"
                                                 icon="delete"
                                                 flat
-                                                @click="showDialogDeleteProduct(props.row.id)"
+                                                @click="showDialogActionProduct(props.row.id, 'delete')"
+                                            />
+                                        </div>
+
+                                        <div v-if="props.row.deleted_at !== null">
+                                            <q-btn
+                                                size="10px"
+                                                no-caps
+                                                color="green"
+                                                icon="rotate_left"
+                                                flat
+                                                @click="showDialogActionProduct(props.row.id, 'active')"
                                             />
                                         </div>
                                     </div>
@@ -87,8 +88,14 @@
 
                                 <template v-else>
                                     <div class="text-center">
-                                        {{ col.value }}
+                                        <span v-if="props.row.deleted_at !== null" class="text-gray-400">
+                                            {{ col.value }}
 
+                                        </span>
+                                        <div v-else>
+                                            {{ col.value }}
+
+                                        </div>
                                     </div>
                                 </template>
                             </q-td>
@@ -111,11 +118,9 @@
 
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
-    import { onMounted, ref, watch } from 'vue';
-    import { getAll, deleteProduct } from '../services/productsService';
+    import { onMounted, ref } from 'vue';
+    import { getAll, manageProductService } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-
-    type FilterProductsOptions = 'all'|'actived'|'disabled'|null;
 
     const $q = useQuasar();
     const { notify } = useNotify();
@@ -123,8 +128,6 @@
     const pagination = ref({
         sortBy: 'id' 
     });
-
-    const filterProduct = ref<FilterProductsOptions>('all');
 
     const columns: QTableColumn[] = [
         {
@@ -188,14 +191,14 @@
         allProducts.value = [...products.value];
     };
 
-    const showDialogDeleteProduct = (productId: number) => {
+    const showDialogActionProduct = (productId: number, operation: 'active'|'delete') => {
         $q.dialog({
-            title: 'Excluir produto',
-            message: `Deseja realmente remover esse produto (${productId})?`,
+            title: `${operation === 'delete' ? 'Excluir' : 'Ativar'} produto`,
+            message: `Deseja realmente ${operation === 'delete' ? 'deletear' : 'ativar'} esse produto (${productId})?`,
             cancel: {
                 push: true,
                 label: 'Não',
-                color: 'red',
+                color: operation === 'delete' ? 'red' : 'green'
             },
 
             ok: {
@@ -205,63 +208,38 @@
             },
 
         }).onOk(() => {
-            deleteProductByDialog(productId);
+            manageProduct(productId, operation);
 
         }).onCancel(() => {
             return;
         });
     };
 
-    const deleteProductByDialog = async (productId: number) => {
-        const res = await deleteProduct(productId);
+    const manageProduct = async (productId: number, operation: 'active'|'delete') => {
+        const res = await manageProductService(productId, operation);
 
-        if(res.success)
+        if(!res.success)
         {
             notify(
-                'positive',
+                'negative',
                 res.message
             );
-
-        } else {
-            notify(
-                'positive',
-                res.message
-            );
+            return;
         };
 
-        getAllProducts();
+        notify(
+            'positive',
+            res.message
+        );
+
+        await getAllProducts();
     };
 
     const filterProducts = (): void => {
         products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
     };
 
-    watch(
-        () => filterProduct.value,
-        (option: FilterProductsOptions) => {
-            switch (option) {
-                case 'all':
-                    products.value = allProducts.value;
-                    
-                    break;
-                    
-                case 'actived':
-                    products.value = allProducts.value.filter(product => product.deleted_at === null);
-                        
-                    break;
-
-                case 'disabled':
-                    products.value = allProducts.value.filter(product => product.deleted_at !== null);
-                    break;
-            
-                default:
-                    break;
-            }
-        }
-    );
-
     onMounted(() => {
         getAllProducts();
-        
     });
 </script>

@@ -12,17 +12,17 @@ import (
 )
 
 type ProductContract struct {
-	Id         int       `json:"id"`
-	Name       string    `json:"name"`
-	Price      float64   `json:"price"`
-	Qtde       int       `json:"qtde"`
-	Commission float64   `json:"commission"`
-	Returned   int       `json:"returned"`
-	Saled      int       `json:"saled"`
-	UseGrid    bool      `json:"use_grid"`
-	DeletedAt  time.Time `json:"deleted_at"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	Id         int        `json:"id"`
+	Name       string     `json:"name"`
+	Price      float64    `json:"price"`
+	Qtde       int        `json:"qtde"`
+	Commission float64    `json:"commission"`
+	Returned   int        `json:"returned"`
+	Saled      int        `json:"saled"`
+	UseGrid    bool       `json:"use_grid"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	DeletedAt  *time.Time `json:"deleted_at"`
 }
 
 var conn *pgxpool.Pool
@@ -251,7 +251,10 @@ func GetAll() ([]ProductContract, error) {
 			qtde,           
 			commission,
 			use_grid,
+			created_at,
+			updated_at,
 			deleted_at
+
 		FROM
 			products
 	`
@@ -278,9 +281,11 @@ func GetAll() ([]ProductContract, error) {
 			&p.Qtde,
 			&p.Commission,
 			&p.UseGrid,
+			&p.CreatedAt,
+			&p.UpdatedAt,
 			&p.DeletedAt,
 		); err != nil {
-			u.ErrorLogger.Println("Erro: ", err)
+			u.ErrorLogger.Println("Erro ao ler os dados do select:", err)
 			return nil, err
 		}
 
@@ -351,6 +356,58 @@ func Delete(id int, deletedAt time.Time) error {
 		deletedAt,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao deletar a grade do produto: ", err)
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao commitar: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func Active(id int, updatedAt time.Time) error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	product, err := Show(id)
+
+	if err != nil {
+		u.ErrorLogger.Println("Ocorreu um erro ao consultar o produto: ", err)
+		return err
+	}
+
+	if product == nil {
+		u.ErrorLogger.Println("Produto não localizado.")
+		return fmt.Errorf("Produto não localizado.")
+	}
+
+	queryActiveProduct := `
+		UPDATE
+			products
+
+		SET
+			updated_at = $2,
+			deleted_at = NULL
+
+		WHERE 
+			id = $1
+	`
+
+	if _, err = conn.Exec(
+		ctx,
+		queryActiveProduct,
+		id,
+		updatedAt,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao ativar o produto: ", err)
 		return err
 	}
 

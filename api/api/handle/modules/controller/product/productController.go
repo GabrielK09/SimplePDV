@@ -103,6 +103,45 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto deletado com sucesso!"))
 }
 
+func HandleActiveProduct(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPatch {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
+
+		return
+	}
+
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		u.ErrorLogger.Println("Id inválido: ", err)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err, "Id inválido."),
+		)
+
+		return
+	}
+
+	if err := product.Active(id, time.Now()); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(
+			responsehelper.Response(false, err.Error(), "Erro ao ativar o produto."),
+		)
+
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto ativado com sucesso!"))
+}
+
 func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 	u.InfoLogger.Println("HandleGetByNameProduct")
 	w.Header().Set("Content-Type", "application/json")

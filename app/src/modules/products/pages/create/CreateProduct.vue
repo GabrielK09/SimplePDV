@@ -123,7 +123,6 @@
                         </div>
 
                         <div v-if="product.use_grid" class="mx-2 my-4">
-                            {{ product }}
                             <QGridTable
                                 :product-data="product"
                                 @show-create-grid="showCreateGrid = $event"
@@ -311,14 +310,14 @@
                     {
                         notify(
                             'negative',
-                            resCharacteristics.data.message
+                            resCharacteristics.message
                         );  
                     };
                 };
                 
                 notify(
                     'positive',
-                    res.data.message
+                    res.message
                 );
 
                 router.replace({
@@ -327,7 +326,7 @@
                 });
 
             } else {
-                    notify(
+                notify(
                     'negative',
                     res.message
 

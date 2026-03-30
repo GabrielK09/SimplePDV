@@ -193,6 +193,7 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 		}
 
 		if totalPaide < s.SaleValue {
+			u.ErrorLogger.Printf("Valor informado menor do que da venda, valor da venda: %2.f, valor pago: %2.f", s.SaleValue, totalPaide)
 			return fmt.Errorf("Valor informado menor do que da venda.")
 		}
 

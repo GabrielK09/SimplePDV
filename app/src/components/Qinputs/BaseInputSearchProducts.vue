@@ -34,6 +34,13 @@
             v-show="false"
         />
     </q-form>
+
+    <QSelectGridTable
+        v-if="showSizeGrid"
+        :is-just-list="true"
+        :product-data="productFullData"
+        @return:selected-grid="handelSelectedGrid($event)"
+    />
 </template>
 
 <script setup lang="ts">
@@ -41,10 +48,24 @@
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { findById, findByName } from 'src/modules/products/services/productsService';
     import { ref, watch } from 'vue';
+    import QSelectGridTable from '../Products/UseGrid/QTable/QSelectGridTable.vue';
+
+    const productFullData = ref<ProductContract>({
+        id: null,
+        commission: null,
+        name: null,
+        price: null,
+        qtde: null,
+        productWithCharacteristics: null,
+        use_grid: null,
+    });
+
+    const intermediaryProductItemData = ref<SaleItemContract>();
 
     const searchInput = ref<number | string | null>(null);
 
     const habilitStringSearchInput = ref<boolean>(false);
+    const showSizeGrid = ref<boolean>(false);
 
     const itensTableColumn: QTableColumn[] = [
         {
@@ -57,6 +78,12 @@
             name: 'name',
             label: 'Produto',
             field: 'name',
+            align: 'center',
+        },
+        {
+            name: 'qtde',
+            label: 'Qtde',
+            field: 'qtde',
             align: 'center',
         },
         {
@@ -83,42 +110,66 @@
 
         if(!searchInput.value) return; // Se não for busca pelo nome, precisa possuir algum valor inserido no campo de busca
 
-        let productQtde: number;
+        let productQtde: number = 1;
+        let productId: number = Number(searchInput.value);
     
-        const splitedSearchInput = searchInput.value?.toString().split('');
-
-        if(splitedSearchInput.includes('*'))
+        if(searchInput.value?.toString().split('').includes('*'))
         {
-            //const removeSpaces = splitedSearchInput.join('');
-            
-            
-            console.log('productQtde: ', productQtde);
-            return;
+            const splitedInput = searchInput.value?.toString().split('*');
+            productQtde = Number(splitedInput[0]);
+            productId = Number(splitedInput[1]);
         };
-
-        console.log('Number(searchInput.value): ', searchInput.value);
         
-        const product = await findById(Number(searchInput.value));
+        const resProduct = (await findById(productId)).data;
 
-        console.log('product localizado: ', product);
+        const productResData: ProductContract = resProduct.product;
+        productResData.productWithCharacteristics = resProduct.characteristics;
+
+        console.log('product localizado: ', resProduct);
     
-        if(!product)
+        if(!productResData)
         {
             notify('warning', 'Produto não localizado');
             return;
         };
 
         const productData: SaleItemContract = {
-            id: product.data.product?.id,
-            name: product.data.product?.name,
-            price: product.data.product?.price,
-            product_id: product.data.product?.id,
-            qtde: productQtde ?? 1
+            id: productResData?.id,
+            name: productResData?.name,
+            price: productResData?.price,
+            product_id: productResData?.id,
+            qtde: productQtde ?? 1,
+            product_with_characteristics: null
         };
 
-        console.log('Vai enviar: ', productData);
+        intermediaryProductItemData.value = productData;
 
-        emits('emit:selected-product', productData);
+        if(!productResData.use_grid && productResData.productWithCharacteristics.length <= 0)
+        {
+            emitProduct(productData);
+            return;
+        };
+    
+        productFullData.value = productResData;
+        showSizeGrid.value = true;
+        return;
+    };
+
+    const handelSelectedGrid = (grid: any) => {
+        const normalizedProduct: SaleItemContract = {
+            id: intermediaryProductItemData.value.id,
+            name: intermediaryProductItemData.value.name,
+            price: intermediaryProductItemData.value.price,
+            product_id: intermediaryProductItemData.value.product_id,
+            qtde: intermediaryProductItemData.value.qtde,
+            product_with_characteristics: grid
+        };
+
+        emitProduct(normalizedProduct);
+    };
+
+    const emitProduct = (product: SaleItemContract) => {
+        emits('emit:selected-product', product);
         searchInput.value = '';
     };
 
@@ -165,7 +216,16 @@
     const selectProduct = (evt: Event, row: SaleItemContract) => {
         console.log('evt: ', evt);
 
-        emits('emit:selected-product', row);
+        const normalizedProduct: SaleItemContract= {
+            id: row.id,
+            name: row.name,
+            price: row.price,
+            product_id: row.product_id,
+            product_with_characteristics: row.product_with_characteristics,
+            qtde: 1
+        };
+
+        emits('emit:selected-product', normalizedProduct);
 
         searchInput.value = null;
         habilitStringSearchInput.value = false;

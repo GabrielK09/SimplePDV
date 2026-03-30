@@ -7,11 +7,12 @@ interface SaleContract {
 };
 
 interface SaleItemContract {
-    readonly id: number;
+    id: number;
     product_id: number;
     name: string;
     price: number;
     qtde: number;
+    product_with_characteristics: ProductCharacteristicsContract
 };
 
 interface PaySaleContract {

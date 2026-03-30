@@ -28,13 +28,14 @@ const (
 )
 
 type ProductCharacteristicsContract struct {
-	Id        int       `json:"id"`
-	ProductId int       `json:"product_id"`
-	Size      string    `json:"size"`
-	GridQtde  int       `json:"grid_qtde"`
-	DeletedAt time.Time `json:"deleted_at"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id        int        `json:"id"`
+	SaleId    int        `json:"sale_id"`
+	ProductId int        `json:"product_id"`
+	Size      string     `json:"size"`
+	GridQtde  int        `json:"grid_qtde"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 var conn *pgxpool.Pool
@@ -90,13 +91,17 @@ func GetAllByProductId(productId int) ([]ProductCharacteristicsContract, error) 
 				id,
 				product_id,
 				size,
-				grid_qtde
+				grid_qtde,
+				created_at,
+				updated_at,
+				deleted_at
 
 			FROM
 				product_grids
 
 			WHERE
-				product_id = $1
+				product_id = $1 AND
+				deleted_at IS NULL
 		`,
 		productId,
 	)
@@ -116,6 +121,9 @@ func GetAllByProductId(productId int) ([]ProductCharacteristicsContract, error) 
 			&p.ProductId,
 			&p.Size,
 			&p.GridQtde,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+			&p.DeletedAt,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao executar a leitura dos dados: ", err)
 			return []ProductCharacteristicsContract{}, err
@@ -317,14 +325,14 @@ func ShowById(gridId, productId int) (ProductCharacteristicsContract, error) {
 		&productCharacteristic.GridQtde,
 	)
 
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao fazer o select da grade: ", err)
-		return ProductCharacteristicsContract{}, err
-	}
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Nada foi localizado", err)
 		return ProductCharacteristicsContract{}, fmt.Errorf("Nem uma grade localizada para esses IDs.")
+	}
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao fazer o select da grade: ", err)
+		return ProductCharacteristicsContract{}, err
 	}
 
 	return productCharacteristic, nil
@@ -365,6 +373,66 @@ func Delete(id, productId int, deletedAt time.Time) error {
 
 	if err := tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Println("Erro ao commitar: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func (p *ProductCharacteristicsContract) DiscountedGridQtde(ctx context.Context, tx pgx.Tx, qtde int, size Size) error {
+	if qtde <= 0 {
+		return fmt.Errorf("Qtde inválida: %d", qtde)
+	}
+
+	if !size.isValidSize() {
+		u.ErrorLogger.Printf("A grade: %s, é inválida", size)
+		return fmt.Errorf("Grade inválida, %s", size)
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE	
+				product_grids
+
+			SET
+				grid_qtde = grid_qtde - $2
+
+			WHERE	
+				product_id = $1 AND
+				size = $3
+		`,
+		p.ProductId,
+		qtde,
+		size,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar a qtde de sale_itens_grid:", err)
+		return err
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE	
+				products
+
+			SET
+				qtde = (
+					SELECT
+						COALESCE(SUM(grid_qtde), 0)
+
+					FROM
+						product_grids
+
+					WHERE
+						product_id = $1
+				)
+			WHERE	
+				id = $1
+		`,
+		p.ProductId,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar a qtde de products:", err)
 		return err
 	}
 
