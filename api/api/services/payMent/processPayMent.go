@@ -480,13 +480,10 @@ func CancelSaleOrShopping(c CancelContract) error {
 					si.product_id,
 					si.qtde,
 					si.status
-
 				FROM
 					sale_itens si
-
 				INNER JOIN
 					products p on p.id = si.product_id
-
 				WHERE
 					si.sale_id = $1
 			`,
@@ -494,7 +491,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 		)
 
 		if err != nil {
-			u.ErrorLogger.Println("Erro ao executar o query: ", err)
+			u.ErrorLogger.Println("Erro ao executar a query: ", err)
 			return err
 		}
 
@@ -524,6 +521,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
 				return err
 			}
+
+			u.InfoLogger.Println("Dados produto localizado:", p)
 
 			saleProducts = append(saleProducts, p)
 		}
