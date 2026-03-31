@@ -24,6 +24,26 @@ type ProductWithCharacteristics struct {
 func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	var perPage interface{}
+
+	//perPage, err := strconv.Atoi(r.URL.Query().Get("per_page"))
+	perPageStr := r.URL.Query().Get("per_page")
+
+	u.InfoLogger.Println("perPageStr: ", perPageStr)
+
+	if perPageStr != "" {
+		perPage = "all"
+	}
+
+	if v, err := strconv.Atoi(perPageStr); err == nil {
+		perPage = v
+	}
+
+	u.InfoLogger.Println("per_page: ", perPage)
+
+	// params := mux.Vars(r)
+	// productId, err := strconv.Atoi(params["id"])
+
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		resp := responsehelper.Response(false, nil, "Método não permetido.")
@@ -32,7 +52,9 @@ func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	products, err := product.GetAll()
+	var productsWithCharacteristics []ProductWithCharacteristics
+
+	products, err := product.GetAll(perPage)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -41,22 +63,25 @@ func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var productsWithCharacteristics []ProductWithCharacteristics
+	productCharacteristics, err := productcharacteristics.GetAll()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos os produtos."))
+		return
+	}
+
+	characteristicsMap := make(map[int][]productcharacteristics.ProductCharacteristicsContract)
+
+	for _, c := range productCharacteristics {
+		characteristicsMap[c.ProductId] = append(characteristicsMap[c.ProductId], c)
+	}
 
 	for _, p := range products {
-		productCharacteristics, err := productcharacteristics.GetAllByProductId(p.Id)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-
-			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar a características os produtos."))
-			return
-
-		}
-
 		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
 			Product:         p,
-			Characteristics: productCharacteristics,
+			Characteristics: characteristicsMap[p.Id],
 		})
 	}
 

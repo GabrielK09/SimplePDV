@@ -15,7 +15,6 @@ import (
 	"myApi/interface/customer"
 	"myApi/interface/dashBoard"
 	paymentform "myApi/interface/payMentForm"
-	"myApi/interface/pdv"
 	"myApi/interface/product"
 	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
@@ -74,7 +73,6 @@ func main() {
 	customer.SetConnection(dbConn)
 	dashBoard.SetConnection(dbConn)
 	paymentform.SetConnection(dbConn)
-	pdv.SetConnection(dbConn)
 	reports.SetConnection(dbConn)
 	shopping.SetConnection(dbConn)
 	user.SetConnection(dbConn)

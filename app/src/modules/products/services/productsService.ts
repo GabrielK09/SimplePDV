@@ -1,10 +1,10 @@
 import { api } from "src/boot/axios";
 import apiResponse from "src/helpers/response/apiResponse";
 
-export async function getAll(): Promise<any>
+export async function getAll(perPage: number): Promise<any>
 {
     try {
-        const res = await api.get('products/all');
+        const res = await api.get(`products/all${perPage > 0 ? `?per_page=${perPage}` : ''}`);
         const data = res.data;
 
         return apiResponse(
@@ -27,7 +27,7 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
     try {
         const res = await api.post('products/create', payLoad);
         const data = res.data;
-        
+
         return apiResponse(
             true,
             data.message,
@@ -80,7 +80,7 @@ export async function createProductCharacteristics(payLoads: ProductCharacterist
 export async function getProductCharacteristicsById(productGridId: number): Promise<any>
 {
     console.log('called getProductCharacteristicsById');
-    
+
     try {
         const res = await api.get(`products/find/characteristics/${productGridId}`);
 
@@ -98,7 +98,7 @@ export async function getProductCharacteristicsById(productGridId: number): Prom
             error.response?.data?.message,
             error.response
         );
-    };  
+    };
 };
 
 export async function getProductCharacteristicsByGridIds({gridId, productGridId}): Promise<any>
@@ -120,7 +120,7 @@ export async function getProductCharacteristicsByGridIds({gridId, productGridId}
             error.response?.data?.message,
             error.response
         );
-    };  
+    };
 };
 
 export async function updateProduct(payLoad: ProductContract): Promise<any>

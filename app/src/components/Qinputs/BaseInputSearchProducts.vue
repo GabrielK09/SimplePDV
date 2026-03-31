@@ -122,19 +122,19 @@
 
         let productQtde: number = 1;
         let productId: number = Number(searchInput.value);
-    
+
         if(searchInput.value?.toString().split('').includes('*'))
         {
             const splitedInput = searchInput.value?.toString().split('*');
             productQtde = Number(splitedInput[0]);
             productId = Number(splitedInput[1]);
         };
-        
+
         const resProduct = (await findById(productId)).data;
 
         const productResData: ProductContract = resProduct.product;
         productResData.productWithCharacteristics = resProduct.characteristics;
-    
+
         if(!productResData)
         {
             notify('warning', 'Produto não localizado');
@@ -157,7 +157,7 @@
             emitProduct(productData);
             return;
         };
-    
+
         productFullData.value = productResData;
         showSizeGrid.value = true;
         return;
@@ -211,42 +211,48 @@
         const res = await findByName(search);
 
         console.log(res);
-            
+
         if(!res.success) return;
 
         const data: any[] = res.data;
 
         console.log(data);
-        
+
         itensData.value = data.map(p => ({
             id: p.product.id,
             name: p.product.name,
             price: p.product.price,
             product_id: p.product.product_id,
+            qtde: 1,
+            use_grid: p.use_grid,
             //@ts-ignore
             product_with_characteristics: p.characteristics,
-            qtde: 1,
-            use_grid: p.use_grid
         }));
-        console.log(itensData.value);
-        
     };
 
-    const selectProduct = (_: Event, row: ProductContract) => {
-        console.log('called selectProduct, row ', row);
-        
-        if(row.use_grid)
+    const selectProduct = (_: Event, row: SaleItemContract) => {
+        if(row.product_with_characteristics !== null)
         {
             showSizeGrid.value = true;
-            productFullData.value = row;
+            productFullData.value = {
+                commission: 0,
+                id: row.id,
+                name: row.name,
+                price: row.price,
+                qtde: 1,
+                use_grid: true,
+                 //@ts-ignore
+                productWithCharacteristics: row.product_with_characteristics
+            };
 
+            intermediaryProductItemData.value = row;
             searchInput.value = null;
             habilitStringSearchInput.value = false;
             itensData.value = [];
             return;
         };
 
-        emits('emit:selected-product', normalizeProduct(row));
+        emits('emit:selected-product', row);
 
         searchInput.value = null;
         habilitStringSearchInput.value = false;

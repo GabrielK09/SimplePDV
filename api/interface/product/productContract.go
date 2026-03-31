@@ -242,7 +242,7 @@ func ShowByName(productName string) ([]ProductContract, error) {
 	return products, nil
 }
 
-func GetAll() ([]ProductContract, error) {
+func GetAll(perPage any) ([]ProductContract, error) {
 	var products []ProductContract
 
 	query := `
@@ -253,17 +253,30 @@ func GetAll() ([]ProductContract, error) {
 			qtde,           
 			commission,
 			use_grid,
-			created_at,
-			updated_at,
 			deleted_at
 
 		FROM
 			products
+
+		ORDER BY
+			id
 	`
 
-	rows, err := conn.Query(
-		context.Background(),
+	var rows pgx.Rows
+	var err error
+
+	if perPage == "all" {
+		rows, err = conn.Query(ctx, query)
+	} else {
+		query += " LIMIT $1"
+
+		rows, err = conn.Query(ctx, query)
+	}
+
+	rows, err = conn.Query(
+		ctx,
 		query,
+		perPage,
 	)
 
 	if err != nil {
@@ -283,8 +296,6 @@ func GetAll() ([]ProductContract, error) {
 			&p.Qtde,
 			&p.Commission,
 			&p.UseGrid,
-			&p.CreatedAt,
-			&p.UpdatedAt,
 			&p.DeletedAt,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao ler os dados do select:", err)

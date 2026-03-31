@@ -6,6 +6,7 @@ import (
 	u "myApi/helpers/logger"
 	"myApi/interface/cashRegister"
 	"myApi/interface/customer"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
 	"myApi/interface/shopping"
 
@@ -471,22 +472,24 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return fmt.Errorf("Essa venda n° %d já está cancelada", s.Id)
 		}
 
-		querySelectItensSale := `
-			SELECT
-				product_id,
-				qtde,
-				status
-
-			FROM
-				sale_itens
-
-			WHERE
-				sale_id = $1
-		`
-
 		itensSaleRows, err := tx.Query(
 			ctx,
-			querySelectItensSale,
+			`
+				SELECT
+					p.use_grid,
+					si.product_id,
+					si.qtde,
+					si.status
+
+				FROM
+					sale_itens si
+
+				INNER JOIN
+					products p on p.id = si.product_id
+
+				WHERE
+					si.sale_id = $1
+			`,
 			c.SaleId,
 		)
 
@@ -498,6 +501,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 		defer itensSaleRows.Close()
 
 		var saleProducts []struct {
+			UseGrid   bool
 			ProductId int
 			Qtde      int
 			Status    string
@@ -505,12 +509,14 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 		for itensSaleRows.Next() {
 			var p struct {
+				UseGrid   bool
 				ProductId int
 				Qtde      int
 				Status    string
 			}
 
 			if err := itensSaleRows.Scan(
+				&p.UseGrid,
 				&p.ProductId,
 				&p.Qtde,
 				&p.Status,
@@ -523,45 +529,124 @@ func CancelSaleOrShopping(c CancelContract) error {
 		}
 
 		for _, p := range saleProducts {
-			queryUpdateReturnQtdeStock := `
-				UPDATE
-					products
-
-				SET
-					qtde = qtde + $2
-
-				WHERE
-					id = $1
-			`
-
 			u.InfoLogger.Println("Vai fazer o update dos item: ", p)
 
-			if _, err := tx.Exec(
-				ctx,
-				queryUpdateReturnQtdeStock,
-				p.ProductId,
-				p.Qtde,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
-				return err
+			if p.UseGrid {
+				u.InfoLogger.Println("Produto da venda possuia grade informada, vai retornar a qtde da grade: ", p)
+				u.InfoLogger.Println("Vai localizar qual grade e qtde foi vendida.")
 
+				var productGrid struct {
+					SizeSaled productcharacteristics.Size
+					GridQtde  int
+				}
+
+				if err := tx.QueryRow(
+					ctx,
+					`
+						SELECT
+							size_saled,
+							grid_qtde										
+
+						FROM
+							sale_itens_grid
+
+						WHERE
+							product_id = $1 AND
+							sale_id = $2
+					`,
+					p.ProductId,
+					c.SaleId,
+				).Scan(
+					&productGrid.SizeSaled,
+					&productGrid.GridQtde,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+					return err
+				}
+
+				u.InfoLogger.Println("Vai fazer o update na product_grids.")
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							product_grids
+
+						SET
+							grid_qtde = grid_qtde + $1
+
+						WHERE
+							product_id = $2 AND
+							size = $3
+					`,
+					productGrid.GridQtde,
+					p.ProductId,
+					productGrid.SizeSaled,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+					return err
+				}
+
+				u.InfoLogger.Println("Vai fazer o update na products para a qtde total das grades .")
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							products
+
+						SET
+							qtde = (
+								SELECT
+									COALESCE(SUM(grid_qtde), 0)
+								FROM
+									product_grids
+								WHERE
+									product_id = $1 AND
+									use_grid = true
+							)
+
+						WHERE
+							id = $1
+					`,
+					p.ProductId,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+					return err
+				}
+
+			} else {
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							products
+
+						SET
+							qtde = qtde + $2
+
+						WHERE
+							id = $1
+					`,
+					p.ProductId,
+					p.Qtde,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+					return err
+				}
 			}
 		}
 
-		queryCancelSale := `
-			UPDATE
-				sales
-
-			SET
-				status = 'Cancelada'
-
-			WHERE
-				id = $1
-		`
-
 		if _, err = tx.Exec(
 			ctx,
-			queryCancelSale,
+			`
+				UPDATE
+					sales
+
+				SET
+					status = 'Cancelada'
+
+				WHERE
+					id = $1
+			`,
 			s.Id,
 		); err != nil {
 			u.ErrorLogger.Printf("Erro no update sale para cancelado - %s", err)

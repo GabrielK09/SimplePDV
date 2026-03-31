@@ -164,9 +164,3 @@ CREATE TABLE public.shopping_pay_ment (
   CONSTRAINT shopping_pay_ment_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id),
   CONSTRAINT shopping_pay_ment_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id)
 );
-CREATE TABLE public.config_pdv (
-  id SERIAL PRIMARY KEY,
-  confirm_to_pinter BOOLEAN DEFAULT 'false',
-  block_sale_negative_stock BOOLEAN DEFAULT 'false',
-  reserve_stock BOOLEAN DEFAULT 'true'
-);

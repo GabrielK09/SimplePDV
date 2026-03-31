@@ -41,7 +41,7 @@
                             </template>
                         </q-input>
                     </template>
-                    
+
                     <template v-slot:body="props">
                         <q-tr
                             :props="props"
@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
-    import { onMounted, ref } from 'vue';
+    import { onMounted, ref, watch } from 'vue';
     import { getAll, manageProductService } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
 
@@ -126,7 +126,8 @@
     const { notify } = useNotify();
 
     const pagination = ref({
-        sortBy: 'id' 
+        sortBy: 'id',
+        rowsPerPage: 20
     });
 
     const columns: QTableColumn[] = [
@@ -170,27 +171,6 @@
 
     const searchInput = ref<string>('');
 
-    const getAllProducts = async () => {
-        const res = await getAll();
-    
-        const data = res.data;
-
-        if(!res.success)
-        {
-            notify(
-                'negative',
-                res.message
-            );
-
-            return;
-        };
-
-        const productsData = data.map(c => c.product);
-
-        products.value = productsData;
-        allProducts.value = [...products.value];
-    };
-
     const showDialogActionProduct = (productId: number, operation: 'active'|'delete') => {
         $q.dialog({
             title: `${operation === 'delete' ? 'Excluir' : 'Ativar'} produto`,
@@ -215,6 +195,40 @@
         });
     };
 
+    const filterProducts = (): void => {
+        products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
+    };
+
+    watch(
+        () => pagination.value.rowsPerPage,
+        async (newRowsPerPage) => {
+            console.log('newRowsPerPage: ', newRowsPerPage);
+
+            await getAllProducts(newRowsPerPage);
+        }
+    )
+
+    const getAllProducts = async (rowsPerPage?: number) => {
+        const res = await getAll(rowsPerPage);
+
+        const data = res.data;
+
+        if(!res.success)
+        {
+            notify(
+                'negative',
+                res.message
+            );
+
+            return;
+        };
+
+        const productsData = data.map(c => c.product);
+
+        products.value = productsData;
+        allProducts.value = [...products.value];
+    };
+
     const manageProduct = async (productId: number, operation: 'active'|'delete') => {
         const res = await manageProductService(productId, operation);
 
@@ -233,10 +247,6 @@
         );
 
         await getAllProducts();
-    };
-
-    const filterProducts = (): void => {
-        products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
     };
 
     onMounted(() => {

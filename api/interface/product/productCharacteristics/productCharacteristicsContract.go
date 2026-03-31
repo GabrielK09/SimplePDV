@@ -135,6 +135,58 @@ func GetAllByProductId(productId int) ([]ProductCharacteristicsContract, error) 
 	return productGrids, nil
 }
 
+func GetAll() ([]ProductCharacteristicsContract, error) {
+	var productGrids []ProductCharacteristicsContract
+
+	productGridsRows, err := conn.Query(
+		ctx,
+		`
+			SELECT
+				id,
+				product_id,
+				size,
+				grid_qtde,
+				created_at,
+				updated_at,
+				deleted_at
+
+			FROM
+				product_grids
+
+			WHERE
+				deleted_at IS NULL
+		`,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao executar a query: ", err)
+		return []ProductCharacteristicsContract{}, err
+	}
+
+	defer productGridsRows.Close()
+
+	for productGridsRows.Next() {
+		var p ProductCharacteristicsContract
+
+		if err := productGridsRows.Scan(
+			&p.Id,
+			&p.ProductId,
+			&p.Size,
+			&p.GridQtde,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+			&p.DeletedAt,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao executar a leitura dos dados: ", err)
+			return []ProductCharacteristicsContract{}, err
+		}
+
+		productGrids = append(productGrids, p)
+	}
+
+	return productGrids, nil
+}
+
 func (p *ProductCharacteristicsContract) Create() error {
 	tx, err := conn.Begin(ctx)
 

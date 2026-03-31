@@ -24,6 +24,18 @@
                             v-model:pagination="pagination"
                             hide-bottom
                         >
+                            <template v-slot:body-cell-name="props">
+                                <q-td :props="props">
+                                    <span>
+                                        {{ `${props.row.name.substring(0, 20)}...` }}
+
+                                        <q-tooltip>
+                                            {{ props.row.name }}
+                                        </q-tooltip>
+                                    </span>
+                                </q-td>
+                            </template>
+
                             <template v-slot:body-cell-qtde="props">
                                 <q-td :props="props">
                                     <q-input
@@ -169,7 +181,7 @@
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
-    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';    
+    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
@@ -192,6 +204,7 @@
     const { notify } = useNotify();
 
     const registeredCustomer = ref<boolean>(false);
+    const hoveredProductId = ref<boolean>(false);
 
     const disableButtons = reactive<DisableButtons>({
         editPayMentsForms: false,
@@ -202,7 +215,7 @@
 
     /**data is products for sale */
     const productsSale = ref<SaleItemContract[]>([]);
-    
+
     const originalProductsSale = ref<SaleItemContract[]>([]);
 
     const route = useRoute();
@@ -322,7 +335,7 @@
             productsSale.value = [];
             return;
         };
-        
+
         selectedProducts.forEach(p => {
             const exisit = productsSale.value.find(i => i.product_id === p.id);
 
@@ -338,7 +351,7 @@
                     price: p.price,
                     qtde: p.qtde ?? 1,
                     product_with_characteristics: p.product_with_characteristics
-                    
+
                 });
             };
         });
@@ -608,13 +621,13 @@
             };
         } catch (error) {
             notify(
-                'negative', 
+                'negative',
                 error.message
             );
-            
+
         } finally {
             disableButtons.finallySale = false;
-            
+
         };
     };
 
