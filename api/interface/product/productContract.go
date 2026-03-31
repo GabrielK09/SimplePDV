@@ -193,7 +193,8 @@ func ShowByName(productName string) ([]ProductContract, error) {
 			name, 
 			price, 
 			qtde, 
-			commission
+			commission,
+			use_grid
 		FROM
 			products
 
@@ -229,6 +230,7 @@ func ShowByName(productName string) ([]ProductContract, error) {
 			&p.Price,
 			&p.Qtde,
 			&p.Commission,
+			&p.UseGrid,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao realizar a query:", err)
 			return nil, err

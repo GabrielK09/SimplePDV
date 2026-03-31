@@ -408,8 +408,8 @@
     };
 
     const getAllProductsStock = async () => {
-        const res = await ProductsService.getAll();
-        const data = res.data;
+        const res = (await ProductsService.getAll()).data;
+        const data = res.product;
 
         if(!res.success)
         {

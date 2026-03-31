@@ -143,8 +143,9 @@ func HandleActiveProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
-	u.InfoLogger.Println("HandleGetByNameProduct")
 	w.Header().Set("Content-Type", "application/json")
+
+	var productsWithCharacteristics []ProductWithCharacteristics
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -155,7 +156,7 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.InfoLogger.Println("Name - recebido: ", r.URL.Query().Get("name"))
-	product, err := product.ShowByName(r.URL.Query().Get("name"))
+	productData, err := product.ShowByName(r.URL.Query().Get("name"))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -165,11 +166,26 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, p := range productData {
+		productCharacteristics, err := productcharacteristics.GetAllByProductId(p.Id)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar a características os produtos."))
+			return
+
+		}
+
+		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
+			Product:         p,
+			Characteristics: productCharacteristics,
+		})
+	}
+
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, product, "Produto")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, productsWithCharacteristics, "Produto"))
 }
 
 func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {

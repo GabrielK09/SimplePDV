@@ -105,6 +105,16 @@
         (e: 'emit:selected-product', value: SaleItemContract): void
     }>();
 
+    const normalizeProduct = (p: ProductContract): SaleItemContract => ({
+        id: p.id,
+        product_id: p.id,
+        name: p.name,
+        price: p.price,
+        //@ts-ignore
+        product_with_characteristics: p.productWithCharacteristics,
+        qtde: 1
+    });
+
     const searchProduct = async (): Promise<void> => {
         if (habilitStringSearchInput.value) return; // Se for busca pelo nome, não valida busca pelo qtde/código
 
@@ -124,8 +134,6 @@
 
         const productResData: ProductContract = resProduct.product;
         productResData.productWithCharacteristics = resProduct.characteristics;
-
-        console.log('product localizado: ', resProduct);
     
         if(!productResData)
         {
@@ -156,16 +164,16 @@
     };
 
     const handelSelectedGrid = (grid: any) => {
-        const normalizedProduct: SaleItemContract = {
+        const parsedProduct: ProductContract = {
             id: intermediaryProductItemData.value.id,
             name: intermediaryProductItemData.value.name,
             price: intermediaryProductItemData.value.price,
-            product_id: intermediaryProductItemData.value.product_id,
             qtde: intermediaryProductItemData.value.qtde,
-            product_with_characteristics: grid
+            commission: 0,
+            productWithCharacteristics: grid
         };
 
-        emitProduct(normalizedProduct);
+        emitProduct(normalizeProduct(parsedProduct));
     };
 
     const emitProduct = (product: SaleItemContract) => {
@@ -177,8 +185,6 @@
         () => searchInput.value,
         async (idValue) => {
             const input = idValue?.toString().split('') ?? '';
-
-            console.log(input);
 
             if(input[0] === '/')
             {
@@ -196,36 +202,51 @@
     );
 
     const getProductByName = async () => {
-        console.log('call getProductByName');
-
         if(!habilitStringSearchInput.value) return;
 
         const search = searchInput.value.toString().slice(1);
-
-        console.log('Vai buscar por: ', search);
 
         if(!search) return;
 
         const res = await findByName(search);
 
+        console.log(res);
+            
         if(!res.success) return;
 
-        itensData.value = res.data;
+        const data: any[] = res.data;
+
+        console.log(data);
+        
+        itensData.value = data.map(p => ({
+            id: p.product.id,
+            name: p.product.name,
+            price: p.product.price,
+            product_id: p.product.product_id,
+            //@ts-ignore
+            product_with_characteristics: p.characteristics,
+            qtde: 1,
+            use_grid: p.use_grid
+        }));
+        console.log(itensData.value);
+        
     };
 
-    const selectProduct = (evt: Event, row: SaleItemContract) => {
-        console.log('evt: ', evt);
+    const selectProduct = (_: Event, row: ProductContract) => {
+        console.log('called selectProduct, row ', row);
+        
+        if(row.use_grid)
+        {
+            showSizeGrid.value = true;
+            productFullData.value = row;
 
-        const normalizedProduct: SaleItemContract= {
-            id: row.id,
-            name: row.name,
-            price: row.price,
-            product_id: row.product_id,
-            product_with_characteristics: row.product_with_characteristics,
-            qtde: 1
+            searchInput.value = null;
+            habilitStringSearchInput.value = false;
+            itensData.value = [];
+            return;
         };
 
-        emits('emit:selected-product', normalizedProduct);
+        emits('emit:selected-product', normalizeProduct(row));
 
         searchInput.value = null;
         habilitStringSearchInput.value = false;
