@@ -2,6 +2,7 @@ package processpayment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
 	"myApi/interface/cashRegister"
@@ -437,23 +438,21 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 		var s sale.SaleContract
 
-		querySelectSale := `
-			SELECT
-				id,
-				customer_id,
-				sale_value,
-				status
-
-			FROM
-				sales
-			
-			WHERE
-				id = $1
-		`
-
 		if err := tx.QueryRow(
 			ctx,
-			querySelectSale,
+			`
+				SELECT
+					id,
+					customer_id,
+					sale_value,
+					status
+
+				FROM
+					sales
+				
+				WHERE
+					id = $1
+			`,
 			c.SaleId,
 		).Scan(
 			&s.Id,
@@ -517,7 +516,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 				&p.ProductId,
 				&p.Qtde,
 				&p.Status,
-			); err != nil {
+			); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
 				return err
 			}

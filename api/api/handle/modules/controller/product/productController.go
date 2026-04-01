@@ -170,8 +170,6 @@ func HandleActiveProduct(w http.ResponseWriter, r *http.Request) {
 func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var productsWithCharacteristics []ProductWithCharacteristics
-
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		resp := responsehelper.Response(false, nil, "Método não permetido.")
@@ -181,6 +179,8 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u.InfoLogger.Println("Name - recebido: ", r.URL.Query().Get("name"))
+
+	var productsWithCharacteristics []ProductWithCharacteristics
 	productData, err := product.ShowByName(r.URL.Query().Get("name"))
 
 	if err != nil {
@@ -191,20 +191,25 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	productCharacteristics, err := productcharacteristics.GetAll()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos os produtos."))
+		return
+	}
+
+	characteristicsMap := make(map[int][]productcharacteristics.ProductCharacteristicsContract)
+
+	for _, c := range productCharacteristics {
+		characteristicsMap[c.ProductId] = append(characteristicsMap[c.ProductId], c)
+	}
+
 	for _, p := range productData {
-		productCharacteristics, err := productcharacteristics.GetAllByProductId(p.Id)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-
-			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar a características os produtos."))
-			return
-
-		}
-
 		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
 			Product:         p,
-			Characteristics: productCharacteristics,
+			Characteristics: characteristicsMap[p.Id],
 		})
 	}
 
