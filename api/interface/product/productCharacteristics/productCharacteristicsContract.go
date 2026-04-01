@@ -197,29 +197,52 @@ func (p *ProductCharacteristicsContract) Create() error {
 
 	defer tx.Rollback(ctx)
 
-	queryInsertNewGrid := `
-		INSERT INTO product_grids
-			(product_id, size, grid_qtde)
-
-		VALUES
-			($1, $2, $3)
-
-		ON CONFLICT (size, product_id)
-		DO UPDATE SET
-			size = EXCLUDED.size, 
-			grid_qtde = EXCLUDED.grid_qtde,
-			deleted_at = NULL,
-			updated_at = now()
-	`
-
 	if _, err := tx.Exec(
 		ctx,
-		queryInsertNewGrid,
+		`
+			INSERT INTO product_grids
+				(product_id, size, grid_qtde)
+
+			VALUES
+				($1, $2, $3)
+
+			ON CONFLICT (size, product_id)
+			DO UPDATE SET
+				size = EXCLUDED.size, 
+				grid_qtde = EXCLUDED.grid_qtde,
+				deleted_at = NULL,
+				updated_at = now()
+		`,
 		p.ProductId,
 		p.Size,
 		p.GridQtde,
 	); err != nil {
-		u.ErrorLogger.Println("Erro ao inserir nova grade")
+		u.ErrorLogger.Println("Erro ao inserir nova grade:", err)
+		return err
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE
+				products
+			SET 
+				qtde = (
+					SELECT
+						COALESCE(SUM(grid_qtde), 0)
+
+					FROM
+						product_grids
+
+					WHERE
+						product_id = $1
+				)
+			WHERE
+				id = $1
+		`,
+		p.ProductId,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar a qtde do produto com base na qtde das grades:", err)
 		return err
 	}
 

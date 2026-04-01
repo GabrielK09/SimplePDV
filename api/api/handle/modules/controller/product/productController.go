@@ -257,10 +257,14 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 
 	productData, err := product.Show(productId)
 
-	productsWithCharacteristics = ProductWithCharacteristics{
-		Product:         *productData,
-		Characteristics: nil,
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produtos."))
+		return
 	}
+
+	productCharacteristicsData, err := productcharacteristics.Show(productId)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -269,22 +273,9 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if productData.UseGrid {
-		productCharacteristicsData, err := productcharacteristics.Show(productId)
-
-		u.InfoLogger.Println("productCharacteristics: ", productCharacteristicsData)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-
-			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produtos."))
-			return
-		}
-
-		productsWithCharacteristics = ProductWithCharacteristics{
-			Product:         *productData,
-			Characteristics: *productCharacteristicsData,
-		}
+	productsWithCharacteristics = ProductWithCharacteristics{
+		Product:         *productData,
+		Characteristics: *productCharacteristicsData,
 	}
 
 	w.WriteHeader(http.StatusOK)

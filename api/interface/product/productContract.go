@@ -17,8 +17,6 @@ type ProductContract struct {
 	Price      float64    `json:"price"`
 	Qtde       int        `json:"qtde"`
 	Commission float64    `json:"commission"`
-	Returned   int        `json:"returned"`
-	Saled      int        `json:"saled"`
 	UseGrid    bool       `json:"use_grid"`
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`

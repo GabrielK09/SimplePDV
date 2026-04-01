@@ -331,6 +331,8 @@
     };
 
     const pushProducts = (selectedProducts: SaleItemContract[]) => {
+        console.log('called pushProducts');
+        
         if(!Array.isArray(productsSale.value)) {
             productsSale.value = [];
             return;
@@ -339,8 +341,13 @@
         selectedProducts.forEach(p => {
             const exisit = productsSale.value.find(i => i.product_id === p.id);
 
-            if(exisit)
-            {
+            console.log('Produto: ', {
+                exisit: exisit,
+                p: p
+            });
+
+            if(exisit && exisit.product_with_characteristics === null)
+            {                
                 exisit.qtde += p.qtde;
 
             } else {
@@ -367,7 +374,7 @@
 
     const calculateTotal = computed(() => {
         const subTotal = productsSale.value.reduce((total, p) => {
-            return total + (p.price * p.qtde);
+            return total + (Number(p.price) * p.qtde);
         }, 0);
 
         totalSale.value = subTotal;
@@ -619,7 +626,7 @@
 
                 resetBtns();
             };
-        } catch (error) {
+        } catch (error: any) {
             notify(
                 'negative',
                 error.message
@@ -703,12 +710,15 @@
             return;
         };
 
-        const existingSaleId: number = SessionStorage.getItem('sale_id');
-        const existingSale: SaleContract = SessionStorage.getItem('sale');
+        const existingSaleId: number|null = SessionStorage.getItem('sale_id');
+        const existingSale = SessionStorage.getItem('sale') as SaleContract;
+        
+        if(existingSaleId === null && existingSale === null) 
+        {
+            return;
+        };
 
-        if(!existingSaleId && !existingSale) return;
-
-        productsSale.value = existingSale.products || [];
+        productsSale.value = existingSale?.products || [];
 
         originalProductsSale.value = cloneProducts(existingSale.products);
 

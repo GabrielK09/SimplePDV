@@ -1,18 +1,18 @@
 interface SaleContract {
-    readonly id: number;
-    readonly customer_id: number;
+    id: number|null;
+    customer_id: number;
     customer: string;
     specie: string;
     products: SaleItemContract[]
 };
 
 interface SaleItemContract {
-    id: number;
-    product_id: number;
+    id: number|null;
+    product_id: number|null;
     name: string;
-    price: number;
+    price: number|null;
     qtde: number;
-    product_with_characteristics: ProductCharacteristicsContract
+    product_with_characteristics: ProductCharacteristicsContract|null
 };
 
 interface PaySaleContract {

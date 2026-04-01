@@ -3,7 +3,7 @@
         <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
             <div class="bg-white p-4">
                 <div class="text-h6">
-                    Formas de Pagamento - {{ props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId ?? props.shoppingId }}
+                    Formas de Pagamento - {{ props.saleId && props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId ?? props.shoppingId }}
                 </div>
 
                 <q-list bordered separator class="bg-white text-black">
@@ -123,8 +123,8 @@
     }>();
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean),
-        (e: 'paide', value: boolean)
+        (e: 'close', value: boolean): void,
+        (e: 'paide', value: boolean): void
     }>();
 
     const payMentForms = ref<PayMentFormContract[]>([]);
@@ -194,6 +194,7 @@
 
     const resetValues = (id: number): void => {
         const payMentForm = payMentValues.value.find(p => p.id === id);
+        if(!payMentForm) return;
 
         payMentForm.amount = '0,00';
     };
@@ -228,7 +229,7 @@
     };
 
     const confirmValues = () => {
-        if(calculatePayMent.value.totalPaid < 0) return;
+        if(calculatePayMent.value.totalPaid < 0 || calculatePayMent.value.totalPaid < props.totalSale) return;
 
         if(havePix.value)
         {

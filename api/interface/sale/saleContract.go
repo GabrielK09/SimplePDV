@@ -50,8 +50,6 @@ func (s SaleContract) Validate() map[string]string {
 	var subTotal float64
 
 	for _, p := range s.Products {
-		u.GeneralLogger.Println("Produto aqui: ", p)
-
 		subTotal += calchelper.CalculateTotalSale(p.SaleValue, p.Qtde)
 	}
 
@@ -314,22 +312,20 @@ func (s *SaleContract) Create() (int, error) {
 		s.CustomerId = otherCustomer.Id
 	}
 
-	querySale := `
-		INSERT INTO sales
-			(customer_id, customer, sale_value)
-
-		VALUES
-			($1, $2, $3)
-
-		RETURNING 
-			id
-	`
-
 	var saleId int
 
 	if err = tx.QueryRow(
 		ctx,
-		querySale,
+		`
+			INSERT INTO sales
+				(customer_id, customer, sale_value)
+
+			VALUES
+				($1, $2, $3)
+
+			RETURNING 
+				id
+		`,
 		s.CustomerId,
 		s.Customer,
 		s.SaleValue,
@@ -342,10 +338,8 @@ func (s *SaleContract) Create() (int, error) {
 
 	s.Id = saleId
 
-	for idx := range s.Products {
-		i := &s.Products[idx]
-
-		var p product.ProductContract
+	for _, itemSale := range s.Products {
+		/*var p product.ProductContract
 
 		if err := tx.QueryRow(
 			ctx,
@@ -356,14 +350,12 @@ func (s *SaleContract) Create() (int, error) {
 					qtde,
 					use_grid
 
-				FROM	
+				FROM
 					products
 				WHERE
 					id = $1
-
-				FOR UPDATE
 			`,
-			i.ProductId,
+			itemSale.ProductId,
 		).Scan(
 			&p.Id,
 			&p.Name,
@@ -372,11 +364,18 @@ func (s *SaleContract) Create() (int, error) {
 		); err != nil {
 			u.ErrorLogger.Println("Erro no select:", err)
 			return 0, err
+		}*/
+
+		productData, err := product.Show(itemSale.ProductId)
+
+		if err != nil {
+			u.ErrorLogger.Printf("Erro ao localizar o produto pelo ID %d, %s", itemSale.ProductId, err)
+			return 0, err
 		}
 
-		totalSale := calchelper.CalculateTotalSale(i.SaleValue, i.Qtde)
+		totalSale := calchelper.CalculateTotalSale(itemSale.SaleValue, itemSale.Qtde)
 
-		if !p.UseGrid {
+		if !productData.UseGrid && itemSale.ProductWithCharacteristics == nil {
 			u.InfoLogger.Println("O produto da venda não tem grade, vai gravar normal")
 
 			if err = tx.QueryRow(
@@ -393,28 +392,30 @@ func (s *SaleContract) Create() (int, error) {
 						name,
 						status
 				`,
-				i.ProductId,
-				p.Name,
-				i.Qtde,
+				itemSale.ProductId,
+				productData.Name,
+				itemSale.Qtde,
 				totalSale,
 				saleId,
 			).Scan(
-				&i.Id,
-				&i.Name,
-				&i.Status,
+				&itemSale.Id,
+				&itemSale.Name,
+				&itemSale.Status,
 			); err != nil {
 				u.ErrorLogger.Println("Erro no insert no sale_itens:", err)
 				return 0, err
 			}
 
-			i.Name = p.Name
-			i.SaleId = saleId
+			itemSale.Name = productData.Name
+			itemSale.SaleId = saleId
 
-			if err = p.DiscountedQtde(ctx, tx, i.Qtde); err != nil {
+			if err = productData.DiscountedQtde(ctx, tx, itemSale.Qtde); err != nil {
 				u.ErrorLogger.Println("Erro no insert no DiscountedQtde:", err)
 				return 0, err
 			}
-		} else {
+		}
+
+		if productData.UseGrid && itemSale.ProductWithCharacteristics != nil {
 			u.InfoLogger.Println("O produto da venda tem grade, vai gravar na sale_itens_grid também")
 
 			if err = tx.QueryRow(
@@ -431,47 +432,54 @@ func (s *SaleContract) Create() (int, error) {
 						name,
 						status
 				`,
-				i.ProductId,
-				p.Name,
-				i.Qtde,
+				itemSale.ProductId,
+				productData.Name,
+				itemSale.Qtde,
 				totalSale,
 				saleId,
 			).Scan(
-				&i.Id,
-				&i.Name,
-				&i.Status,
+				&itemSale.Id,
+				&itemSale.Name,
+				&itemSale.Status,
 			); err != nil {
 				u.ErrorLogger.Println("Erro no insert no sale_itens:", err)
 				return 0, err
 			}
 
-			i.SaleId = saleId
+			itemSale.SaleId = saleId
 
-			u.InfoLogger.Printf("Vai descontar a qtde %d da grade %s do produto", i.Qtde, i.ProductWithCharacteristics.Size)
-			if err = i.ProductWithCharacteristics.DiscountedGridQtde(ctx, tx, i.Qtde, productcharacteristics.Size(i.ProductWithCharacteristics.Size)); err != nil {
+			u.InfoLogger.Printf("Vai descontar a qtde %d da grade %s do produto", itemSale.Qtde, itemSale.ProductWithCharacteristics.Size)
+			if err = itemSale.ProductWithCharacteristics.DiscountedGridQtde(ctx, tx, itemSale.Qtde, productcharacteristics.Size(itemSale.ProductWithCharacteristics.Size)); err != nil {
 				u.ErrorLogger.Println("Erro ao descontar a qtde da grade do produto:", err)
 				return 0, err
 			}
-		}
 
-		if _, err = tx.Exec(
-			ctx,
-			`
-				INSERT INTO sale_itens_grid
-					(product_id, sale_id, product_grid_id, size_saled, grid_qtde)
+			u.InfoLogger.Println("Vai gravar na sale_itens_grid também:", itemSale.ProductWithCharacteristics)
 
-				VALUES
-					($1, $2, $3, $4, $5)
-				
-			`,
-			i.ProductId,
-			saleId,
-			i.ProductWithCharacteristics.Id,
-			i.ProductWithCharacteristics.Size,
-			i.Qtde,
-		); err != nil {
-			u.ErrorLogger.Println("Erro no insert no sale_itens_grid:", err)
-			return 0, err
+			if itemSale.ProductWithCharacteristics == nil {
+				u.ErrorLogger.Println("O produto possui grade porém está com as caracteristicas ausentes:", itemSale)
+				return 0, fmt.Errorf("O produto possui grade porém está com as caracteristicas ausentes.")
+			}
+
+			if _, err = tx.Exec(
+				ctx,
+				`
+					INSERT INTO sale_itens_grid
+						(product_id, sale_id, product_grid_id, size_saled, grid_qtde)
+	
+					VALUES
+						($1, $2, $3, $4, $5)
+					
+				`,
+				itemSale.ProductId,
+				saleId,
+				itemSale.ProductWithCharacteristics.Id,
+				itemSale.ProductWithCharacteristics.Size,
+				itemSale.Qtde,
+			); err != nil {
+				u.ErrorLogger.Println("Erro no insert no sale_itens_grid:", err)
+				return 0, err
+			}
 		}
 	}
 

@@ -53,11 +53,10 @@
     const productFullData = ref<ProductContract>({
         id: null,
         commission: null,
-        name: null,
+        name: '',
         price: null,
         qtde: null,
-        productWithCharacteristics: null,
-        use_grid: null,
+        use_grid: false,
     });
 
     const intermediaryProductItemData = ref<SaleItemContract>();
@@ -129,17 +128,26 @@
             productQtde = Number(splitedInput[0]);
             productId = Number(splitedInput[1]);
         };
+                
+        const resProduct = (await findById(productId)).data.product;
 
-        const resProduct = (await findById(productId)).data;
-
-        const productResData: ProductContract = resProduct.product;
-        productResData.productWithCharacteristics = resProduct.characteristics;
-
-        if(!productResData)
+        if(!resProduct)
         {
             notify('warning', 'Produto não localizado');
             return;
         };
+
+        const resCharacteristics = (await findById(productId)).data.characteristics;
+        
+        const productResData: ProductContract = resProduct;
+            
+        if(!productResData.use_grid && !resCharacteristics)
+        {
+            emitProduct(normalizeProduct(productResData));
+            return;
+        };
+
+        productResData.productWithCharacteristics = resCharacteristics;
 
         const productData: SaleItemContract = {
             id: productResData?.id,
@@ -152,18 +160,14 @@
 
         intermediaryProductItemData.value = productData;
 
-        if(!productResData.use_grid && productResData.productWithCharacteristics.length <= 0)
-        {
-            emitProduct(productData);
-            return;
-        };
-
         productFullData.value = productResData;
         showSizeGrid.value = true;
         return;
     };
 
     const handelSelectedGrid = (grid: any) => {
+        if(!intermediaryProductItemData.value) return;
+
         const parsedProduct: ProductContract = {
             id: intermediaryProductItemData.value.id,
             name: intermediaryProductItemData.value.name,
@@ -174,9 +178,12 @@
         };
 
         emitProduct(normalizeProduct(parsedProduct));
+        showSizeGrid.value = false;
     };
 
     const emitProduct = (product: SaleItemContract) => {
+        console.log('called emitProduct', product);
+        
         emits('emit:selected-product', product);
         searchInput.value = '';
     };
@@ -203,6 +210,7 @@
 
     const getProductByName = async () => {
         if(!habilitStringSearchInput.value) return;
+        if(!searchInput.value) return;
 
         const search = searchInput.value.toString().slice(1);
 
@@ -210,13 +218,9 @@
 
         const res = await findByName(search);
 
-        console.log(res);
-
         if(!res.success) return;
 
         const data: any[] = res.data;
-
-        console.log(data);
 
         itensData.value = data.map(p => ({
             id: p.product.id,
