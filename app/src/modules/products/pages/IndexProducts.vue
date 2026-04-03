@@ -196,7 +196,7 @@
     };
 
     const filterProducts = (): void => {
-        products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
+        products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : null);
     };
 
     watch(
@@ -206,7 +206,7 @@
 
             await getAllProducts(newRowsPerPage);
         }
-    )
+    );
 
     const getAllProducts = async (rowsPerPage?: number) => {
         const res = await getAll(rowsPerPage);
@@ -223,7 +223,7 @@
             return;
         };
 
-        const productsData = data.map(c => c.product);
+        const productsData = data.map((c: any) => c.product);
 
         products.value = productsData;
         allProducts.value = [...products.value];

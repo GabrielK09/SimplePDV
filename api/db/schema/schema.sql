@@ -1,5 +1,3 @@
--- WARNING: This schema is for context only and is not meant to be run.
--- Table order and constraints may not be valid for execution.
 CREATE SCHEMA public;
 
 CREATE TABLE public.users (
@@ -57,6 +55,7 @@ ALTER TABLE public.product_grids
 ADD CONSTRAINT unique_product_grid_size
 UNIQUE (size, product_id);
 
+-- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## 
 CREATE TABLE public.sales (
   id SERIAL PRIMARY KEY,
   customer_id integer,
@@ -80,10 +79,6 @@ CREATE TABLE public.sale_itens (
   CONSTRAINT sales_itens_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT sales_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
-ALTER TABLE sale_itens
-ADD CONSTRAINT unique_sale_product
-UNIQUE (sale_id, product_id);
-
 CREATE TABLE public.sale_itens_grid (
   id SERIAL PRIMARY KEY,
   product_id integer NULL,
@@ -100,6 +95,7 @@ CREATE TABLE public.sale_itens_grid (
 ALTER TABLE sale_itens_grid
 ADD CONSTRAINT unique_sale_grid
 UNIQUE (sale_id, size_saled, product_grid_id);
+-- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## 
 
 CREATE TABLE public.sale_pay_ment (
   id SERIAL PRIMARY KEY,
@@ -112,6 +108,7 @@ CREATE TABLE public.sale_pay_ment (
   CONSTRAINT sale_pay_ment_sales_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT sale_pay_ment_pay_ment_forms_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
 );
+-- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## 
 CREATE TABLE public.shopping (
   id SERIAL PRIMARY KEY,
   load integer unique,
@@ -133,6 +130,23 @@ CREATE TABLE public.shopping_itens (
   CONSTRAINT shopping_itens_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id),
   CONSTRAINT shopping_itens_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
+CREATE TABLE public.shopping_itens_grid (
+  id SERIAL PRIMARY KEY,
+  product_id integer NULL,
+  shopping_id integer NULL,
+  product_grid_id integer NULL,
+  size_saled sizes NULL,
+  grid_qtde integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT shopping_itens_grid_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.sales(id),
+  CONSTRAINT shopping_itens_grid_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id),
+  CONSTRAINT shopping_itens_grid_product_grids_id_foreign FOREIGN KEY (product_grid_id) REFERENCES public.product_grids(id)
+);
+ALTER TABLE shopping_itens_grid
+ADD CONSTRAINT unique_shopping_grid
+UNIQUE (shopping_id, size_saled, product_grid_id);
+-- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## 
 CREATE TABLE public.cash_registers (
   id SERIAL PRIMARY KEY,
   sale_id integer,

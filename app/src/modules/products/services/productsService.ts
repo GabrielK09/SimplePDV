@@ -1,7 +1,7 @@
 import { api } from "src/boot/axios";
 import apiResponse from "src/helpers/response/apiResponse";
 
-export async function getAll(perPage: number): Promise<any>
+export async function getAll(perPage: number|any): Promise<any>
 {
     try {
         const res = await api.get(`products/all${perPage > 0 ? `?per_page=${perPage}` : ''}`);
@@ -13,7 +13,7 @@ export async function getAll(perPage: number): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -33,7 +33,7 @@ export async function createProduct(payLoad: ProductContract): Promise<any>
             data.message,
             data.data || []
         );
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -68,7 +68,7 @@ export async function createProductCharacteristics(payLoads: ProductCharacterist
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -92,7 +92,7 @@ export async function getProductCharacteristicsById(productGridId: number): Prom
             data.data    || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -101,10 +101,15 @@ export async function getProductCharacteristicsById(productGridId: number): Prom
     };
 };
 
-export async function getProductCharacteristicsByGridIds({gridId, productGridId}): Promise<any>
+type GetProductCharacteristicsByGridIds = {
+    gridId: number;
+    productGridId: number;
+}
+
+export async function getProductCharacteristicsByGridIds(ids: GetProductCharacteristicsByGridIds): Promise<any>
 {
     try {
-        const res = await api.get(`products/${productGridId}/find/characteristics/${gridId}`);
+        const res = await api.get(`products/${ids.productGridId}/find/characteristics/${ids.gridId}`);
 
         const data = res.data;
 
@@ -114,7 +119,7 @@ export async function getProductCharacteristicsByGridIds({gridId, productGridId}
             data.data    || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -135,7 +140,7 @@ export async function updateProduct(payLoad: ProductContract): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -157,7 +162,7 @@ export async function manageProductService(id: number, operation: 'active'|'dele
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error.response.data);
 
         return apiResponse(
@@ -168,10 +173,10 @@ export async function manageProductService(id: number, operation: 'active'|'dele
     };
 };
 
-export async function deleteProductCharacteristics({gridId, productGridId}): Promise<any>
+export async function deleteProductCharacteristics(ids: GetProductCharacteristicsByGridIds): Promise<any>
 {
     try {
-        const res = await api.delete(`products/${productGridId}/delete/characteristics/${gridId}`);
+        const res = await api.delete(`products/${ids.productGridId}/delete/characteristics/${ids.gridId}`);
         const data = res.data;
 
         return apiResponse(
@@ -180,7 +185,7 @@ export async function deleteProductCharacteristics({gridId, productGridId}): Pro
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error.response.data);
 
         return apiResponse(
@@ -203,7 +208,7 @@ export async function findById(id: number): Promise<any>
             data
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return null;
 
     };
@@ -212,7 +217,7 @@ export async function findById(id: number): Promise<any>
 export async function findByName(name: string): Promise<any>
 {
     try {
-        const res = await api.get(`products/find-by-name?name=${name}`);
+        const res = await api.get(`products/find-by-name ?name=${name}`);
         const data = res.data.data;
 
         return apiResponse(
@@ -221,7 +226,7 @@ export async function findByName(name: string): Promise<any>
             data
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return null;
 
     };

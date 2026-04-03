@@ -1,10 +1,10 @@
 interface ProductContract {
     id: number|null;
-    name: string;
+    name: string|null;
     price: number|null;
     qtde: number|null;
     commission: number|null;
-    use_grid?: boolean;
+    use_grid?: boolean|null;
     productWithCharacteristics?: ProductCharacteristicsContract[]|null;
     deleted_at?: Date;
 };

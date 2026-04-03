@@ -9,7 +9,7 @@
         </header>
 
         <main class="rounded-md flex flex-center text-xl mt-4">
-            <section class="w-[80vh] rounded-lg px-4">
+            <section class="rounded-lg px-4">
                 <div>
                     <q-table
                         v-model:pagination="pagination"
@@ -17,10 +17,6 @@
                         :rows="productsStockData"
                         :columns="productsColumns"
                     >
-                        <template v-slot:top-selection>
-                            <span>a</span>
-                        </template>
-
                         <template v-slot:top-right>
                             <q-input
                                 outlined
@@ -41,12 +37,13 @@
                         <template v-slot:body-cell-select="props">
                             <q-td :props="props">
                                 <q-checkbox
-                                    v-model="selectedProducts"
-                                    :val="props.row"
+                                    v-model="selectedProductsIds"
+                                    :val="props.row.id"
                                     :disable="associateProdutcs.find(ap => ap.product_id === props.row.id) !== undefined ? true : false"
                                     dense
                                 />
                             </q-td>
+
                         </template>
 
                         <template v-slot:no-data>
@@ -76,7 +73,7 @@
                             no-caps
                             color="primary"
                             label="Adicionar"
-                            :disable="selectedProducts.length === 0"
+                            :disable="selectedProductsIds.length === 0"
                             @click="associateCheckedProdutcs"
                         />
                     </div>
@@ -213,18 +210,31 @@
         @paide="finallyShopping(!$event)"
     />
 
+    <QSelectGridTable
+        v-if="showSizeGrid"
+        :is-just-list="true"
+        :product-data="productFullData"
+        @return:selected-grid="handelSelectedGrid($event)"
+    />
+
 </template>
 
 <script setup lang="ts">
     import { QTableColumn, SessionStorage } from 'quasar';
     import * as ProductsService from 'src/modules/products/services/productsService';
-    import { computed, onMounted, onUnmounted, ref } from 'vue';
+    import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import CreateProductComponent from 'src/components/Products/CreateComponent/CreateProductComponent.vue';
     import InformLoad from 'src/components/Shopping/InformLoad.vue';
     import { useRoute, useRouter } from 'vue-router';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
+    import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
     import { createshopping, getLastShoppingLoad, getShoppingById } from '../../services/shoppingService';
+
+    type ProductResponse = {
+        product: ProductContract,
+        characteristics: ProductCharacteristicsContract
+    };
 
     const { notify } = useNotify();
 
@@ -305,9 +315,13 @@
 
     const productsStockData = ref<ProductContract[]>([]);
     const allProductsStockData = ref<ProductContract[]>([]);
+    
     const associateProdutcs = ref<ShoppingItemContract[]>([]);
+    const intermediaryProductItemData = ref<ShoppingItemContract>();
+
     const showPayMentForms = ref<boolean>(false);
     const isSavingRef = ref<boolean>(false);
+    const showSizeGrid = ref<boolean>(false);
     const lastShoppingId = ref<number | null>(null);
 
     const shoppingPrePayLoad = ref<ShoppingContract>({
@@ -317,16 +331,37 @@
         total_shopping: 0
     });
 
-    const selectedProducts = ref<ProductContract[]>([]);
+    const productFullData = ref<ProductContract>({
+        id: null,
+        name: null,
+        price: null,
+        qtde: null,
+        use_grid: null,
+        commission: null,
+        productWithCharacteristics: null,
+    });
+
+    const indexOfProductHaveCharacteristics = ref<number|null>(null);
+    const selectedProductsIds = ref<number[]>([]);
 
     const searchInput = ref<string>('');
 
     const pagination = ref({
-        sortBy: 'id'
+        sortBy: 'id',
+        rowsPerPage: 20
     });
 
     const showCreateProductComponent = ref<boolean>(false);
     const showInformLoadComponent = ref<boolean>(false);
+
+    const normalizeProduct = (p: ProductContract): ShoppingItemContract => ({
+        product_id: p.id,
+        name: p.name,
+        purchased_value: p.price,
+        qtde_purchased: 1,
+        //@ts-ignore
+        product_with_characteristics: p.product_with_characteristics,
+    });
 
     const removeSessionData = (key: string): void => {
         SessionStorage.remove(key);
@@ -337,6 +372,13 @@
             name: 'shopping.index',
         });
     };
+
+    watch(
+        () => pagination.value.rowsPerPage,
+        async (newRowsPerPage) => {
+            await ProductsService.getAll(newRowsPerPage);
+        }
+    );
 
     const validateQtde = (val: number, row: SaleItemContract) => {
         if(!val || val <= 0) {
@@ -359,12 +401,14 @@
     };
 
     const filterProductsStock = (): void => {
-        productsStockData.value = allProductsStockData.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
+        productsStockData.value = allProductsStockData.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : []);
     };
 
     const associateCheckedProdutcs = () => {
-        selectedProducts.value.forEach(p => {
-            if(associateProdutcs.value.find(ap => ap.product_id === p.id))
+        selectedProductsIds.value.forEach(id => {
+            console.log(id);
+            
+            if(associateProdutcs.value.find((ap: ShoppingItemContract) => ap.product_id === id))
             {
                 notify(
                     'info',
@@ -374,43 +418,87 @@
                 return;
             };
 
-            const newProductStock: ShoppingItemContract = {
-                product_id: p.id,
-                name: p.name,
-                purchased_value: p.price,
-                qtde_purchased: 1,
+            const productData = productsStockData.value.find(p => p.id === id) as ProductContract;
+
+            if(productData === undefined)
+            {
+                notify(
+                    'negative',
+                    'Ocorreu um erro ao associar o produto, produto não localizado.'
+                );
             };
 
-            associateProdutcs.value.push(newProductStock);
+            console.log(productData);
+            
+            const newProductToAssociate: ShoppingItemContract = {
+                product_id: productData.id,
+                name: productData.name,
+                purchased_value: productData.price,
+                qtde_purchased: 1,
+                productWithCharacteristics: productData.productWithCharacteristics
+            };
+
+            associateProdutcs.value.push(newProductToAssociate);
         });
 
-        selectedProducts.value = [];
         searchInput.value = '';
         productsStockData.value = allProductsStockData.value;
 
     };
 
-    const disassociateCheckedProdutcs = (id: number) => {
-        console.log('call disassociateCheckedProdutcs');
+    watch(associateProdutcs.value, (newProducts) => {
+        newProducts.forEach(p => {            
+            if(p.productWithCharacteristics !== null) 
+            {   
+                const index = newProducts.findIndex(item => item.product_id === p.product_id);
 
+                console.log(index);
+                
+                if (index > -1)
+                {
+                    indexOfProductHaveCharacteristics.value = index;
+                    
+                    productFullData.value = {
+                        commission: 0,
+                        id: p.product_id,
+                        name: p.name,
+                        price: p.purchased_value,
+                        qtde: 1,
+                        //@ts-ignore
+                        productWithCharacteristics: p.productWithCharacteristics
+                    };
+
+                    intermediaryProductItemData.value = {
+                        name: productFullData.value.name,
+                        product_id: productFullData.value.id,
+                        purchased_value: productFullData.value.price,
+                        qtde_purchased: 1,
+                        productWithCharacteristics: productFullData.value.productWithCharacteristics
+                    };
+
+                    showSizeGrid.value = true;
+                };
+            };
+        });
+    }, {    
+        immediate: true 
+    });
+
+    const disassociateCheckedProdutcs = (id: number) => {
         if(associateProdutcs.value.length <= 1)
         {
             associateProdutcs.value = []
             return
         };
 
-        console.log(`Deve remover o id: ${id}`);
-
         associateProdutcs.value = associateProdutcs.value.filter(ap => ap.product_id !== id);
 
-        selectedProducts.value = [];
         searchInput.value = '';
     };
 
-    const getAllProductsStock = async () => {
-        const res = (await ProductsService.getAll()).data;
-        const data = res.product;
-
+    const getAllProductsStock = async (rowsPerPage?: number) => {
+        const res = await ProductsService.getAll(rowsPerPage);
+        
         if(!res.success)
         {
             notify(
@@ -419,7 +507,17 @@
             );
         };
 
-        productsStockData.value = data;
+        console.log(res.data);
+
+        productsStockData.value = res.data.map((c: ProductResponse) => ({
+            id: c.product.id,
+            name: c.product.name,
+            price: c.product.price,
+            qtde: c.product.qtde,
+            commission: c.product.commission,
+            productWithCharacteristics: c.characteristics
+        }));
+                
         allProductsStockData.value = [...productsStockData.value];
     };
 
@@ -427,21 +525,48 @@
         replaceToShoppingIndex();
     };
 
+    const handelSelectedGrid = (grid: any) => {
+        if(!intermediaryProductItemData.value) return;
+
+        const parsedProduct: ShoppingItemContract = {
+            product_id: intermediaryProductItemData.value.product_id,
+            name: intermediaryProductItemData.value.name,
+            purchased_value: intermediaryProductItemData.value.purchased_value,
+            qtde_purchased: intermediaryProductItemData.value.qtde_purchased,
+            productWithCharacteristics: grid
+        };
+
+        const originalProduct = associateProdutcs.value.findIndex(ap => ap.product_id === intermediaryProductItemData.value?.product_id);
+        if(originalProduct > -1)
+        {
+            notify(
+                'negative',
+                'Erro ao validar os dados, produto não localizado.'
+            );
+
+            return;
+        };
+
+        associateProdutcs.value.splice(originalProduct, 1);
+        associateProdutcs.value.push(parsedProduct);
+
+        showSizeGrid.value = false;
+    };
+
     const submitShopping = async (isSaving: boolean) => {
         isSavingRef.value = isSaving;
 
-        const existingLoad: number = SessionStorage.getItem('inform_load');
-
-        console.log(shoppingPrePayLoad.value);
+        const existingLoad = SessionStorage.getItem('inform_load');
 
         if(existingLoad || shoppingPrePayLoad.value.id)
         {
-            saveShopping(existingLoad);
+            saveShopping(Number(existingLoad));
             return;
         };
 
         showInformLoadComponent.value = true;
 
+        //@ts-ignore
         const total_shopping = associateProdutcs.value.reduce((total, a) => total + (a.purchased_value * a.qtde_purchased), 0);
 
         shoppingPrePayLoad.value = {
@@ -459,13 +584,13 @@
         {
             existingShoppingId = routeShoppingId.value;
         } else {
-            existingShoppingId = SessionStorage.getItem('shopping_id');
+            existingShoppingId = SessionStorage.getItem('shopping_id') as number;
         };
 
         showInformLoadComponent.value = false;
         SessionStorage.set('inform_load', informLoad);
 
-        const existingLoad: number = SessionStorage.getItem('inform_load');
+        const existingLoad = SessionStorage.getItem('inform_load') as number;
 
         const payload: ShoppingContract = {
             id: null,
@@ -579,7 +704,7 @@
         {
             notify(
                 'info',
-                'Carregando dados da compra.'
+                'Carregando dados da compra...'
             );
 
             const res = await getShoppingById(routeShoppingId.value);
@@ -607,8 +732,6 @@
             };
 
             lastShoppingId.value = shoppingData.id;
-
-            console.log(shoppingPrePayLoad.value);
 
             return;
         };

@@ -69,7 +69,7 @@
                         <q-btn
                             color="primary"
                             no-caps
-                            label="Ok"
+                            label="Confirmar"
                             @click="emitProducts"
                         />
                     </div>
@@ -98,9 +98,9 @@
         typeSearch: TypeSearch;
     }>();
 
-    const pagination = ref<TPagination>({
-        rowsPerPage: 10,
-        sortBy: 'id'
+    const pagination = ref({
+        sortBy: 'id',
+        rowsPerPage: 20
     });
 
     const emits = defineEmits<{
@@ -176,8 +176,8 @@
         qtde: 1
     });
 
-    const getAllProducts = async () => {
-        const res: any[] = (await getAll()).data;
+    const getAllProducts = async (perPager: number) => {
+        const res: any[] = (await getAll(perPager)).data;
 
         const formatedProducts: ProductContract[] = res.map(r => ({
             id: r.product.id,
@@ -197,7 +197,7 @@
     };
 
     const filterProducts = () => {
-        products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
+        products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : null);
     };
 
     const selectedProducts = computed<SaleItemContract[]>(() => {
@@ -209,7 +209,7 @@
         };
 
         return products.value
-            .filter(p => selectedProductsIds.value.includes(p.id))
+            .filter(p => selectedProductsIds.value.includes(Number(p.id)))
             .map(normalizeProduct);
     });
 
@@ -235,13 +235,15 @@
                 };
 
                 showSizeGrid.value = true;
-                };
+            };
         });
     }, {    
         immediate: true 
     });
 
     const handelSelectedGrid = (grid: any) => {
+        if(!indexOfProductHaveCharacteristics.value) return;
+
         const oldProductData = selectedProducts.value[indexOfProductHaveCharacteristics.value];
 
         const normalizedProduct: SaleItemContract = {
@@ -264,6 +266,6 @@
     };
 
     onMounted(() => {
-        getAllProducts();
+        getAllProducts(20);
     });
 </script>

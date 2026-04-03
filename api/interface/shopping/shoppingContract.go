@@ -7,6 +7,7 @@ import (
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
 	"myApi/interface/product"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -25,15 +26,16 @@ type ShoppingContract struct {
 }
 
 type ShoppingItenContract struct {
-	Id             int       `json:"id"`
-	ShoppingId     int       `json:"shopping_id"`
-	ProductId      int       `json:"product_id"`
-	Name           string    `json:"name"`
-	QtdePurchased  int       `json:"qtde_purchased"`
-	PurchasedValue float64   `json:"purchased_value"`
-	DeletedAt      time.Time `json:"deleted_at"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	Id                               int                                                    `json:"id"`
+	ShoppingId                       int                                                    `json:"shopping_id"`
+	ProductId                        int                                                    `json:"product_id"`
+	Name                             string                                                 `json:"name"`
+	QtdePurchased                    int                                                    `json:"qtde_purchased"`
+	PurchasedValue                   float64                                                `json:"purchased_value"`
+	ShoppingItensWithCharacteristics *productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+	DeletedAt                        time.Time                                              `json:"deleted_at"`
+	CreatedAt                        time.Time                                              `json:"created_at"`
+	UpdatedAt                        time.Time                                              `json:"updated_at"`
 }
 
 var conn *pgxpool.Pool
@@ -154,31 +156,29 @@ func (s *ShoppingContract) Create() (int, error) {
 		return 0, err
 	}
 
-	queryInsertShopping := `
-		INSERT INTO shopping
-			(
-				load, 
-				operation, 
-				total_shopping
-			)
-
-		VALUES(
-			$1, 
-			'Entrada',
-			$2
-		)
-
-		RETURNING
-			id
-	`
-
 	for _, p := range s.ShoppingItens {
 		subTotal = calchelper.CalculateTotalSale(p.PurchasedValue, p.QtdePurchased)
 	}
 
 	if err := tx.QueryRow(
 		ctx,
-		queryInsertShopping,
+		`
+			INSERT INTO shopping
+				(
+					load, 
+					operation, 
+					total_shopping
+				)
+
+			VALUES(
+				$1, 
+				'Entrada',
+				$2
+			)
+
+			RETURNING
+				id
+		`,
 		s.Load,
 		subTotal,
 	).Scan(
@@ -190,56 +190,90 @@ func (s *ShoppingContract) Create() (int, error) {
 
 	s.Id = shoppingId
 
-	queryInsertItens := `
-		INSERT INTO shopping_itens
-			(shopping_id, product_id, name, qtde_purchased, purchased_value)
-
-		VALUES(
-			$1,
-			$2,
-			$3,
-			$4,
-			$5
-		)
-	`
-
-	queryForUpdateItens := `
-		UPDATE
-			products
-
-		SET
-			name = $2,
-			price = $3,
-			qtde = qtde + $4
-
-		WHERE
-			id = $1
-	`
-
 	for _, p := range s.ShoppingItens {
-		if _, err := tx.Exec(
-			ctx,
-			queryInsertItens,
-			s.Id,
-			p.ProductId,
-			p.Name,
-			p.QtdePurchased,
-			p.PurchasedValue,
-		); err != nil {
-			u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
-			return 0, err
+
+		if p.ShoppingItensWithCharacteristics != nil {
+			if _, err := tx.Exec(
+				ctx,
+				`
+					INSERT INTO shopping_itens_grid
+						(shopping_id, product_id, product_grid_id, size_saled, grid_qtde)
+					VALUES
+						($1, $2, $3, $4, $5)
+				`,
+				s.Id,
+				p.ProductId,
+				p.ShoppingItensWithCharacteristics.Id,
+				p.ShoppingItensWithCharacteristics.Size,
+				p.QtdePurchased,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
+				return 0, err
+			}
+
+			if _, err := tx.Exec(
+				ctx,
+				`
+					INSERT INTO shopping_itens
+						(shopping_id, product_id, name, qtde_purchased, purchased_value)
+
+					VALUES($1, $2, $3, $4, $5)
+				`,
+				s.Id,
+				p.ProductId,
+				p.Name,
+				p.QtdePurchased,
+				p.PurchasedValue,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
+				return 0, err
+			}
+
 		}
 
-		if _, err := tx.Exec(
-			ctx,
-			queryForUpdateItens,
-			p.ProductId,
-			p.Name,
-			p.PurchasedValue,
-			p.QtdePurchased,
-		); err != nil {
-			u.ErrorLogger.Println("Erro ao alterar os itens no estoque, com base na compra: ", err)
-			return 0, err
+		if p.ShoppingItensWithCharacteristics == nil {
+			if _, err := tx.Exec(
+				ctx,
+				`
+					INSERT INTO shopping_itens
+						(shopping_id, product_id, name, qtde_purchased, purchased_value)
+
+					VALUES($1, $2, $3, $4, $5)
+				`,
+				s.Id,
+				p.ProductId,
+				p.Name,
+				p.QtdePurchased,
+				p.PurchasedValue,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
+				return 0, err
+			}
+
+			/*
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							products
+
+						SET
+							name = $2,
+							price = $3,
+							qtde = qtde + $4
+
+						WHERE
+							id = $1
+					`,
+					p.ProductId,
+					p.Name,
+					p.PurchasedValue,
+					p.QtdePurchased,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao alterar os itens no estoque, com base na compra: ", err)
+					return 0, err
+				}
+			*/
 		}
 	}
 

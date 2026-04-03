@@ -339,33 +339,6 @@ func (s *SaleContract) Create() (int, error) {
 	s.Id = saleId
 
 	for _, itemSale := range s.Products {
-		/*var p product.ProductContract
-
-		if err := tx.QueryRow(
-			ctx,
-			`
-				SELECT
-					id,
-					name,
-					qtde,
-					use_grid
-
-				FROM
-					products
-				WHERE
-					id = $1
-			`,
-			itemSale.ProductId,
-		).Scan(
-			&p.Id,
-			&p.Name,
-			&p.Qtde,
-			&p.UseGrid,
-		); err != nil {
-			u.ErrorLogger.Println("Erro no select:", err)
-			return 0, err
-		}*/
-
 		productData, err := product.Show(itemSale.ProductId)
 
 		if err != nil {
@@ -378,7 +351,7 @@ func (s *SaleContract) Create() (int, error) {
 		if !productData.UseGrid && itemSale.ProductWithCharacteristics == nil {
 			u.InfoLogger.Println("O produto da venda não tem grade, vai gravar normal")
 
-			if err = tx.QueryRow(
+			if _, err := tx.Exec(
 				ctx,
 				`
 					INSERT INTO sale_itens
@@ -389,7 +362,7 @@ func (s *SaleContract) Create() (int, error) {
 						
 					RETURNING 
 						id,
-						name,
+						name, 
 						status
 				`,
 				itemSale.ProductId,
@@ -397,17 +370,10 @@ func (s *SaleContract) Create() (int, error) {
 				itemSale.Qtde,
 				totalSale,
 				saleId,
-			).Scan(
-				&itemSale.Id,
-				&itemSale.Name,
-				&itemSale.Status,
 			); err != nil {
 				u.ErrorLogger.Println("Erro no insert no sale_itens:", err)
 				return 0, err
 			}
-
-			itemSale.Name = productData.Name
-			itemSale.SaleId = saleId
 
 			if err = productData.DiscountedQtde(ctx, tx, itemSale.Qtde); err != nil {
 				u.ErrorLogger.Println("Erro no insert no DiscountedQtde:", err)
@@ -574,11 +540,13 @@ func (s *SaleContract) InsertNewItens() error {
 	
 					WHERE
 						sale_id = $2 AND
-						product_id = $3
+						product_id = $3 AND
+						size_saled = $4
 				`,
 				p.Qtde,
 				s.Id,
 				p.ProductId,
+				p.ProductWithCharacteristics.Size,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao atualizar a grade do item: ", err)
 				return err
@@ -724,29 +692,79 @@ func (s *SaleContract) InsertNewItens() error {
 
 			diff := p.Qtde - oldQtdeSaleItem
 
-			if _, err := tx.Exec(
+			var itenSaleExisit bool
+
+			// CASE FOR CONFIRM IF PRODUCTS EXISTI IN SALE
+			if err := tx.QueryRow(
 				ctx,
-				`
-					INSERT INTO sale_itens
-						(product_id, name, qtde, sale_value, sale_id)
-	
-					VALUES
-						($1, $2, $3, $4, $5)
-	
-					ON CONFLICT (sale_id, product_id)
-					DO UPDATE SET
-						name = EXCLUDED.name,
-						qtde = EXCLUDED.qtde, 
-						sale_value = EXCLUDED.sale_value
+				`	
+					SELECT
+						id
+
+					FROM
+						sale_itens
+
+					WHERE
+						product_id = $1 AND 
+						sale_id = $2
+
+					LIMIT
+						1
 				`,
 				p.ProductId,
-				p.Name,
-				p.Qtde,
-				p.SaleValue,
 				s.Id,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao inserir/atualizar item: ", err)
+			).Scan(&itenSaleExisit); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				u.ErrorLogger.Println("Ocorroe um erro ao salvar a venda:", err)
 				return err
+			}
+			// --------------------------------------------------------- \\
+
+			if !itenSaleExisit {
+				// CASE FOR INSERT NEW ITENS ONLY DON'T LOCALIZATE ID PRODUCT
+				if _, err := tx.Exec(
+					ctx,
+					`
+						INSERT INTO sale_itens
+							(product_id, name, qtde, sale_value, sale_id)
+		
+						VALUES
+							($1, $2, $3, $4, $5)
+					`,
+					p.ProductId,
+					p.Name,
+					p.Qtde,
+					p.SaleValue,
+					s.Id,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao inserir/atualizar item: ", err)
+					return err
+				}
+				// --------------------------------------------------------- \\
+			} else {
+				// CASE FOR UPDATE ITENS
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							sale_itens
+
+						SET
+							qtde = $1,
+							sale_value = $2
+
+						WHERE
+							product_id = $3 AND
+							sale_id = $4
+					`,
+					p.Qtde,
+					p.SaleValue,
+					p.ProductId,
+					s.Id,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao inserir/atualizar item: ", err)
+					return err
+				}
+				// --------------------------------------------------------- \\
 			}
 
 			if diff != 0 {

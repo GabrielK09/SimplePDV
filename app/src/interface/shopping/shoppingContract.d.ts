@@ -7,8 +7,9 @@ interface ShoppingContract {
 };
 
 interface ShoppingItemContract {
-    readonly product_id: number;
-    name: string;
-    purchased_value: number;
-    qtde_purchased: number;
+    product_id: number|null;
+    name: string|null;
+    purchased_value: number|null;
+    qtde_purchased: number|null;
+    productWithCharacteristics?: ProductCharacteristicsContract[]|null;
 };

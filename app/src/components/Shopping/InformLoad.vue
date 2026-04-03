@@ -49,12 +49,12 @@
     import { ref } from 'vue';
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean),
-        (e: 'return:informed-load', value: number),
+        (e: 'close', value: boolean): void,
+        (e: 'return:informed-load', value: number): void
     }>();
 
     const props = defineProps<{
-        lastShoppingId: number;
+        lastShoppingId: number|null;
     }>();
 
     const informedLoad = ref<number>(0);

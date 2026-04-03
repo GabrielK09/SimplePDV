@@ -9,7 +9,7 @@ interface SaleContract {
 interface SaleItemContract {
     id: number|null;
     product_id: number|null;
-    name: string;
+    name: string|null;
     price: number|null;
     qtde: number;
     product_with_characteristics: ProductCharacteristicsContract|null
