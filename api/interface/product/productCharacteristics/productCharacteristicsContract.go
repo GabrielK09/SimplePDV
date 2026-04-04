@@ -513,3 +513,63 @@ func (p *ProductCharacteristicsContract) DiscountedGridQtde(ctx context.Context,
 
 	return nil
 }
+
+func (p *ProductCharacteristicsContract) AddGridQtde(ctx context.Context, tx pgx.Tx, qtde int, size Size) error {
+	if qtde <= 0 {
+		return fmt.Errorf("Qtde inválida: %d", qtde)
+	}
+
+	if !size.isValidSize() {
+		u.ErrorLogger.Printf("A grade: %s, é inválida", size)
+		return fmt.Errorf("Grade inválida, %s", size)
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE	
+				product_grids
+
+			SET
+				grid_qtde = grid_qtde + $2
+
+			WHERE	
+				product_id = $1 AND
+				size = $3
+		`,
+		p.ProductId,
+		qtde,
+		size,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar a qtde de sale_itens_grid:", err)
+		return err
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE	
+				products
+
+			SET
+				qtde = (
+					SELECT
+						COALESCE(SUM(grid_qtde), 0)
+
+					FROM
+						product_grids
+
+					WHERE
+						product_id = $1
+				)
+			WHERE	
+				id = $1
+		`,
+		p.ProductId,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar a qtde de products:", err)
+		return err
+	}
+
+	return nil
+}

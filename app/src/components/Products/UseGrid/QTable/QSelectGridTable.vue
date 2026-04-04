@@ -4,7 +4,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-40 backdrop-blur-sm">
                 <q-table
                     title="Grade"
-                    :rows="props.productData.productWithCharacteristics"
+                    :rows="props.characteristics || []"
                     hide-bottom
                     :columns="gridTableColumn"
                     row-key="name"
@@ -21,12 +21,12 @@
     import { ref } from 'vue';
 
     const props = defineProps<{
-        productData?: ProductContract,
-        productId?: number
+        characteristics: ProductCharacteristicsContract[]|undefined
+
     }>();
 
     const emists = defineEmits<{
-        (e: 'return:selected-grid', value: any)
+        (e: 'return:selected-grid', value: any): void
     }>();
 
     const gridTableColumn: QTableColumn[] = [
@@ -45,6 +45,10 @@
     ];
 
     const confirm = ref<boolean>(true);
+
+    const filterGrids = () => {
+
+    };
 
     const selectGrid = (_: Event, row: any) => {
         emists('return:selected-grid', row);

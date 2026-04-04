@@ -5,39 +5,44 @@
                 <section class="rounded-lg p-6 flex flex-col">
                     <span class="font-bold mb-2">Última carga: {{ props.lastShoppingId }}</span>
 
-                    <q-input
-                        v-model.number="informedLoad"
-                        type="text"
-                        stack-label
-                        label-slot
-                        input-class="text-lg"
-                        :rules="[
-                            val => val > 0 || 'A carga da compra não pode ser menor zero.'
-                        ]"
+                    <q-form
+                        @submit="emits('return:informed-load', informedLoad)"
+                        class="q-gutter-md"
                     >
-                        <template v-slot:label>
-                            <span class="font-bold text-lg">
-                                N° Carga da compra
-                            </span>
-                        </template>
-                    </q-input>
+                        <q-input
+                            v-model.number="informedLoad"
+                            type="text"
+                            stack-label
+                            label-slot
+                            input-class="text-lg"
+                            :rules="[
+                                val => val > 0 || 'A carga da compra não pode ser menor zero.'
+                            ]"
+                        >
+                            <template v-slot:label>
+                                <span class="font-bold text-lg">
+                                    N° Carga da compra
+                                </span>
+                            </template>
+                        </q-input>
 
-                    <div class="mt-4 flex gap-4">
-                        <q-btn
-                            color="red"
-                            label="Fechar"
-                            no-caps
-                            @click="emits('close', true)"
-                        />
+                        <div class="mt-4 flex gap-4">
+                            <q-btn
+                                color="red"
+                                label="Fechar"
+                                no-caps
+                                @click="emits('close', true)"
+                            />
 
-                        <q-btn
-                            color="primary"
-                            label="Confirmar carga da compra"
-                            no-caps
-                            @click="emits('return:informed-load', informedLoad)"
-                        />
+                            <q-btn
+                                color="primary"
+                                label="Confirmar carga da compra"
+                                no-caps
+                                type="submit"
+                            />
 
-                    </div>
+                        </div>
+                    </q-form>
                 </section>
             </main>
         </q-card>

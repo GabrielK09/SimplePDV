@@ -29,7 +29,7 @@ func Init() (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("DB_URL não definida")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 35*time.Second)
 	defer cancel()
 
 	config, err := pgxpool.ParseConfig(dsn)

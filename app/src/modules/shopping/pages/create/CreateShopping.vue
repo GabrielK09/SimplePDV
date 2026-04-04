@@ -39,7 +39,7 @@
                                 <q-checkbox
                                     v-model="selectedProductsIds"
                                     :val="props.row.id"
-                                    :disable="associateProdutcs.find(ap => ap.product_id === props.row.id) !== undefined ? true : false"
+                                    :disable="disableCheckBox(props.row.id)"
                                     dense
                                 />
                             </q-td>
@@ -86,10 +86,78 @@
                         :rows="associateProdutcs"
                         :columns="associateProductsColumns"
                     >
-                        <template v-slot:body="props">
+                        <template v-slot:body-cell-name="props">
+                            <q-td :props="props">
+                                <span>
+                                    {{ `${props.row.name.substring(0, 20)}...` }}
+
+                                    <q-tooltip>
+                                        {{ props.row.name }}
+                                    </q-tooltip>
+                                </span>
+                            </q-td>
+                        </template>
+
+                        <template v-slot:body-cell-purchased_value="props">
+                            <q-td :props="props">
+                                <q-input
+                                    v-model.number="props.row.purchased_value"
+                                    type="number"
+                                    class="w-12 flex ml-auto mr-auto"
+                                    input-class="text-center"
+                                    dense
+                                    @update:model-value="val => validatePrice(Number(val), props.row)"
+                                />
+                            </q-td>
+                        </template>
+
+                        <template v-slot:body-cell-qtde_purchased="props">
+                            <q-td :props="props">
+                                <q-input
+                                    v-model.number="props.row.qtde_purchased"
+                                    type="number"
+                                    class="w-12 flex ml-auto mr-auto"
+                                    input-class="text-center"
+                                    dense
+                                    @update:model-value="val => validateQtde(Number(val), props.row)"
+                                />
+                            </q-td>
+                        </template>
+
+                        <template v-slot:body-cell-actions="props">
+                            <q-td :props="props">
+                                <q-btn
+                                    size="10px"
+                                    color="black"
+                                    icon="edit"
+                                    flat
+                                    @click="updateAssociateProdutcs(props.row.product_id)"
+                                />
+
+                                <q-btn
+                                    size="10px"
+                                    color="red"
+                                    icon="delete"
+                                    flat
+                                    @click="disassociateCheckedProdutcs(props.row.product_id)"
+                                />
+                            </q-td>
+                        </template>
+
+                        <!--template v-slot:body="props">
                             <q-tr :props="props">
                                 <q-td v-for="col in props.cols">
-                                    <template v-if="col.name === 'purchased_value'">
+                                    <template v-if="col.name === 'name'">                                    
+                                        <span>
+                                            {{ `${props.row.name.substring(0, 20)}...` }}
+
+                                            <q-tooltip>
+                                                {{ props.row.name }}
+                                            </q-tooltip>
+                                        </span>
+                                    </template>
+
+                                    <template v-else-if="col.name === 'purchased_value'">
                                         <div
                                             class="text-center flex flex-center"
                                         >
@@ -139,7 +207,7 @@
                                     </template>
                                 </q-td>
                             </q-tr>
-                        </template>
+                        </template-->
 
                         <template v-slot:no-data>
                             <div class="ml-auto mr-auto">
@@ -213,10 +281,15 @@
     <QSelectGridTable
         v-if="showSizeGrid"
         :is-just-list="true"
-        :product-data="productFullData"
+        :characteristics="productFullData.productWithCharacteristics"
         @return:selected-grid="handelSelectedGrid($event)"
     />
 
+    <UpdateAssociateProduct
+        v-if="showUpdateAssociateProdutc"
+        :product-data="producDataForUpdate"
+        @close="showUpdateAssociateProdutc = !$event"
+    />
 </template>
 
 <script setup lang="ts">
@@ -230,6 +303,7 @@
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
     import { createshopping, getLastShoppingLoad, getShoppingById } from '../../services/shoppingService';
+    import UpdateAssociateProduct from 'src/components/Shopping/UpdateItem/UpdateAssociateProduct.vue';
 
     type ProductResponse = {
         product: ProductContract,
@@ -324,6 +398,14 @@
     const showSizeGrid = ref<boolean>(false);
     const lastShoppingId = ref<number | null>(null);
 
+    const producDataForUpdate= ref<ShoppingItemContract>({
+        name: null,
+        product_id: null,
+        purchased_value: null,
+        qtde_purchased: null,
+        productWithCharacteristics: null,
+    });
+
     const shoppingPrePayLoad = ref<ShoppingContract>({
         id: null,
         load: null,
@@ -338,7 +420,7 @@
         qtde: null,
         use_grid: null,
         commission: null,
-        productWithCharacteristics: null,
+        productWithCharacteristics: [],
     });
 
     const indexOfProductHaveCharacteristics = ref<number|null>(null);
@@ -353,6 +435,7 @@
 
     const showCreateProductComponent = ref<boolean>(false);
     const showInformLoadComponent = ref<boolean>(false);
+    const showUpdateAssociateProdutc = ref<boolean>(false);
 
     const normalizeProduct = (p: ProductContract): ShoppingItemContract => ({
         product_id: p.id,
@@ -406,18 +489,6 @@
 
     const associateCheckedProdutcs = () => {
         selectedProductsIds.value.forEach(id => {
-            console.log(id);
-            
-            if(associateProdutcs.value.find((ap: ShoppingItemContract) => ap.product_id === id))
-            {
-                notify(
-                    'info',
-                    'Produto já associado!'
-                );
-
-                return;
-            };
-
             const productData = productsStockData.value.find(p => p.id === id) as ProductContract;
 
             if(productData === undefined)
@@ -428,8 +499,6 @@
                 );
             };
 
-            console.log(productData);
-            
             const newProductToAssociate: ShoppingItemContract = {
                 product_id: productData.id,
                 name: productData.name,
@@ -443,7 +512,6 @@
 
         searchInput.value = '';
         productsStockData.value = allProductsStockData.value;
-
     };
 
     watch(associateProdutcs.value, (newProducts) => {
@@ -537,20 +605,20 @@
         };
 
         const originalProduct = associateProdutcs.value.findIndex(ap => ap.product_id === intermediaryProductItemData.value?.product_id);
+
         if(originalProduct > -1)
         {
-            notify(
-                'negative',
-                'Erro ao validar os dados, produto não localizado.'
-            );
+            associateProdutcs.value.splice(originalProduct, 1);
+            associateProdutcs.value.push(parsedProduct);
 
+            showSizeGrid.value = false;
             return;
         };
 
-        associateProdutcs.value.splice(originalProduct, 1);
-        associateProdutcs.value.push(parsedProduct);
-
-        showSizeGrid.value = false;
+        notify(
+            'negative',
+            'Erro ao validar os dados, produto não localizado.'
+        );
     };
 
     const submitShopping = async (isSaving: boolean) => {
@@ -683,6 +751,29 @@
     const reloadProcuts = async (event: boolean): Promise<void> => {
         showCreateProductComponent.value = event;
         await getAllProductsStock();
+    };
+
+    const updateAssociateProdutcs = (id: number) => {
+        const producDataById = associateProdutcs.value.find(p => p.product_id === id);
+
+        if(!producDataById)
+        {
+            notify(
+                'negative',
+                'Um erro ocorreu, produto não localizado'
+            );
+            return;
+        };
+
+        producDataForUpdate.value = producDataById;
+        showUpdateAssociateProdutc.value = true;
+    };
+
+    const disableCheckBox = (productId: number): boolean => {
+        if(!associateProdutcs.value.map(a => a.product_id).includes(productId))
+            return false;
+
+        return true;
     };
 
     onMounted(async () => {

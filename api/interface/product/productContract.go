@@ -453,3 +453,27 @@ func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde in
 
 	return tx.QueryRow(ctx, query, p.Id, qtde).Scan(&p.Id, &p.Qtde, &p.Name)
 }
+
+func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int) error {
+	if qtde <= 0 {
+		return fmt.Errorf("Qtde inválida: %d", qtde)
+	}
+
+	query := `
+		UPDATE	
+			products 
+
+		SET
+			qtde = qtde + $2
+
+		WHERE	
+			id = $1
+
+		RETURNING
+			id,
+			qtde,
+			name
+	`
+
+	return tx.QueryRow(ctx, query, p.Id, qtde).Scan(&p.Id, &p.Qtde, &p.Name)
+}

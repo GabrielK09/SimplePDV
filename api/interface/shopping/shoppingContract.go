@@ -288,24 +288,22 @@ func (s *ShoppingContract) Create() (int, error) {
 func Show(shoppingId int) (*ShoppingContract, error) {
 	var s ShoppingContract
 
-	query := `
-		SELECT
-			id,
-			load,
-			operation,
-			status,
-			total_shopping
-			
-		FROM
-			shopping
-
-		WHERE
-			id = $1
-	`
-
 	if err := conn.QueryRow(
 		ctx,
-		query,
+		`
+			SELECT
+				id,
+				load,
+				operation,
+				status,
+				total_shopping
+				
+			FROM
+				shopping
+
+			WHERE
+				id = $1
+		`,
 		shoppingId,
 	).Scan(
 		&s.Id,
@@ -324,24 +322,22 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 	var shoppingItens []ShoppingItenContract
 
-	queryForSelectItens := `
-		SELECT
-			id,
-			shopping_id,
-			product_id,
-			name,
-			qtde_purchased,
-			purchased_value
-		FROM
-			shopping_itens
-
-		WHERE
-			shopping_id = $1
-	`
-
 	rows, err := conn.Query(
 		ctx,
-		queryForSelectItens,
+		`
+			SELECT
+				id,
+				shopping_id,
+				product_id,
+				name,
+				qtde_purchased,
+				purchased_value
+			FROM
+				shopping_itens
+
+			WHERE
+				shopping_id = $1
+		`,
 		shopingId,
 	)
 
@@ -376,18 +372,20 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 func checkExistLoad(load int) (bool, error) {
 	var shoppingId int
 
-	query := `
-		SELECT
-			id
+	err := conn.QueryRow(
+		ctx,
+		`
+			SELECT
+				id
 
-		FROM
-			shopping
+			FROM
+				shopping
 
-		WHERE
-			load = $1
-	`
-
-	err := conn.QueryRow(ctx, query, load).Scan(&shoppingId)
+			WHERE
+				load = $1
+		`,
+		load,
+	).Scan(&shoppingId)
 
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao conferir se esse LOAD existe: ", err)
@@ -404,22 +402,20 @@ func checkExistLoad(load int) (bool, error) {
 func ReturnLastShoppingLoad() (int, error) {
 	var shoppingId int
 
-	query := `
-		SELECT
-			load
-		FROM
-			shopping
-
-		ORDER BY
-			load DESC
-
-		LIMIT 
-			1
-	`
-
 	if err := conn.QueryRow(
 		ctx,
-		query,
+		`
+			SELECT
+				load
+			FROM
+				shopping
+
+			ORDER BY
+				load DESC
+
+			LIMIT 
+				1
+		`,
 	).Scan(&shoppingId); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao conferir o ultimo ID do compras: ", err)
 		return 0, err
