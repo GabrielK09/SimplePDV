@@ -7,34 +7,31 @@
                         Produto em edição: {{ newProduct.name }}
                     </span>
 
-                    <div>
-                        <q-input v-model.number="newProduct.qtde_purchased" type="number" stack-label label-slot
-                            label="Qtde comprada" />
+                    <div v-if="props.productData?.product_with_characteristics !== null" class="mt-4">
+                        <BaseSelectGridTypes
+                            v-model="newProduct.product_with_characteristics[0].size"
+                            :selected-sizes="props.productData?.product_with_characteristics"
+                        />
                     </div>
 
-                    <div>
-                        <q-input v-model.number="newProduct.purchased_value" type="number" stack-label label-slot
-                            label="Qtde comprada" />
-                    </div>
+                    <div class="mt-6 flex justify-center">
+                        <span class="font-bold mr-4 my-auto ">Grade atual: {{ newProduct.product_with_characteristics[0].size }}</span>
 
-                    <div v-if="props.productData?.productWithCharacteristics !== null">
-                        <q-btn 
-                            color="primary" 
-                            label="Alterar grade"
-                            no-caps
-                            @click="changeGrid = !changeGrid" 
-                        />
-        
-                        <QSelectGridTable   
-                            v-if="changeGrid"
-                            :characteristics="props.productData?.productWithCharacteristics"
-                        />
-                        
                     </div>
 
                     <div class="mt-4 flex justify-end gap-2">
-                        <q-btn flat label="Cancelar" color="negative" @click="emit('close', true)" />
-                        <q-btn label="Salvar" color="primary" @click="saveData" />
+                        <q-btn 
+                            flat 
+                            label="Cancelar" 
+                            color="negative" 
+                            @click="emit('close', true)" 
+                        />
+
+                        <q-btn 
+                            label="Salvar" 
+                            color="primary" 
+                            @click="saveData" 
+                        />
                     </div>
                 </section>
             </main>
@@ -43,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-    import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
+    import BaseSelectGridTypes from 'src/components/Products/UseGrid/QSelectGridTypes/BaseSelectGridTypes.vue';
     import { ref, watch } from 'vue';    
 
     const props = defineProps<{
@@ -56,13 +53,16 @@
     }>();
 
     const internalDialog = ref<boolean>(true);
-    const changeGrid = ref<boolean>(true);
+
     const newProduct = ref<ShoppingItemContract | null>(null);
 
     watch(
         () => props.productData,
         (product) => {
+            if(!product) return;
+
             newProduct.value = product ? { ...product } : null;
+
         },
         { immediate: true }
     );
@@ -70,7 +70,9 @@
     const saveData = () => {
         if (!newProduct.value) return;
 
+        console.log(newProduct.value);
+        
         emit('update:product', newProduct.value);
-        emit('close', false);
+        emit('close', true);
     };
 </script>

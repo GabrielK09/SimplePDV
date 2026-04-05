@@ -156,6 +156,8 @@ func (s *ShoppingContract) Create() (int, error) {
 		return 0, err
 	}
 
+	defer tx.Rollback(ctx)
+
 	for _, p := range s.ShoppingItens {
 		subTotal = calchelper.CalculateTotalSale(p.PurchasedValue, p.QtdePurchased)
 	}
@@ -191,8 +193,9 @@ func (s *ShoppingContract) Create() (int, error) {
 	s.Id = shoppingId
 
 	for _, p := range s.ShoppingItens {
-
 		if p.ShoppingItensWithCharacteristics != nil {
+			u.InfoLogger.Println("Produto possui caracteristicas, vai inserir na shopping_itens_grid e shopping_itens")
+
 			if _, err := tx.Exec(
 				ctx,
 				`
@@ -203,8 +206,8 @@ func (s *ShoppingContract) Create() (int, error) {
 				`,
 				s.Id,
 				p.ProductId,
-				p.ShoppingItensWithCharacteristics.Id,
 				p.ShoppingItensWithCharacteristics.Size,
+				p.QtdePurchased,
 				p.QtdePurchased,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
@@ -228,10 +231,11 @@ func (s *ShoppingContract) Create() (int, error) {
 				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
 				return 0, err
 			}
-
 		}
 
 		if p.ShoppingItensWithCharacteristics == nil {
+			u.InfoLogger.Println("Produto não possui caracteristicas, vai inserir na shopping_itens")
+
 			if _, err := tx.Exec(
 				ctx,
 				`
@@ -422,4 +426,141 @@ func ReturnLastShoppingLoad() (int, error) {
 	}
 
 	return shoppingId, nil
+}
+
+func (s *ShoppingContract) UpdateShopping() error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transação: ", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	for _, p := range s.ShoppingItens {
+		if p.ShoppingItensWithCharacteristics != nil {
+			u.InfoLogger.Println("O produto possui caracteristicas, vai alterar a shopping_itens_grid e shopping_itens")
+
+			if _, err := tx.Exec(
+				ctx,
+				`
+					UPDATE
+						shopping_itens_grid
+				
+					SET
+						grid_qtde = $2
+	
+					WHERE
+						shopping_id = $1 AND 
+						size_saled = $3 AND
+						product_id = $4
+						
+				`,
+				s.Id,
+				p.ShoppingItensWithCharacteristics.GridQtde,
+				p.ShoppingItensWithCharacteristics.Size,
+				p.ProductId,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
+				return err
+			}
+
+			if _, err := tx.Exec(
+				ctx,
+				`
+					UPDATE
+						shopping_itens
+				
+					SET
+						qtde_purchased = (
+							SELECT
+								COALESCE(SUM(grid_qtde), 0)
+
+							FROM
+								shopping_itens_grid
+
+							WHERE
+								shopping_id = $1 AND 
+								size_saled = $2 AND 
+								product_id = $3
+						)
+							
+					WHERE
+						shopping_id = $1 AND 
+						product_id = $3
+				`,
+				s.Id,
+				p.ShoppingItensWithCharacteristics.Size,
+				p.ProductId,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
+				return err
+			}
+		}
+
+		if p.ShoppingItensWithCharacteristics == nil {
+			u.InfoLogger.Println("O produto não possui caracteristicas, vai alterar shopping_itens")
+
+			if _, err := tx.Exec(
+				ctx,
+				`
+					UPDATE
+						shopping_itens
+				
+					SET
+						qtde_purchased = $2,
+						Purchased_Value = $3
+	
+					WHERE
+						shopping_id = $1 AND
+						product_id = $4
+						
+				`,
+				s.Id,
+				p.QtdePurchased,
+				p.PurchasedValue,
+				p.ProductId,
+			); err != nil {
+				u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
+				return err
+			}
+		}
+	}
+
+	u.InfoLogger.Println("Vai alterar o valor total da compra")
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE 
+				shopping
+			SET
+				total_shopping = (
+					SELECT
+						COALESCE(SUM(qtde_purchased * purchased_value), 0)
+
+					FROM
+						shopping_itens
+
+					WHERE
+						shopping_id = $1
+				)
+			WHERE
+				id = $1
+		`,
+		s.Id,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar o total da venda depois da inserção/alteração dos itens: ", err)
+		return err
+	}
+
+	u.InfoLogger.Println("Valor da venda atualizado.")
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao comitar: ", err)
+
+		return err
+	}
+
+	return nil
 }

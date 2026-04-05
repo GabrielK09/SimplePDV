@@ -74,8 +74,8 @@
     }>();
 
     const emists = defineEmits<{
-        (e: 'showCreateGrid', value: boolean),
-        (e: 'return:selected-grid', value: any)
+        (e: 'showCreateGrid', value: boolean): void,
+        (e: 'return:selected-grid', value: any): void
     }>();
 
     const showUpdateGrid = ref<boolean>(false);
@@ -110,7 +110,6 @@
             console.warn('Grid não encontrada:', row?.id);
 
             const newGrid = {
-                id: null,
                 product_id: props.productId,
                 grid_qtde: row.grid_qtde,
                 size: row.size,

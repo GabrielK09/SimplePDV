@@ -114,16 +114,38 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppingId, "Compra cadastrada com sucesso!"))
 }
 
-func HandlePutCancelShopping(w http.ResponseWriter, r *http.Request) {
+func HandlePutUpdateShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
+
+	var shoppingDetails shopping.ShoppingContract
+
+	if err := json.NewDecoder(r.Body).Decode(&shoppingDetails); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao ler os dados da edição da compra."))
+		return
+	}
+
+	if shoppingDetails.Id <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "ID da compra inválido."))
+		return
+	}
+
+	if err := shoppingDetails.UpdateShopping(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao alterar os dados da compra."))
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Forma de pagamento alterada com sucesso!"))

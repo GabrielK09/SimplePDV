@@ -1,16 +1,21 @@
 <template>
     <q-dialog v-model="confirm" persistent>
         <q-card>
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-40 backdrop-blur-sm">
+            <div class="fixed inset-0 z-50 items-center justify-center bg-opacity-40 backdrop-blur-sm flex">
                 <q-table
-                    title="Grade"
+                    title="Grades"
                     :rows="props.characteristics || []"
                     hide-bottom
                     :columns="gridTableColumn"
                     row-key="name"
                     @row-click="selectGrid"
-                />
+                >
+                    <template v-slot:top-right>
+                        <q-btn color="red" icon="close" @click="emists('close',true)" />
 
+                    </template>
+
+                </q-table>
             </div>
         </q-card>
     </q-dialog>
@@ -26,6 +31,7 @@
     }>();
 
     const emists = defineEmits<{
+        (e: 'close', value: boolean): void
         (e: 'return:selected-grid', value: any): void
     }>();
 
@@ -46,9 +52,6 @@
 
     const confirm = ref<boolean>(true);
 
-    const filterGrids = () => {
-
-    };
 
     const selectGrid = (_: Event, row: any) => {
         emists('return:selected-grid', row);

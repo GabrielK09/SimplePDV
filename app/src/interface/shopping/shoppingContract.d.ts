@@ -11,5 +11,5 @@ interface ShoppingItemContract {
     name: string|null;
     purchased_value: number|null;
     qtde_purchased: number|null;
-    productWithCharacteristics?: ProductCharacteristicsContract[]|null;
+    product_with_characteristics?: ProductCharacteristicsContract[];
 };

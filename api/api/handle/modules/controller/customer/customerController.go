@@ -184,9 +184,8 @@ func HandleDeleteCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := responsehelper.Response(true, nil, "Cliente deletado com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
+	w.WriteHeader(http.StatusNoContent)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Cliente deletado com sucesso!"))
 }
 
 func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {

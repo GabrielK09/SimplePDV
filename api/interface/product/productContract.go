@@ -477,3 +477,18 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int) erro
 
 	return tx.QueryRow(ctx, query, p.Id, qtde).Scan(&p.Id, &p.Qtde, &p.Name)
 }
+
+// Processamento de qtdes futuras e reservadas
+
+func VerifyQtdes() error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transiction:", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	return nil
+}

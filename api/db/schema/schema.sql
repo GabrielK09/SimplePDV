@@ -31,8 +31,8 @@ CREATE TABLE public.products (
   price double precision NOT NULL,
   commission double precision NOT NULL,
   qtde integer NOT NULL,
-  returned integer DEFAULT 0,
-  saled integer DEFAULT 0,
+  reserved_qtde integer NULL DEFAULT 0,
+  future_qtde integer NULL DEFAULT 0,
   use_grid BOOLEAN DEFAULT 'true',
   deleted_at timestamp without time zone,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -139,13 +139,17 @@ CREATE TABLE public.shopping_itens_grid (
   grid_qtde integer NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT shopping_itens_grid_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.sales(id),
+  CONSTRAINT shopping_itens_grid_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping_id(id),
   CONSTRAINT shopping_itens_grid_products_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id),
   CONSTRAINT shopping_itens_grid_product_grids_id_foreign FOREIGN KEY (product_grid_id) REFERENCES public.product_grids(id)
 );
 ALTER TABLE shopping_itens_grid
 ADD CONSTRAINT unique_shopping_grid
 UNIQUE (shopping_id, size_saled, product_grid_id);
+
+ALTER TABLE shopping_itens_grid
+ADD CONSTRAINT shopping_itens_grid_shopping_id_foreign
+REFERENCES public.shopping_id(id)
 -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## -- ## 
 CREATE TABLE public.cash_registers (
   id SERIAL PRIMARY KEY,

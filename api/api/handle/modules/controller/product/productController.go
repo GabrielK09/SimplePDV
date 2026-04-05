@@ -123,8 +123,7 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
+	w.WriteHeader(http.StatusNoContent)
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto deletado com sucesso!"))
 }
 

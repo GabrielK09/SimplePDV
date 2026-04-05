@@ -159,8 +159,8 @@ func StartServer() {
 	api.HandleFunc("/shopping/all", shoppingcontroller.HandleGetAllShopping)
 	api.HandleFunc("/shopping/return-last-load", shoppingcontroller.HandleGetLastShoppingLoad)
 	api.HandleFunc("/shopping/create", shoppingcontroller.HandlePostCreateShopping)
-	api.HandleFunc("/shopping/cancel", paymentcontroller.HandlePutCancelSaleOrShopping)
 	api.HandleFunc("/shopping/details/{id}", shoppingcontroller.HandleGetShoppingById)
+	api.HandleFunc("/shopping/update", shoppingcontroller.HandlePutUpdateShopping)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Pagamentos \\
