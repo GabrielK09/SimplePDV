@@ -3,8 +3,6 @@
         <q-card>
             <main class="rounded-md flex flex-center mt-4 bg-white text-xl">
                 <section class="rounded-lg p-6 flex flex-col">
-                    <span class="font-bold mb-2">Última carga: {{ props.lastShoppingId }}</span>
-
                     <q-form
                         @submit="emits('return:informed-load', informedLoad)"
                         class="q-gutter-md"
@@ -40,7 +38,6 @@
                                 no-caps
                                 type="submit"
                             />
-
                         </div>
                     </q-form>
                 </section>
@@ -56,10 +53,6 @@
     const emits = defineEmits<{
         (e: 'close', value: boolean): void,
         (e: 'return:informed-load', value: number): void
-    }>();
-
-    const props = defineProps<{
-        lastShoppingId: number|null;
     }>();
 
     const informedLoad = ref<number>(0);

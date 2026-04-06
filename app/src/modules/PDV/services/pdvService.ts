@@ -13,7 +13,7 @@ export async function getAll(): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -33,7 +33,7 @@ export async function saveSaleService(payLoad: SaleContract): Promise<any>
             data.message,
             data.data || []
         );
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -54,7 +54,7 @@ export async function getSaleDetailsById(saleId: number): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -75,7 +75,7 @@ export async function insertNewItens(payLoad: SaleContract) : Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,

@@ -81,7 +81,7 @@
     <QSelectGridTable
         v-if="showSizeGrid"
         :is-just-list="true"
-        :product-data="productFullData"
+        :characteristics="productCharacteristics"
         @return:selected-grid="handelSelectedGrid($event)"
     />
 </template>
@@ -118,15 +118,7 @@
     const confirm = ref<boolean>(true);
     const showSizeGrid = ref<boolean>(false);
     
-    const productFullData = ref<ProductContract>({
-        id: null,
-        commission: null,
-        name: null,
-        price: null,
-        qtde: null,
-        productWithCharacteristics: null,
-        use_grid: null,
-    });
+    const productCharacteristics = ref<ProductCharacteristicsContract[]>([]);
 
     const columns: QTableColumn[] = [
         {
@@ -224,15 +216,7 @@
                     indexOfProductHaveCharacteristics.value = index;
                 };
 
-                productFullData.value = {
-                    commission: 0,
-                    id: p.id,
-                    name: p.name,
-                    price: p.price,
-                    qtde: 1,
-                    //@ts-ignore
-                    productWithCharacteristics: p.product_with_characteristics
-                };
+                productCharacteristics.value = [p.product_with_characteristics];
 
                 showSizeGrid.value = true;
             };

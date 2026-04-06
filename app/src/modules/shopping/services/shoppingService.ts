@@ -21,26 +21,10 @@ export async function getAll(): Promise<any>
     };
 };
 
-export async function createshopping(payLoad: any): Promise<any>
+export async function createshopping(payLoad: ShoppingContract): Promise<any>
 {
-    const formatedItens = payLoad.shopping_itens.map((i: ShoppingItemContract) => ({
-        product_id: i.product_id,
-        name: i.name,
-        purchased_value: i.purchased_value,
-        qtde_purchased: i.qtde_purchased,
-        product_with_characteristics: i.product_with_characteristics === null ? null : i.product_with_characteristics[0]
-    }));
-
-    const newPayLoad = {
-        id: payLoad.id,
-        load: payLoad.load,
-        shopping_itens: formatedItens,
-        total_shopping: payLoad.total_shopping,
-        status: payLoad.status
-    };
-
     try {
-        const res = await api.post('shopping/create', newPayLoad);
+        const res = await api.post('shopping/create', payLoad);
         const data = res.data;
 
         return apiResponse(

@@ -76,8 +76,8 @@
     const { notify } = useNotify();
 
     const emits = defineEmits<{
-        (e: 'return:grids', value: any)
-        (e: 'close', value: boolean)
+        (e: 'return:grids', value: any): void
+        (e: 'close', value: boolean): void
     }>();
 
     const props = defineProps<{
@@ -117,7 +117,7 @@
             emits('return:grids', productCharacteristics.value);
             emits('close', true);
             
-        } catch (error) {
+        } catch (error: any) {
             console.log(error);
             
             if(error.inner)

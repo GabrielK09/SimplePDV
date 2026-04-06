@@ -14,7 +14,7 @@ export async function getAllPayMentFormsService(): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -38,7 +38,7 @@ export async function updatePayMentFormService(payLoad: string): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -71,7 +71,7 @@ export async function payMentService(payMentValues: PayMentValue[], saleId: numb
             data.message,
             data.data || []
         );
-    } catch (error) {
+    } catch (error: any) {
         console.error('Erro: ', error);
 
         return apiResponse(

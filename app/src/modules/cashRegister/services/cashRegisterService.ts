@@ -13,7 +13,7 @@ export async function getAll(): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -34,7 +34,7 @@ export async function createManualCashRegister(payLoad: CashRegisterContract): P
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,

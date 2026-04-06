@@ -414,12 +414,7 @@
             const current = currentMap.get(oldItem.product_id);
 
             if (!current) return true;
-
-            console.log('Itens: ', {
-                current: current,
-                oldItem: oldItem
-            });
-
+            
             if (
                 current.qtde !== oldItem.qtde || current.price !== oldItem.price
             ) return true;

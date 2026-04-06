@@ -38,7 +38,7 @@
     <QSelectGridTable
         v-if="showSizeGrid"
         :is-just-list="true"
-        :product-data="productFullData"
+        :characteristics="productCharacteristics"
         @return:selected-grid="handelSelectedGrid($event)"
     />
 </template>
@@ -50,14 +50,7 @@
     import { ref, watch } from 'vue';
     import QSelectGridTable from '../Products/UseGrid/QTable/QSelectGridTable.vue';
 
-    const productFullData = ref<ProductContract>({
-        id: null,
-        commission: null,
-        name: '',
-        price: null,
-        qtde: null,
-        use_grid: false,
-    });
+    const productCharacteristics = ref<ProductCharacteristicsContract[]>([]);
 
     const intermediaryProductItemData = ref<SaleItemContract>();
 
@@ -147,6 +140,7 @@
             return;
         };
 
+        productCharacteristics.value = resCharacteristics;
         productResData.productWithCharacteristics = resCharacteristics;
 
         const productData: SaleItemContract = {
@@ -160,7 +154,6 @@
 
         intermediaryProductItemData.value = productData;
 
-        productFullData.value = productResData;
         showSizeGrid.value = true;
         return;
     };
@@ -238,16 +231,8 @@
         if(row.product_with_characteristics !== null)
         {
             showSizeGrid.value = true;
-            productFullData.value = {
-                commission: 0,
-                id: row.id,
-                name: row.name,
-                price: row.price,
-                qtde: 1,
-                use_grid: true,
-                 //@ts-ignore
-                productWithCharacteristics: row.product_with_characteristics
-            };
+
+            productCharacteristics.value = [row.product_with_characteristics];
 
             intermediaryProductItemData.value = row;
             searchInput.value = null;

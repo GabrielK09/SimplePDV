@@ -41,17 +41,12 @@
                                         <q-radio
                                             v-model="selectedProductsId"
                                             :val="props.row.id"
-                                            :disable="disableCheckBox(props.row.id) && props.row.productWithCharacteristics.length === 1"
                                             dense
                                         />
                                     </template>
 
                                     <template v-if="col.name === 'name'">
-                                        <span 
-                                            :class="{
-                                                'text-blue-500': disableCheckBox(props.row.id)
-                                            }"
-                                        >
+                                        <span>
                                             {{ `${props.row.name.substring(0, 20)}...` }}
 
                                             <q-tooltip>
@@ -62,11 +57,7 @@
                                     </template>
 
                                     <template v-else>
-                                        <span 
-                                            :class="{
-                                                'text-blue-500': disableCheckBox(props.row.id)
-                                            }"
-                                        >
+                                        <span>
                                             {{ col.value }}
                                         </span>
                                     </template>
@@ -113,64 +104,126 @@
                         title="Produtos associados"
                         :rows="associateProducts"
                         :columns="associateProductsColumns"
+                        row-key="product_id"
                     >
-                        <template v-slot:body-cell-name="props">
-                            <q-td :props="props">
-                                <span>
-                                    {{ `${props.row.name.substring(0, 20)}...` }}
+                        <template v-slot:body="props">
+                            <q-tr :props="props">
+                                <q-td key="name" :props="props">
+                                    <span>
+                                        {{ `${props.row.name.substring(0, 20)}...` }}
 
-                                    <q-tooltip>
-                                        {{ props.row.name }} - {{ props.row.product_with_characteristics[0].size }}
-                                    </q-tooltip>
-                                </span>
-                            </q-td>
-                        </template>
+                                        <q-tooltip>
+                                            {{ props.row.name }} - {{ props.row.product_with_characteristics[0].size }}
+                                        </q-tooltip>
+                                    </span>
+                                </q-td>
 
-                        <template v-slot:body-cell-purchased_value="props">
-                            <q-td :props="props">
-                                <q-input
-                                    v-model.number="props.row.purchased_value"
-                                    type="number"
-                                    class="w-12 flex ml-auto mr-auto"
-                                    input-class="text-center"
-                                    dense
-                                    @update:model-value="val => validatePrice(Number(val), props.row)"
-                                />
-                            </q-td>
-                        </template>
+                                <q-td key="purchased_value" :props="props">
+                                    <q-input
+                                        v-model.number="props.row.purchased_value"
+                                        type="number"
+                                        class="w-12 flex ml-auto mr-auto"
+                                        input-class="text-center"
+                                        dense
+                                        @update:model-value="val => validatePrice(Number(val), props.row)"
+                                    />
+                                </q-td>
 
-                        <template v-slot:body-cell-qtde_purchased="props">
-                            <q-td :props="props">
-                                <q-input
-                                    v-model.number="props.row.qtde_purchased"
-                                    type="number"
-                                    class="w-12 flex ml-auto mr-auto"
-                                    input-class="text-center"
-                                    dense
-                                    @update:model-value="val => validateQtde(Number(val), props.row)"
-                                />
-                            </q-td>
-                        </template>
+                                <q-td key="qtde_purchased" :props="props">
+                                    <q-input
+                                        v-model.number="props.row.qtde_purchased"
+                                        type="number"
+                                        class="w-12 flex ml-auto mr-auto"
+                                        input-class="text-center"
+                                        dense
+                                        @update:model-value="val => validateQtde(Number(val), props.row)"
+                                        :disable="props.row.product_with_characteristics && props.row.product_with_characteristics.length > 0"
+                                    />
+                                </q-td>
 
-                        <template v-slot:body-cell-actions="props">
-                            <q-td :props="props">
-                                <q-btn
-                                    size="10px"
-                                    color="black"
-                                    icon="edit"
-                                    flat
-                                    @click="updateassociateProducts(props.row.product_id)"
-                                    v-if="props.row.productWithCharacteristics !== null"
-                                />
+                                <q-td key="actions" :props="props">
+                                    <div class="flex flex-row items-center gap-1">
+                                        <q-btn 
+                                            v-if="hasCharacteristics(props.row)"
+                                            size="10px"
+                                            color="black"
+                                            :icon="isExpanded(props.row.product_id) ? 'expand_less' : 'grid_on'"
+                                            flat
+                                            @click="toggleExpanded(props.row.product_id)"
+                                        >
+                                            <q-tooltip>
+                                                {{ 
+                                                    isExpanded(props.row.product_id)
+                                                        ? 'Ocultar'
+                                                        : 'Ver grade'
+                                                }}
+                                            </q-tooltip>
+                                        </q-btn>
 
-                                <q-btn
-                                    size="10px"
-                                    color="red"
-                                    icon="delete"
-                                    flat
-                                    @click="disassociateCheckedProdutcs(props.row.product_id)"
-                                />
-                            </q-td>
+                                        <q-btn
+                                            size="10px"
+                                            color="red"
+                                            icon="delete"
+                                            flat
+                                            @click="disassociateCheckedProdutc(props.row.product_id)"
+                                        />
+                                    </div>  
+
+                                </q-td>
+                            </q-tr>
+
+                            <q-tr 
+                                v-if="isExpanded(props.row.product_id) && hasCharacteristics(props.row)"
+                                :props="props"
+                            >
+                                <q-td colspan="100%" class="bg-gray-200">
+                                    <div class="q-pa-md">
+                                        <div class="text-subtitle2 text-weight-bold q-mb-sm">
+                                            Grade do produto
+                                        </div>
+
+                                        <div class="row q-col-gutter-sm">
+                                            <div
+                                                v-for="(characteristic, i) in props.row.product_with_characteristics"
+                                                :key="`${props.row.product_id}-${characteristic.size}`"
+                                                class="col-12 col-sm-6 col-md-3"
+                                            >   
+                                                <q-card flat bordered>
+                                                    <q-card-section class="q-pa-pmd">
+                                                        <div class="text-caption text-gray-700">
+                                                            Tamanho
+
+                                                            <q-btn
+                                                                size="10px"
+                                                                color="red"
+                                                                icon="close"
+                                                                flat
+                                                                @click="disassociateCheckedGridProdutc(props.rowIndex, Number(i))"
+                                                            />
+                                                        </div>
+                                                        <div class="text-body2 text-weight-bold">
+                                                            {{ characteristic.size }}
+                                                        </div>
+
+                                                        <div class="text-caption text-grey-7 q-mt-sm">Quantidade</div>
+                                                        <div>
+                                                            <q-input
+                                                                v-model.number="characteristic.grid_qtde"
+                                                                type="number"
+                                                                class="w-12 flex ml-auto mr-auto"
+                                                                input-class="text-center"
+                                                                dense
+                                                                @update:model-value="val => validateQtde(Number(val), props.row, Number(i))"
+                                                            />
+                                                        </div>
+                                                    </q-card-section>
+                                                </q-card>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </q-td>
+                            </q-tr>
+
                         </template>
 
                         <template v-slot:no-data>
@@ -205,7 +258,7 @@
                         no-caps
                         class="ml-4"
                         label="Continuar depois"
-                        @click="submitShopping(false)"
+                        @click="submitShopping(true)"
                         :disable="associateProducts.length === 0"
                     />
 
@@ -222,7 +275,7 @@
                         no-caps
                         class="ml-4"
                         label="Confirmar compra"
-                        @click="submitShopping(true)"
+                        @click="submitShopping(false)"
                         :disable="associateProducts.length === 0"
                     />
                 </div>
@@ -239,8 +292,6 @@
         v-if="showInformLoadComponent"
         @return:informed-load="saveShopping($event)"
         @close="showInformLoadComponent = !$event"
-        :shopping-data="shoppingPrePayLoad"
-        :last-shopping-id="lastShoppingId"
     />
 
     <PayMentSale
@@ -258,13 +309,6 @@
         @return:selected-grid="handelSelectedGrid($event)"
         @close="showSizeGrid = !$event"
     />
-
-    <UpdateAssociateProduct
-        v-if="showUpdateAssociateProdutc"
-        :product-data="producDataForUpdate"
-        @close="showUpdateAssociateProdutc = !$event"
-        @update:product="handleUpdateProductById($event)"
-    />
 </template>
 
 <script setup lang="ts">
@@ -278,7 +322,6 @@
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
     import { createshopping, getLastShoppingLoad, getShoppingById, updateShoppingDetails } from '../../services/shoppingService';
-    import UpdateAssociateProduct from 'src/components/Shopping/UpdateItem/UpdateAssociateProduct.vue';
 
     type ProductResponse = {
         product: ProductContract,
@@ -328,12 +371,6 @@
 
     const associateProductsColumns: QTableColumn[] = [
         {
-            name: 'product_id',
-            label: 'ID',
-            field: 'product_id',
-            align: 'center'
-        },
-        {
             name: 'name',
             label: 'Produto de entrada',
             field: 'name',
@@ -356,7 +393,7 @@
         },
         {
             name: 'actions',
-            label: '',
+            label: 'Ações',
             field: 'actions',
             align: 'right'
         }
@@ -365,21 +402,13 @@
     const productsStockData = ref<ProductContract[]>([]);
     const allProductsStockData = ref<ProductContract[]>([]);
     
+    const originalProductsShopping = ref<ShoppingItemContract[]>([]);
     const associateProducts = ref<ShoppingItemContract[]>([]);
     const intermediaryProductItemData = ref<ShoppingItemContract>();
 
     const showPayMentForms = ref<boolean>(false);
     const isSavingRef = ref<boolean>(false);
     const showSizeGrid = ref<boolean>(false);
-    const lastShoppingId = ref<number | null>(null);
-
-    const producDataForUpdate= ref<ShoppingItemContract>({
-        name: null,
-        product_id: null,
-        purchased_value: null,
-        qtde_purchased: null,
-        product_with_characteristics: null,
-    });
 
     const shoppingPrePayLoad = ref<ShoppingContract>({
         id: null,
@@ -390,8 +419,8 @@
 
     const productCharacteristics = ref<ProductCharacteristicsContract[]>([]);
     
+    const expdandeRows = ref<number[]>([]);
     const selectedProductsId = ref<number>(0);
-    //const selectedProductsIds = ref<number[]>();
 
     const searchInput = ref<string>('');
 
@@ -402,7 +431,23 @@
 
     const showCreateProductComponent = ref<boolean>(false);
     const showInformLoadComponent = ref<boolean>(false);
-    const showUpdateAssociateProdutc = ref<boolean>(false);
+
+    const hasCharacteristics = (row: any): boolean => {
+        return Array.isArray(row.product_with_characteristics) && row.product_with_characteristics.length > 0;
+    };
+
+    const isExpanded = (productId: number) => {
+        return expdandeRows.value.includes(productId);
+    };
+
+    const toggleExpanded = (productId: number): void => {
+        if (isExpanded(productId)) {
+            expdandeRows.value = expdandeRows.value.filter(id => id !== productId);
+            return;
+        };
+
+        expdandeRows.value.push(productId);
+    }; 
 
     const removeSessionData = (key: string): void => {
         SessionStorage.remove(key);
@@ -421,22 +466,33 @@
         }
     );
 
-    const validateQtde = (val: number, row: ShoppingItemContract) => {
-        console.log(row);
+    const validateToReturnQtde = (val: number): number => {
         if(!val || val <= 0) {
-            
-            row.qtde_purchased = 1;
-            return;
+            return 1;
         };
 
-        row.qtde_purchased = val;
+        return val;
+    };
+
+    const validateQtde = (val: number, row: ShoppingItemContract, index?: number) => { 
+        const qtde = validateToReturnQtde(val);
+
+        if(index < 0)
+        {   
+            row.qtde_purchased = qtde;
+        } else {          
+            row.product_with_characteristics[index].grid_qtde = qtde;
+
+            row.qtde_purchased = row.product_with_characteristics.reduce((total, a) => total + (a.grid_qtde), 0);
+
+        };
     };
 
     const validatePrice = (val: number, row: ShoppingItemContract) => {
-        const afterPrice = productsStockData.value.find(i => i.id === row.product_id)?.price || 1;
+        const product = productsStockData.value.find(i => i.id === row.product_id);
 
-        if(!val || val <= 0) {
-            row.purchased_value = afterPrice;
+        if(!val || val <= 0) {            
+            row.purchased_value = product.price || 1;
             return;
         };
         
@@ -445,6 +501,10 @@
 
     const filterProductsStock = (): void => {
         productsStockData.value = allProductsStockData.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : []);
+    };
+
+    const checkEveryGridsRegistred = (currentGrids: ProductCharacteristicsContract[], associateProductById: ShoppingItemContract): ProductCharacteristicsContract[] => {
+        return currentGrids.filter(c => !associateProductById.product_with_characteristics.map(ap => ap.size).includes(c.size));
     };
 
     const associateCheckedProdutcs = () => {
@@ -456,11 +516,21 @@
                 'negative',
                 'Ocorreu um erro ao associar o produto, produto não localizado.'
             );
+            return;
         };
 
         if (productStockData.productWithCharacteristics !== null)
         {
-            productCharacteristics.value = productStockData.productWithCharacteristics;
+            const characteristics = productStockData.productWithCharacteristics;
+            const associateProduct = associateProducts.value.find(ap => ap.product_id === productStockData.id);
+
+            if(associateProduct)
+            {   
+                productCharacteristics.value = checkEveryGridsRegistred(characteristics, associateProduct);
+
+            } else {
+                productCharacteristics.value = characteristics;
+            };
 
             intermediaryProductItemData.value = {
                 name: productStockData.name,
@@ -471,6 +541,7 @@
             };
 
             showSizeGrid.value = true;
+
             return;
         };
 
@@ -489,14 +560,26 @@
         searchInput.value = '';
     };
 
-    const disassociateCheckedProdutcs = (id: number) => {
-        if(associateProducts.value.length <= 1)
+    const disassociateCheckedProdutc = (id: number) => {
+        associateProducts.value = associateProducts.value.filter(ap => ap.product_id !== id);
+
+        searchInput.value = '';
+    };
+
+    const disassociateCheckedGridProdutc = (indexProduct: number, indexGrid: number): void => {
+        const product = associateProducts.value[indexProduct];
+
+        if(!associateProducts.value[indexProduct] && !product.product_with_characteristics[indexGrid])
         {
-            associateProducts.value = []
-            return
+            notify(
+                'negative',
+                'Erro ao deletar a grade, grade não localizada.'
+            );
+
+            return;
         };
 
-        associateProducts.value = associateProducts.value.filter(ap => ap.product_id !== id);
+        associateProducts.value[indexProduct].product_with_characteristics.splice(indexGrid, 1);
 
         searchInput.value = '';
     };
@@ -524,126 +607,277 @@
         allProductsStockData.value = [...productsStockData.value];
     };
 
-    const handelSelectedGrid = (grid: any) => {
-        if(!intermediaryProductItemData.value) return;
-
+    const handelSelectedGrid = (grid: ProductCharacteristicsContract) => {
+        showSizeGrid.value = false;
+        
+        if(!intermediaryProductItemData.value)     
+            return;
+        
         const parsedProduct: ShoppingItemContract = {
             product_id: intermediaryProductItemData.value.product_id,
             name: intermediaryProductItemData.value.name,
             purchased_value: intermediaryProductItemData.value.purchased_value,
             qtde_purchased: intermediaryProductItemData.value.qtde_purchased,
-            product_with_characteristics: [grid]
+            product_with_characteristics: [{
+                id: grid.id, 
+                product_id: intermediaryProductItemData.value.product_id, 
+                size: grid.size,
+                grid_qtde: 1, 
+            }]
         };
-        
-        associateProducts.value.push(parsedProduct);
-        showSizeGrid.value = false;
+
+        const existingAssociateProduct = associateProducts.value.find(p => p.product_id === intermediaryProductItemData.value.product_id);
+
+        if (!existingAssociateProduct)
+        {
+            associateProducts.value.push(parsedProduct);
+            return;
+        };
+
+        existingAssociateProduct.product_with_characteristics.push({
+            id: grid.id, 
+            product_id: intermediaryProductItemData.value.product_id, 
+            size: grid.size,
+            grid_qtde: 1, 
+        });
+
         selectedProductsId.value = 0;
     };
 
-    const submitShopping = async (isSaving: boolean) => {
-        isSavingRef.value = isSaving;
-
-        const existingLoad = SessionStorage.getItem('inform_load');
-
-        if(existingLoad || shoppingPrePayLoad.value.id)
-        {
-            saveShopping(Number(existingLoad));
-            return;
-        };
-
-        showInformLoadComponent.value = true;
-
-        const total_shopping = associateProducts.value.reduce((total, a) => total + (a.purchased_value * a.qtde_purchased), 0);
-
-        shoppingPrePayLoad.value = {
-            id: 0,
-            load: 0,
-            shopping_itens: associateProducts.value,
-            total_shopping: total_shopping
-        };
-    };
-
-    const saveShopping = async (informLoad: number): Promise<void> => {
-        const payload: ShoppingContract = {
-            id: null,
-            load: informLoad,
-            shopping_itens: shoppingPrePayLoad.value.shopping_itens,
-            total_shopping: shoppingPrePayLoad.value.total_shopping
-        };
-
-        if (routeShoppingId.value > 0 && !isSavingRef)
-        {
-            const payload: ShoppingContract = {
-                id: routeShoppingId.value,
-                load: shoppingPrePayLoad.value.load,
-                shopping_itens: shoppingPrePayLoad.value.shopping_itens,
-                total_shopping: shoppingPrePayLoad.value.total_shopping
-            };
-                    
-            const res = await updateShoppingDetails(payload);
-
-            if(res.success)
-            {
-                notify(
-                    'positive',
-                    'Compra salva com sucesso!'
-                );
-
-                replaceToShoppingIndex();
-    
-                return;
-            };
-
-            notify(
-                'negative',
-                res.message || 'Erro interno'
-            );
-
-            return;
-        };
-        
-        payload.id = routeShoppingId.value;
-        showInformLoadComponent.value = false;
-
-        const res = await createshopping(payload);
-        const data: number = res.data;
-
-        if(res.success)
-        {
-            SessionStorage.set('shopping_id', data)
-
-            if(!isSavingRef.value)
-            {
-                showPayMentForms.value = true;
-                shoppingPrePayLoad.value.id = data;
-                return;
-            };
-            
-            notify(
-                'positive',
-                res.message
-            );
-
-            replaceToShoppingIndex();
-
-            return;
-        };
-
+    const hasProductChanged = (): boolean => {
         notify(
-            'negative',
-            res.message
+            'info',
+            'Conferindo itens da compra.'
         );
 
-        return;
+        if (associateProducts.value.length !== originalProductsShopping.value.length) {
+            return true;
+        };
+
+        const currentMap = new Map(
+            associateProducts.value.map(item => [
+                item.product_id,
+                { qtde_purchased: item.qtde_purchased, purchased_value: item.purchased_value }
+            ])
+        );
+
+        for (const oldItem of originalProductsShopping.value) {
+            const current = currentMap.get(oldItem.product_id);
+
+            if (!current) return true;
+            
+            if (
+                current.qtde_purchased !== oldItem.qtde_purchased || current.purchased_value !== oldItem.purchased_value
+            ) return true;
+        };
+
+        return false;
     };
 
+    const submitShopping = async (isSaving: boolean): Promise<void> => 
+    {
+        console.log('isSaving é: ', isSaving);
+        
+        isSavingRef.value = isSaving;
+        const exisitInformedLoad = Number(SessionStorage.getItem('inform_load'));
+
+        console.log('Vai conferir se existe uma carga informada: ', exisitInformedLoad);
+        
+        if (exisitInformedLoad > 0)
+        {
+            console.log('Existe uma carga informada: ', exisitInformedLoad);
+            saveShopping(exisitInformedLoad);  
+            return;
+        };
+
+        console.log('Não Existe uma carga informada, vai abrir para informar');
+
+        showInformLoadComponent.value = true;
+    };
+
+    const cloneProducts = (items: ShoppingItemContract[]) =>
+        items.map(item => ({ ...item }));
+        
+    /**
+     * if isSaving = true, just save and return to shopping.index
+     * else isSaving = false, continue to payment
+     * 
+     */
+    const saveShopping = async (informLoad: number): Promise<void> =>
+    {        
+        // Constroi o prePayload da compra
+        console.log('Constroi o prePayload da compra');
+        
+        shoppingPrePayLoad.value = {
+            id: null,
+            load: informLoad,
+            shopping_itens: associateProducts.value,
+            total_shopping: Number(totalShopping.value.replace(',', '.'))
+        };
+
+        console.log('PrePayload da compra: ', shoppingPrePayLoad.value);
+
+        showInformLoadComponent.value = false;
+        // Precisa conferir antes se a venda vai ser apenas para salvar ou se é para finalizar, seguindo fluxos diferentes para cada.
+        // isSaving = true
+        console.log('Vai conferir antes se a venda vai ser apenas para salvar ou se é para finalizar, seguindo fluxos diferentes para cada.');
+        console.log('isSavingRef.value: ', isSavingRef.value);
+        
+        if(isSavingRef.value)
+        {
+            console.log('É apenas para salvar, vai conferir se não era uma venda importada ou se não tem um ID salvo, caso contrário, vai criar a compra e ir para o .index');
+            
+            const existingShoppingId = Number(SessionStorage.getItem('shopping_id'));
+
+            if((routeShoppingId.value > 0 && shoppingPrePayLoad.value.load > 0) || existingShoppingId > 0)
+            {
+                console.log('Tem um ID salvo ou foi importado:', {
+                    routeShoppingId: routeShoppingId.value,
+                    existingShoppingId: existingShoppingId
+                });
+
+                shoppingPrePayLoad.value.id = routeShoppingId.value > 0 ? routeShoppingId.value : existingShoppingId;
+
+                console.log('Vai conferir se possui alteração nos itens.');
+                if(hasProductChanged())
+                {
+                    console.log('hasProductChanged() foi true');
+                    
+                    const res = await updateShoppingDetails(shoppingPrePayLoad.value);
+
+                    if(!res.success)
+                    {
+                        notify(
+                            'negative',
+                            res.message
+                        );
+                        return;
+                    };
+                };
+
+                const res = await updateShoppingDetails(shoppingPrePayLoad.value);
+
+                if (!res.success)
+                {
+                    notify(
+                        'negative',
+                        res.message
+                    );
+
+                    removeSessionData('shopping_id');
+                    removeSessionData('inform_load');
+
+                    return;
+                };
+
+                notify(
+                    'positive',
+                    res.message
+                );
+                
+                replaceToShoppingIndex();
+                return;
+            } else {
+                console.log('Era para salvar e uma nova compra, vai criar a compra e enviar para a .index');
+                const res = await createshopping(shoppingPrePayLoad.value);
+
+                if (!res.success)
+                {
+                    notify(
+                        'negative',
+                        res.message
+                    );
+
+                    removeSessionData('shopping_id');
+                    removeSessionData('inform_load');
+
+                    return;
+                };
+
+                notify(
+                    'positive',
+                    res.message
+                );
+                
+                replaceToShoppingIndex();
+
+                return;
+            };    
+        } else {
+            // Não é para salvar, é para finalizar
+            console.log('Não é para salvar, é para finalizar, vai conferir se não é uma venda importada, caso não seja, vai conferir se existe um ID salvo, caso contrário, será uma nova compra');
+            
+            const existingShoppingId = Number(SessionStorage.getItem('shopping_id'));
+
+            if (routeShoppingId.value > 0 || existingShoppingId > 0)
+            {   
+                console.log('É uma venda importada');
+                shoppingPrePayLoad.value.id = routeShoppingId.value > 0 ? routeShoppingId.value : existingShoppingId;
+                showPayMentForms.value = true;
+
+                console.log('Vai conferir se possui alteração nos itens.');
+                if(hasProductChanged())
+                {
+                    console.log('hasProductChanged() foi true');
+                    
+                    const res = await updateShoppingDetails(shoppingPrePayLoad.value);
+
+                    if(!res.success)
+                    {
+                        notify(
+                            'negative',
+                            res.message
+                        );
+                        return;
+                    };
+                };
+
+                return;
+
+            } else {
+                console.log('Não existe, vai criar uma nova compra');
+                SessionStorage.set('inform_load', informLoad);
+
+                const res = await createshopping(shoppingPrePayLoad.value);
+
+                if (!res.success)
+                {
+                    notify(
+                        'negative',
+                        res.message
+                    );
+
+                    removeSessionData('shopping_id');
+                    removeSessionData('inform_load');
+
+                    return;
+                };
+
+                const returningSaleId = res.data
+
+                notify(
+                    'positive',
+                    res.message
+                );
+                
+                SessionStorage.set('shopping_id', returningSaleId);
+                
+                shoppingPrePayLoad.value.id = returningSaleId;
+
+                showPayMentForms.value = true;
+                return;
+            
+            };
+        };   
+    };
+    
     const finallyShopping = (event: boolean) => {
         showPayMentForms.value = event;
 
-        replaceToShoppingIndex();
-
         removeSessionData('shopping_id');
         removeSessionData('inform_load');
+        
+        replaceToShoppingIndex();
     };
 
     const routeShoppingId = computed(() => {
@@ -661,50 +895,6 @@
         await getAllProductsStock();
     };
 
-    const updateassociateProducts = (id: number) => {
-        const producDataById = associateProducts.value.find(p => p.product_id === id);
-
-        if(!producDataById)
-        {
-            notify(
-                'negative',
-                'Um erro ocorreu, produto não localizado'
-            );
-            
-            return;
-        };
-
-        producDataForUpdate.value = producDataById;
-        showUpdateAssociateProdutc.value = true;
-    };
-
-    const disableCheckBox = (productId: number): boolean => {
-        const productData = associateProducts.value.find(ap => ap.product_id === productId);
-
-        if(
-            productData !== undefined &&
-            !associateProducts.value.map(a => a.product_id).includes(productId) &&
-            productData.product_with_characteristics
-
-        )
-            return false;
-
-        return true;
-    };
-
-    const handleUpdateProductById = (newProduct: ShoppingItemContract): any => 
-    {
-        const productIndex = associateProducts.value.findIndex(ap => ap.product_id === newProduct.product_id);
-
-        if (productIndex > -1)
-        {
-            associateProducts.value.splice(productIndex, 1);
-            associateProducts.value.push(newProduct);
-        };
-
-        return;
-    };
-
     const totalShopping = computed(() => {
         const subTotal = associateProducts.value.reduce((total, p) => {
             return total + (Number(p.purchased_value) * p.qtde_purchased)
@@ -715,18 +905,6 @@
 
     onMounted(async () => {
         await getAllProductsStock();
-
-        const res = await getLastShoppingLoad();
-
-        if(!res.success)
-        {
-            notify(
-                'negative',
-                res.message || 'Erro interno'
-            );
-
-            return;
-        };
 
         if (routeShoppingId.value)
         {
@@ -747,31 +925,28 @@
                 return;
             };
 
-            const shoppingData: ShoppingContract = res.data.shopping;
-            const shoppingItensData: ShoppingItemContract[] = res.data.shoppingWithProducts;
+            associateProducts.value = res.data.shoppingWithProducts;
 
-            associateProducts.value = shoppingItensData;
+            SessionStorage.set('inform_load', res.data.shopping.load);
+
             shoppingPrePayLoad.value = {
-                id: shoppingData.id,
-                load: shoppingData.load,
+                id: res.data.shopping.id,
+                load: res.data.shopping.load,
                 shopping_itens: associateProducts.value,
-                total_shopping: shoppingData.total_shopping
-
+                total_shopping: res.data.shopping.total_shopping
             };
 
-            lastShoppingId.value = shoppingData.id;
+            originalProductsShopping.value = cloneProducts(associateProducts.value);
 
+            console.log('shoppingPrePayLoad: ', shoppingPrePayLoad.value);
+            
             return;
         };
-
-        lastShoppingId.value = res.data;
     });
 
     onUnmounted(() => {
         removeSessionData('shopping_id');
         removeSessionData('inform_load');
-        productsStockData.value = [];
-        isSavingRef.value = false;
     });
  </script>
 
@@ -780,6 +955,5 @@
         display: flex;
         justify-content: end;
         margin: 15px 0 0 0;
-
     }
 </style>

@@ -3,7 +3,7 @@
         <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
             <div class="bg-white p-4">
                 <div class="text-h6">
-                    Formas de Pagamento - {{ props.saleId && props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId ?? props.shoppingId }}
+                    Formas de Pagamento - {{ props.saleId && props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId > 0 ? props.saleId : props.shoppingId }}
                 </div>
 
                 <q-list bordered separator class="bg-white text-black">

@@ -26,16 +26,16 @@ type ShoppingContract struct {
 }
 
 type ShoppingItenContract struct {
-	Id                               int                                                    `json:"id"`
-	ShoppingId                       int                                                    `json:"shopping_id"`
-	ProductId                        int                                                    `json:"product_id"`
-	Name                             string                                                 `json:"name"`
-	QtdePurchased                    int                                                    `json:"qtde_purchased"`
-	PurchasedValue                   float64                                                `json:"purchased_value"`
-	ShoppingItensWithCharacteristics *productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
-	DeletedAt                        time.Time                                              `json:"deleted_at"`
-	CreatedAt                        time.Time                                              `json:"created_at"`
-	UpdatedAt                        time.Time                                              `json:"updated_at"`
+	Id                               int                                                      `json:"id"`
+	ShoppingId                       int                                                      `json:"shopping_id"`
+	ProductId                        int                                                      `json:"product_id"`
+	Name                             string                                                   `json:"name"`
+	QtdePurchased                    int                                                      `json:"qtde_purchased"`
+	PurchasedValue                   float64                                                  `json:"purchased_value"`
+	ShoppingItensWithCharacteristics *[]productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+	DeletedAt                        time.Time                                                `json:"deleted_at"`
+	CreatedAt                        time.Time                                                `json:"created_at"`
+	UpdatedAt                        time.Time                                                `json:"updated_at"`
 }
 
 var conn *pgxpool.Pool
@@ -196,22 +196,24 @@ func (s *ShoppingContract) Create() (int, error) {
 		if p.ShoppingItensWithCharacteristics != nil {
 			u.InfoLogger.Println("Produto possui caracteristicas, vai inserir na shopping_itens_grid e shopping_itens")
 
-			if _, err := tx.Exec(
-				ctx,
-				`
-					INSERT INTO shopping_itens_grid
-						(shopping_id, product_id, product_grid_id, size_saled, grid_qtde)
-					VALUES
-						($1, $2, $3, $4, $5)
-				`,
-				s.Id,
-				p.ProductId,
-				p.ShoppingItensWithCharacteristics.Size,
-				p.QtdePurchased,
-				p.QtdePurchased,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
-				return 0, err
+			for _, c := range *p.ShoppingItensWithCharacteristics {
+				if _, err := tx.Exec(
+					ctx,
+					`
+						INSERT INTO shopping_itens_grid
+							(shopping_id, product_id, product_grid_id, size_saled, grid_qtde)
+						VALUES
+							($1, $2, $3, $4, $5)
+					`,
+					s.Id,
+					p.ProductId,
+					c.Id,
+					c.Size,
+					p.QtdePurchased,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
+					return 0, err
+				}
 			}
 
 			if _, err := tx.Exec(
@@ -439,63 +441,68 @@ func (s *ShoppingContract) UpdateShopping() error {
 	defer tx.Rollback(ctx)
 
 	for _, p := range s.ShoppingItens {
+
 		if p.ShoppingItensWithCharacteristics != nil {
 			u.InfoLogger.Println("O produto possui caracteristicas, vai alterar a shopping_itens_grid e shopping_itens")
 
-			if _, err := tx.Exec(
-				ctx,
-				`
-					UPDATE
-						shopping_itens_grid
-				
-					SET
-						grid_qtde = $2
-	
-					WHERE
-						shopping_id = $1 AND 
-						size_saled = $3 AND
-						product_id = $4
-						
-				`,
-				s.Id,
-				p.ShoppingItensWithCharacteristics.GridQtde,
-				p.ShoppingItensWithCharacteristics.Size,
-				p.ProductId,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
-				return err
+			for _, c := range *p.ShoppingItensWithCharacteristics {
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							shopping_itens_grid
+					
+						SET
+							grid_qtde = $2
+		
+						WHERE
+							shopping_id = $1 AND 
+							size_saled = $3 AND
+							product_id = $4
+							
+					`,
+					s.Id,
+					c.GridQtde,
+					c.Size,
+					p.ProductId,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
+					return err
+				}
 			}
 
-			if _, err := tx.Exec(
-				ctx,
-				`
-					UPDATE
-						shopping_itens
-				
-					SET
-						qtde_purchased = (
-							SELECT
-								COALESCE(SUM(grid_qtde), 0)
-
-							FROM
-								shopping_itens_grid
-
-							WHERE
-								shopping_id = $1 AND 
-								size_saled = $2 AND 
-								product_id = $3
-						)
-							
-					WHERE
-						shopping_id = $1 AND 
-						product_id = $3
-				`,
-				s.Id,
-				p.ShoppingItensWithCharacteristics.Size,
-				p.ProductId,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
-				return err
+			for _, c := range *p.ShoppingItensWithCharacteristics {
+				if _, err := tx.Exec(
+					ctx,
+					`
+						UPDATE
+							shopping_itens
+					
+						SET
+							qtde_purchased = (
+								SELECT
+									COALESCE(SUM(grid_qtde), 0)
+	
+								FROM
+									shopping_itens_grid
+	
+								WHERE
+									shopping_id = $1 AND 
+									size_saled = $2 AND 
+									product_id = $3
+							)
+								
+						WHERE
+							shopping_id = $1 AND 
+							product_id = $3
+					`,
+					s.Id,
+					c.Size,
+					p.ProductId,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao alterar os dados da compra:", err)
+					return err
+				}
 			}
 		}
 
@@ -550,11 +557,11 @@ func (s *ShoppingContract) UpdateShopping() error {
 		`,
 		s.Id,
 	); err != nil {
-		u.ErrorLogger.Println("Erro ao alterar o total da venda depois da inserção/alteração dos itens: ", err)
+		u.ErrorLogger.Println("Erro ao alterar o total da compra depois da inserção/alteração dos itens: ", err)
 		return err
 	}
 
-	u.InfoLogger.Println("Valor da venda atualizado.")
+	u.InfoLogger.Println("Valor da compra atualizado.")
 
 	if err := tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Println("Erro ao comitar: ", err)

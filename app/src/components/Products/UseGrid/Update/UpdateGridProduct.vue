@@ -100,7 +100,7 @@
             emits('return:grids', productCharacteristics.value);
             emits('close', true);
             
-        } catch (error) {
+        } catch (error: any) {
             if(error.inner)
             {
                 formErrors.value = {};

@@ -13,7 +13,7 @@ export async function loginService(payLoad: AuthContract): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,

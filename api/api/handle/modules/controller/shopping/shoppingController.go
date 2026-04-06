@@ -127,6 +127,7 @@ func HandlePutUpdateShopping(w http.ResponseWriter, r *http.Request) {
 	var shoppingDetails shopping.ShoppingContract
 
 	if err := json.NewDecoder(r.Body).Decode(&shoppingDetails); err != nil {
+		u.ErrorLogger.Println("Erro ao ler os dados da edição da compra:", err)
 		w.WriteHeader(http.StatusBadRequest)
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao ler os dados da edição da compra."))
@@ -148,7 +149,7 @@ func HandlePutUpdateShopping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Forma de pagamento alterada com sucesso!"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Compra alterada com sucesso!"))
 }
 
 func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {

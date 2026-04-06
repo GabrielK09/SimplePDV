@@ -13,7 +13,7 @@ export async function getAll(): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -34,7 +34,7 @@ export async function createCustomer(payLoad: CustomerContract): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -55,7 +55,7 @@ export async function deleteCustomer(customerId: number): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -76,7 +76,7 @@ export async function findCustomerById(customerId: number): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
