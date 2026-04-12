@@ -79,10 +79,8 @@
                                     <q-td key="total" :props="props">
                                         R$ {{
                                             hasCharacteristics(props.row) 
-                                                ? (props.row.price * props.row.qtde)
-                                                    .toFixed(2)
-                                                    .replace('.', ',')
-                                                : (props.row.price * props.row.product_with_characteristics.reduce((total: any, a: any) => total + (a.grid_qtde), 0))
+                                                ? (props.row.price * props.row.product_with_characteristics.reduce((total: any, a: any) => total + (a.grid_qtde), 0)).toFixed(2).replace('.', ',')
+                                                : (props.row.price * props.row.qtde).toFixed(2).replace('.', ',')
                                         }}
                                     </q-td>
 
@@ -469,7 +467,7 @@
                     name: p.name,
                     price: p.price,
                     qtde: p.qtde ?? 1,
-                    product_with_characteristics: p.product_with_characteristics
+                    product_with_characteristics: p.product_with_characteristics ?? []
 
                 });
             };

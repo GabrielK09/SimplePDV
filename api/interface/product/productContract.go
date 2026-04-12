@@ -452,13 +452,13 @@ func Active(id int, updatedAt time.Time) error {
 	return nil
 }
 
-func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grids []ProductGrids) error {
+func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grid *ProductGrids) error {
 	if !haveGrid && qtde <= 0 {
 		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
 
 	if !haveGrid {
-		_, err := tx.Exec(
+		if _, err := tx.Exec(
 			ctx,
 			`
 				UPDATE	
@@ -472,33 +472,33 @@ func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde in
 			`,
 			p.Id,
 			qtde,
-		)
-
-		return err
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao descontar a qtde:", err)
+			return err
+		}
 	} else {
-		var err error
+		if _, err := tx.Exec(
+			ctx,
+			`
+				UPDATE	
+					product_grids
 
-		for _, grid := range grids {
-			_, err = tx.Exec(
-				ctx,
-				`
-					UPDATE	
-						product_grids
+				SET
+					grid_qtde = grid_qtde - $3
 
-					SET
-						grid_qtde = grid_qtde - $3
-
-					WHERE	
-						size = $1 AND
-						product_id = $2
-				`,
-				grid.Size,
-				grid.ProductId,
-				grid.GridQtde,
-			)
+				WHERE	
+					size = $1 AND
+					product_id = $2
+			`,
+			grid.Size,
+			grid.ProductId,
+			grid.GridQtde,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao descontar a qtde:", err)
+			return err
 		}
 
-		_, err = tx.Exec(
+		if _, err := tx.Exec(
 			ctx,
 			`
 				UPDATE
@@ -515,19 +515,23 @@ func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde in
 				WHERE
 					id = $1
 			`,
-		)
-
-		return err
+			p.Id,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao descontar a qtde:", err)
+			return err
+		}
 	}
+
+	return nil
 }
 
-func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grids []ProductGrids) error {
+func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grid *ProductGrids) error {
 	if !haveGrid && qtde <= 0 {
 		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
 
 	if !haveGrid {
-		_, err := tx.Exec(
+		if _, err := tx.Exec(
 			ctx,
 			`
 				UPDATE	
@@ -541,43 +545,33 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, have
 			`,
 			p.Id,
 			qtde,
-		)
-
-		if err != nil {
-			u.InfoLogger.Println(err)
-
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao adicionar a qtde:", err)
+			return err
 		}
-
-		return err
 	} else {
-		var err error
+		if _, err := tx.Exec(
+			ctx,
+			`
+				UPDATE	
+					product_grids
 
-		for _, grid := range grids {
-			_, err = tx.Exec(
-				ctx,
-				`
-					UPDATE	
-						product_grids
+				SET
+					grid_qtde = grid_qtde + $3
 
-					SET
-						grid_qtde = grid_qtde + $3
-
-					WHERE	
-						size = $1 AND
-						product_id = $2
-				`,
-				grid.Size,
-				grid.ProductId,
-				grid.GridQtde,
-			)
-
-			if err != nil {
-				u.InfoLogger.Println(err)
-
-			}
+				WHERE	
+					size = $1 AND
+					product_id = $2
+			`,
+			grid.Size,
+			grid.ProductId,
+			grid.GridQtde,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao adicionar a qtde:", err)
+			return err
 		}
 
-		_, err = tx.Exec(
+		if _, err := tx.Exec(
 			ctx,
 			`
 				UPDATE
@@ -595,15 +589,13 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, have
 					id = $1
 			`,
 			p.Id,
-		)
-
-		if err != nil {
-			u.InfoLogger.Println(err)
-
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao adicionar a qtde:", err)
+			return err
 		}
-
-		return err
 	}
+
+	return nil
 }
 
 // Processamento de qtdes futuras e reservadas

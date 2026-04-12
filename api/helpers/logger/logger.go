@@ -9,6 +9,7 @@ import (
 var GeneralLogger *log.Logger
 var InfoLogger *log.Logger
 var ErrorLogger *log.Logger
+var SuccessLoger *log.Logger
 
 func Logger() {
 	logDir := "log"
@@ -25,7 +26,8 @@ func Logger() {
 		log.Fatal("Erro ao abrir a log:", err)
 	}
 
-	GeneralLogger = log.New(file, "General Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
-	ErrorLogger = log.New(file, "Error Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
-	InfoLogger = log.New(file, "Info Logger: \t", log.Ldate|log.Ltime|log.Lshortfile)
+	GeneralLogger = log.New(file, "General Logger:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	ErrorLogger = log.New(file, "Error Logger:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	InfoLogger = log.New(file, "Info Logger:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	SuccessLoger = log.New(file, "Success Logger:\t", log.Ldate|log.Ltime|log.Lshortfile)
 }

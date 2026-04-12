@@ -52,7 +52,6 @@ func main() {
 
 	case "resetSite":
 		jobs.ResetSite(dbConn, ctx)
-		jobs.CreateUser(dbConn, ctx)
 		return
 	}
 

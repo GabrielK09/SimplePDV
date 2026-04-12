@@ -108,7 +108,7 @@
                                         class="text-center flex flex-center"
                                         :class="{
                                             'text-green-600': props.row.status === 'Concluída',
-                                            'text-red-600': props.row.status === 'Cancelado'
+                                            'text-red-600': props.row.status === 'Cancelada'
                                         }"
                                     >
                                         {{ col.value }}

@@ -23,12 +23,7 @@ func ResetSite(db *pgxpool.Pool, ctx context.Context) {
 
 	defer tx.Rollback(ctx)
 
-	if _, err := tx.Exec(
-		ctx,
-		resetSql,
-	); err != nil {
-		u.ErrorLogger.Fatal("Erro ao criar o usuário.", err)
-	}
+	CreateUser(db, ctx)
 
 	if err := tx.Commit(ctx); err != nil {
 		u.ErrorLogger.Fatal("Erro ao commitar o create do usuário.", err)

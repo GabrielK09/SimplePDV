@@ -2,7 +2,7 @@
     <div class="border p-4">
         <q-table
             title="Grade"
-            :rows="props.productData.productWithCharacteristics"
+            :rows="props.productData.product_with_characteristics"
             hide-bottom
             :columns="gridTableColumn"
             row-key="name"
@@ -54,7 +54,7 @@
         :grid-id="selectedGridId"
         :product-id="props.productId"
         :grid-full-object="gridFullObject"
-        :selected-sizes="props.productData.productWithCharacteristics"
+        :selected-sizes="props.productData.product_with_characteristics"
         @return:grids="handleUpdateGrid($event)"
         @close="showUpdateGrid = !$event"
     /> 
@@ -124,11 +124,11 @@
     };
 
     const deleteGrid = async (row: any) => {
-        const index = props.productData.productWithCharacteristics.indexOf(row);
+        const index = props.productData.product_with_characteristics.indexOf(row);
         
         if(index > -1)
         {
-            const item = props.productData.productWithCharacteristics[index];
+            const item = props.productData.product_with_characteristics[index];
 
             if(item?.product_id && item?.id)
             {
@@ -147,13 +147,13 @@
                 };
             };
 
-            props.productData.productWithCharacteristics.splice(index, 1);
+            props.productData.product_with_characteristics.splice(index, 1);
             
         };
     };
 
     const handleUpdateGrid = (newGrid: ProductCharacteristicsContract) => {
-        const oldGrid = props.productData.productWithCharacteristics.find(c => c.id === newGrid.id);
+        const oldGrid = props.productData.product_with_characteristics.find(c => c.id === newGrid.id);
 
         if (!oldGrid)
         {
@@ -164,12 +164,12 @@
             return;
         };
 
-        const index = props.productData.productWithCharacteristics.indexOf(oldGrid);
+        const index = props.productData.product_with_characteristics.indexOf(oldGrid);
 
         if (index > -1)
         {
-            props.productData.productWithCharacteristics.splice(index, 1);
-            props.productData.productWithCharacteristics.push(formatGridDataForPush(newGrid));
+            props.productData.product_with_characteristics.splice(index, 1);
+            props.productData.product_with_characteristics.push(formatGridDataForPush(newGrid));
             
         } else {
             return;  

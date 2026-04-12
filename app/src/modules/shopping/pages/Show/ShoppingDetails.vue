@@ -1,10 +1,9 @@
 <template>
     <q-dialog v-model="confirm" persistent>
-        <q-card v-show="showInternal" class="text-base">
+        <q-card class="text-base dialog">
             <q-card-section>
                 <header class="text-gray-600 text-center">
                     <h2>Detalhes da compra N° {{ props.shoppingId }}</h2>
-                    <pre>{{ shoppingData.shopping_itens }}</pre>
                 </header>
 
                 <article class="flex flex-col gap-4">
@@ -21,6 +20,7 @@
                         </span>
 
                         <div class="mt-4 p-2">
+                            <pre>{{ shoppingData.shopping_itens }}</pre>
                             <q-table
                                 v-model:pagination="pagination"
                                 :rows="shoppingData.shopping_itens"
@@ -40,26 +40,16 @@
                                             </span>
                                         </q-td>
 
-                                        <q-td key="purchased_value" :props="props">
-                                            <q-input
-                                                v-model.number="props.row.product.purchased_value"
-                                                type="number"
-                                                class="w-12 flex ml-auto mr-auto"
-                                                input-class="text-center"
-                                                dense
-                                                disable
-                                            />
+                                        <q-td key="qtde_purchased" :props="props">
+                                            <span>
+                                                {{ props.row.product.qtde_purchased }}
+                                            </span>
                                         </q-td>
 
-                                        <q-td key="qtde_purchased" :props="props">
-                                            <q-input
-                                                v-model.number="props.row.product.qtde_purchased"
-                                                type="number"
-                                                class="w-12 flex ml-auto mr-auto"
-                                                input-class="text-center"
-                                                dense
-                                                disable
-                                            />
+                                        <q-td key="purchased_value" :props="props">
+                                             <span>
+                                                R$ {{ props.row.product.purchased_value.toFixed(2).replace('.', ',') }}
+                                            </span>
                                         </q-td>
 
                                         <q-td key="actions" :props="props">
@@ -85,7 +75,7 @@
                                     </q-tr>
 
                                     <q-tr 
-                                        v-if="isExpanded(props.row.product.product_id) && hasCharacteristics(props.row.product)"
+                                        v-if="isExpanded(props.row.product.product_id) && hasCharacteristics(props.row.product_with_characteristics)"
                                         :props="props"
                                     >
                                         <q-td colspan="100%" class="bg-gray-200">
@@ -141,7 +131,7 @@
                         <span
                             :class="{
                                 'text-green-600': shoppingData.status === 'Concluída',
-                                'text-red-600': shoppingData.status === 'Cancelado'
+                                'text-red-600': shoppingData.status === 'Cancelada'
                             }"
                         >
                             {{ shoppingData.status }}
@@ -196,6 +186,7 @@
             field: 'qtde_purchased',
             label: 'Qtde comprada',
             name: 'qtde_purchased',
+            align: 'center'
         },
         {
             field: 'purchased_value',
@@ -208,7 +199,7 @@
         },
         {
             name: 'actions',
-            label: 'Outros',
+            label: '',
             field: 'actions',
             align: 'right'
         }
@@ -282,3 +273,12 @@
         showInternal.value = !showInternal.value;
     });
 </script>
+
+<style>
+    .dialog {
+        width: 100%;
+        max-width: 1150px;
+        min-width: 320px;
+        border-radius: 18px;
+    }
+</style>

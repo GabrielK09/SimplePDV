@@ -47,7 +47,7 @@ func CreateUser(db *pgxpool.Pool, ctx context.Context) {
 	if _, err := tx.Exec(
 		ctx,
 		`
-			TRUNCATE users
+			TRUNCATE users RESTART IDENTITY CASCADE;
 		`,
 	); err != nil {
 		u.ErrorLogger.Fatal("Erro ao truncar usuários: ", err)

@@ -58,9 +58,8 @@ func HandleGetLastShoppingLoad(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao retornar o ID: ", err)
-		resp := responsehelper.Response(false, err, "Falha na operação.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Falha na operação."))
 		return
 	}
 
@@ -193,7 +192,7 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productCharacteristics, err := productcharacteristics.GetAll()
+	productCharacteristics, err := shopping.ShowShoppingGridItens(shoppingId)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -203,16 +202,11 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var productsWithCharacteristics []ProductWithCharacteristics
-	characteristicsMap := make(map[int][]productcharacteristics.ProductCharacteristicsContract)
-
-	for _, c := range productCharacteristics {
-		characteristicsMap[c.ProductId] = append(characteristicsMap[c.ProductId], c)
-	}
 
 	for _, p := range *shoppingIntesData {
 		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
 			Product:         p,
-			Characteristics: characteristicsMap[p.Id],
+			Characteristics: *productCharacteristics,
 		})
 	}
 

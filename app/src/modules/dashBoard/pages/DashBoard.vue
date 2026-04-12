@@ -196,6 +196,10 @@
             label: 'Valor do produto',
             field: 'item_sale_value',
             align: 'center',
+            format(val: number) {
+                return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
+            }
+
         },
         {
             name: 'qtde',

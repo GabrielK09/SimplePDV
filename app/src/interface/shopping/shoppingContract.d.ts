@@ -3,7 +3,7 @@ interface ShoppingContract {
     load: number|null;
     shopping_itens: ShoppingItemContract[];
     total_shopping: number|null;
-    status?: 'Pendente'|'Cancelado'|'Concluída'|'';
+    status?: 'Pendente'|'Cancelada'|'Concluída'|'';
 };
 
 interface ShoppingItemContract {

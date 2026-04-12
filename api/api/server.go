@@ -136,7 +136,6 @@ func StartServer() {
 	api.HandleFunc("/sale/new-itens", saleController.HandleNewItens)
 	api.HandleFunc("/sale/all", saleController.HandleGetSale)
 	api.HandleFunc("/sale/details/{id}", saleController.HandleGetSaleWithProducts)
-	api.HandleFunc("/sale/cancel", paymentcontroller.HandlePutCancelSaleOrShopping)
 
 	// Customers \\
 	api.HandleFunc("/customer/all", customerController.HandleGetCustomer)
@@ -169,6 +168,8 @@ func StartServer() {
 	api.HandleFunc("/pay-ment-forms/all", paymentFormscontroller.HandleGetPayMentForms)
 
 	api.HandleFunc("/pay-ment-forms/update/pix-key", paymentFormscontroller.HandlePutPayMentForms)
+
+	api.HandleFunc("/cancel-operation", paymentcontroller.HandlePutCancelSaleOrShopping)
 
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 

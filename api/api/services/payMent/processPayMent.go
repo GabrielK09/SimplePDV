@@ -8,7 +8,6 @@ import (
 	"myApi/interface/cashRegister"
 	"myApi/interface/customer"
 	"myApi/interface/product"
-	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
 	"myApi/interface/shopping"
 
@@ -363,23 +362,25 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 
 		} else {
 			u.InfoLogger.Println("A venda possui grade")
+
 			saleItensGridRows, err := tx.Query(
 				ctx,
 				`
 					SELECT
 						product_id,
-						qtde
+						grid_qtde,
+						size_saled
+
 					FROM
-						sale_itens
+						sale_itens_grid
 					WHERE
-						status = 'Concluída' AND
 						sale_id = $1
 				`,
-				payMent.ShoppingId,
+				payMent.SaleId,
 			)
 
 			if err != nil {
-				u.ErrorLogger.Println("Erro ao pegar os itens da venda:", err)
+				u.ErrorLogger.Println("Erro ao pegar a grade dos itens da venda:", err)
 				return err
 			}
 
@@ -401,12 +402,20 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 				saleItensGrids = append(saleItensGrids, saleItemGrids)
 			}
 
-			for _, i := range saleItensGrids {
-				product := product.ProductContract{
-					Id: i.ProductId,
+			for _, grid := range saleItensGrids {
+				productDataId := product.ProductContract{
+					Id: grid.ProductId,
 				}
 
-				if err := product.DiscountedQtde(ctx, tx, 0, true, saleItensGrids); err != nil {
+				productGrid := product.ProductGrids{
+					ProductId: productDataId.Id,
+					Size:      grid.Size,
+					GridQtde:  grid.GridQtde,
+				}
+
+				u.InfoLogger.Println("Vai adicionar a qtde de grade do produto (COMPRA):", productGrid)
+
+				if err := productDataId.DiscountedQtde(ctx, tx, 0, true, &productGrid); err != nil {
 					u.ErrorLogger.Println("Erro ao descontar a qtde da grade do item ao estoque:", err)
 					return err
 				}
@@ -552,6 +561,8 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 					shopping_itens_grid				
 				WHERE
 					shopping_id = $1
+				LIMIT 
+					1
 			`,
 			payMent.ShoppingId,
 		).Scan(&shoppingItensGridId); err != nil && !errors.Is(err, pgx.ErrNoRows) {
@@ -559,7 +570,7 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 			return err
 		}
 
-		if shoppingItensGridId < 0 {
+		if shoppingItensGridId == 0 {
 			u.InfoLogger.Println("A compra não possui grade")
 			shoppingItensRows, err := tx.Query(
 				ctx,
@@ -613,14 +624,14 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 				}
 			}
 		} else {
-			u.InfoLogger.Println("A compra não grade")
+			u.InfoLogger.Println("A compra possui grade")
 			shoppingItensGridRows, err := tx.Query(
 				ctx,
 				`
 					SELECT
 						product_id,
-						grid_qtde,
-						size_saled
+						size_saled,
+						grid_qtde
 
 					FROM
 						shopping_itens_grid
@@ -644,8 +655,8 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 
 				if err := shoppingItensGridRows.Scan(
 					&shoppingItenGrid.ProductId,
-					&shoppingItenGrid.GridQtde,
 					&shoppingItenGrid.Size,
+					&shoppingItenGrid.GridQtde,
 				); err != nil {
 					u.ErrorLogger.Println("Erro ao pegar a grade dos itens da compra:", err)
 					return err
@@ -655,17 +666,26 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 			}
 
 			for _, i := range shoppingItensGrids {
-				product := product.ProductContract{
+				productDataId := product.ProductContract{
 					Id: i.ProductId,
 				}
 
-				if err := product.AddQtde(ctx, tx, 0, true, shoppingItensGrids); err != nil {
+				productGrid := product.ProductGrids{
+					ProductId: productDataId.Id,
+					Size:      i.Size,
+					GridQtde:  i.GridQtde,
+				}
+
+				u.InfoLogger.Println("Vai adicionar a qtde de grade do produto (COMPRA):", productGrid)
+
+				if err := productDataId.AddQtde(ctx, tx, 0, true, &productGrid); err != nil {
 					u.ErrorLogger.Println("Erro ao adicionar a qtde do item ao estoque:", err)
 					return err
 				}
+
+				u.SuccessLoger.Println("Terminou de adicionar as qtdes das grades dos itens")
 			}
 		}
-
 	} // PROCESSAR O PAGAMENTO DA COMPRA
 
 	if err = tx.Commit(ctx); err != nil {
@@ -697,20 +717,16 @@ func CancelSaleOrShopping(c CancelContract) error {
 			ctx,
 			`
 				SELECT
-					id,
 					customer_id,
 					sale_value,
 					status
-
 				FROM
 					sales
-				
 				WHERE
 					id = $1
 			`,
 			c.SaleId,
 		).Scan(
-			&s.Id,
 			&s.CustomerId,
 			&s.SaleValue,
 			&s.Status,
@@ -719,170 +735,146 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return err
 		}
 
-		var payMentFormsFromSale []PayMentBody
-
 		if s.Status == "Cancelada" {
 			u.ErrorLogger.Printf("Essa venda n° %d já está cancelada", s.Id)
 			return fmt.Errorf("Essa venda n° %d já está cancelada", s.Id)
 		}
 
-		itensSaleRows, err := tx.Query(
+		var saleItensGridId int
+
+		if err := tx.QueryRow(
 			ctx,
 			`
 				SELECT
-					p.use_grid,
-					si.product_id,
-					si.qtde,
-					si.status
+					id
 				FROM
-					sale_itens si
-				INNER JOIN
-					products p on p.id = si.product_id
+					sale_itens_grid
 				WHERE
-					si.sale_id = $1
+					sale_id = $1
+				LIMIT
+					1
 			`,
 			c.SaleId,
-		)
-
-		if err != nil {
-			u.ErrorLogger.Println("Erro ao executar a query: ", err)
+		).Scan(
+			&saleItensGridId,
+		); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se possui grids na venda:", err)
 			return err
 		}
 
-		defer itensSaleRows.Close()
+		if saleItensGridId == 0 {
+			itensSaleRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						qtde,
+						status
+					FROM
+						sale_itens
+					WHERE
+						sale_id = $1
+				`,
+				c.SaleId,
+			)
 
-		var saleProducts []struct {
-			UseGrid   bool
-			ProductId int
-			Qtde      int
-			Status    string
-		}
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				u.ErrorLogger.Println("Erro ao executar a query: ", err)
+				return err
+			}
 
-		for itensSaleRows.Next() {
-			var p struct {
-				UseGrid   bool
+			defer itensSaleRows.Close()
+
+			var saleProducts []struct {
 				ProductId int
 				Qtde      int
 				Status    string
 			}
 
-			if err := itensSaleRows.Scan(
-				&p.UseGrid,
-				&p.ProductId,
-				&p.Qtde,
-				&p.Status,
-			); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
+			for itensSaleRows.Next() {
+				var product struct {
+					ProductId int
+					Qtde      int
+					Status    string
+				}
+
+				if err := itensSaleRows.Scan(
+					&product.ProductId,
+					&product.Qtde,
+					&product.Status,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
+					return err
+				}
+
+				saleProducts = append(saleProducts, product)
+			}
+
+			for _, p := range saleProducts {
+				productData := product.ProductContract{
+					Id: p.ProductId,
+				}
+
+				if err := productData.AddQtde(ctx, tx, p.Qtde, false, nil); err != nil {
+					u.ErrorLogger.Println("Erro ao retornar a qtde do produto: ", err)
+					return err
+				}
+			}
+		} else {
+			itensSaleGridRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						size_saled,
+						grid_qtde
+					FROM
+						sale_itens_grid
+					WHERE				
+						sale_id = $1
+				`,
+				c.SaleId,
+			)
+
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				u.ErrorLogger.Println("Erro ao executar a query: ", err)
 				return err
 			}
 
-			u.InfoLogger.Println("Dados produto localizado:", p)
+			var productGrids []product.ProductGrids
 
-			saleProducts = append(saleProducts, p)
-		}
+			defer itensSaleGridRows.Close()
 
-		for _, p := range saleProducts {
-			u.InfoLogger.Println("Vai fazer o update dos item: ", p)
+			for itensSaleGridRows.Next() {
+				var productGrid product.ProductGrids
 
-			if p.UseGrid {
-				u.InfoLogger.Println("Produto da venda possuia grade informada, vai retornar a qtde da grade: ", p)
-				u.InfoLogger.Println("Vai localizar qual grade e qtde foi vendida.")
-
-				var productGrid struct {
-					SizeSaled productcharacteristics.Size
-					GridQtde  int
-				}
-
-				if err := tx.QueryRow(
-					ctx,
-					`
-						SELECT
-							size_saled,
-							grid_qtde										
-
-						FROM
-							sale_itens_grid
-
-						WHERE
-							product_id = $1 AND
-							sale_id = $2
-					`,
-					p.ProductId,
-					c.SaleId,
-				).Scan(
-					&productGrid.SizeSaled,
+				if err := itensSaleGridRows.Scan(
+					&productGrid.ProductId,
+					&productGrid.Size,
 					&productGrid.GridQtde,
 				); err != nil {
-					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+					u.ErrorLogger.Println("Erro ao ler os dados das grades dos produtos:", err)
 					return err
 				}
 
-				u.InfoLogger.Println("Vai fazer o update na product_grids.")
-				if _, err := tx.Exec(
-					ctx,
-					`
-						UPDATE
-							product_grids
+				productGrids = append(productGrids, productGrid)
+			}
 
-						SET
-							grid_qtde = grid_qtde + $1
-
-						WHERE
-							product_id = $2 AND
-							size = $3
-					`,
-					productGrid.GridQtde,
-					p.ProductId,
-					productGrid.SizeSaled,
-				); err != nil {
-					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
-					return err
+			for _, grid := range productGrids {
+				productDataId := product.ProductContract{
+					Id: grid.ProductId,
 				}
 
-				u.InfoLogger.Println("Vai fazer o update na products para a qtde total das grades .")
-				if _, err := tx.Exec(
-					ctx,
-					`
-						UPDATE
-							products
-
-						SET
-							qtde = (
-								SELECT
-									COALESCE(SUM(grid_qtde), 0)
-								FROM
-									product_grids
-								WHERE
-									product_id = $1 AND
-									use_grid = true
-							)
-
-						WHERE
-							id = $1
-					`,
-					p.ProductId,
-				); err != nil {
-					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
-					return err
+				productGrid := product.ProductGrids{
+					ProductId: productDataId.Id,
+					Size:      grid.Size,
+					GridQtde:  grid.GridQtde,
 				}
 
-			} else {
-				if _, err := tx.Exec(
-					ctx,
-					`
-						UPDATE
-							products
+				u.InfoLogger.Println("Vai adicionar a qtde de grade do produto (COMPRA):", productGrid)
 
-						SET
-							qtde = qtde + $2
-
-						WHERE
-							id = $1
-					`,
-					p.ProductId,
-					p.Qtde,
-				); err != nil {
-					u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
+				if err := productDataId.AddQtde(ctx, tx, 0, true, &productGrid); err != nil {
+					u.ErrorLogger.Println("Erro ao retornar a qtde das grades do produto da venda:", err)
 					return err
 				}
 			}
@@ -893,10 +885,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 			`
 				UPDATE
 					sales
-
 				SET
 					status = 'Cancelada'
-
 				WHERE
 					id = $1
 			`,
@@ -947,6 +937,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 
 		defer payMentFormsSelect.Close()
 
+		var payMentFormsFromSale []PayMentBody
+
 		for payMentFormsSelect.Next() {
 			var pf PayMentBody
 
@@ -986,29 +978,25 @@ func CancelSaleOrShopping(c CancelContract) error {
 	}
 
 	if c.ShoppingId > 0 {
+		u.InfoLogger.Println("Cancelando uma compra")
+
 		var s shopping.ShoppingContract
-
-		querySelectShopping := `
-			SELECT
-				id,
-				load,
-				total_shopping,
-				status
-
-			FROM
-				shopping
-			
-			WHERE
-				id = $1
-		`
 
 		if err := tx.QueryRow(
 			ctx,
-			querySelectShopping,
+			`
+				SELECT
+					total_shopping,
+					status
+
+				FROM
+					shopping
+				
+				WHERE
+					id = $1
+			`,
 			c.ShoppingId,
 		).Scan(
-			&s.Id,
-			&s.Load,
 			&s.TotalShopping,
 			&s.Status,
 		); err != nil {
@@ -1016,117 +1004,179 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return err
 		}
 
-		var payMentFormsFromSale []PayMentBody
-
-		if s.Status == "Cancelado" {
-			u.ErrorLogger.Printf("Essa compra n° %d, lote n° %d, já está cancelada", s.Id, s.Load)
-			return fmt.Errorf("Essa compra  n° %d, lote n° %d, já está cancelada", s.Id, s.Load)
+		if s.Status == "Cancelada" {
+			u.ErrorLogger.Printf("Essa compra n° %d, já está cancelada", s.Id)
+			return fmt.Errorf("Essa compra  n° %d, já está cancelada", s.Id)
 		}
 
-		querySelectItensShopping := `
-			SELECT
-				product_id,
-				qtde_purchased
-			FROM
-				shopping_itens
-			WHERE
-				id = $1
-		`
+		var shoppingItensGridId int
 
-		itensShoppingRows, err := tx.Query(
+		if err := tx.QueryRow(
 			ctx,
-			querySelectItensShopping,
-			s.Id,
-		)
-
-		if err != nil {
-			u.ErrorLogger.Println("Erro ao executar o query: ", err)
+			`
+				SELECT
+					id
+				FROM
+					shopping_itens_grid
+				WHERE
+					shopping_id = $1
+				LIMIT
+					1
+			`,
+			c.ShoppingId,
+		).Scan(
+			&shoppingItensGridId,
+		); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se possui grids na compra:", err)
 			return err
 		}
 
-		defer itensShoppingRows.Close()
+		if shoppingItensGridId == 0 {
+			itensShoppingRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						qtde_purchased
+					FROM
+						shopping_itens
+					WHERE
+						shopping_id = $1
+				`,
+				c.ShoppingId,
+			)
 
-		var shoppingProducts []struct {
-			ProductId int
-			Qtde      int
-		}
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao executar o query: ", err)
+				return err
+			}
 
-		for itensShoppingRows.Next() {
-			var sp struct {
+			defer itensShoppingRows.Close()
+
+			var shoppingProducts []struct {
 				ProductId int
 				Qtde      int
 			}
 
-			if err := itensShoppingRows.Scan(
-				&sp.ProductId,
-				&sp.Qtde,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
-				return err
+			for itensShoppingRows.Next() {
+				var sp struct {
+					ProductId int
+					Qtde      int
+				}
+
+				if err := itensShoppingRows.Scan(
+					&sp.ProductId,
+					&sp.Qtde,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao conferir os dados: ", err)
+					return err
+				}
+
+				shoppingProducts = append(shoppingProducts, sp)
 			}
 
-			shoppingProducts = append(shoppingProducts, sp)
-		}
+			for _, p := range shoppingProducts {
+				product := product.ProductContract{
+					Id: p.ProductId,
+				}
 
-		for _, p := range shoppingProducts {
-			queryUpdateDiscountQtdeStock := `
-				UPDATE
-					products
-
-				SET
-					qtde = qtde - $2
-
-				WHERE
-					id = $1
-			`
-
-			if _, err := tx.Exec(
+				if err := product.DiscountedQtde(ctx, tx, p.Qtde, false, nil); err != nil {
+					u.ErrorLogger.Println("Erro ao discontar a qtde do item da compra:", err)
+					return err
+				}
+			}
+		} else {
+			itensShoppingGridRows, err := tx.Query(
 				ctx,
-				queryUpdateDiscountQtdeStock,
-				p.ProductId,
-				p.Qtde,
-			); err != nil {
-				u.ErrorLogger.Println("Erro ao retornar a qtde dos produtos da venda para o estoque: ", err)
-				return err
+				`
+					SELECT
+						product_id,
+						size_saled,
+						grid_qtde
+					FROM
+						shopping_itens_grid
+					WHERE				
+						shopping_id = $1
+				`,
+				c.ShoppingId,
+			)
 
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				u.ErrorLogger.Println("Erro ao executar a query: ", err)
+				return err
+			}
+
+			var productGrids []product.ProductGrids
+
+			defer itensShoppingGridRows.Close()
+
+			for itensShoppingGridRows.Next() {
+				var productGrid product.ProductGrids
+
+				if err := itensShoppingGridRows.Scan(
+					&productGrid.ProductId,
+					&productGrid.Size,
+					&productGrid.GridQtde,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao ler os dados das grades dos produtos:", err)
+					return err
+				}
+
+				productGrids = append(productGrids, productGrid)
+			}
+
+			for _, grid := range productGrids {
+				productDataId := product.ProductContract{
+					Id: grid.ProductId,
+				}
+
+				productGrid := product.ProductGrids{
+					ProductId: productDataId.Id,
+					Size:      grid.Size,
+					GridQtde:  grid.GridQtde,
+				}
+
+				u.InfoLogger.Println("Vai adicionar a qtde de grade do produto (COMPRA):", productGrid)
+
+				if err := productDataId.DiscountedQtde(ctx, tx, 0, true, &productGrid); err != nil {
+					u.ErrorLogger.Println("Erro ao descontar a qtde da grade do item ao estoque:", err)
+					return err
+				}
 			}
 		}
 
-		queryCancelShopping := `
-			UPDATE
-				shopping
-
-			SET
-				status = 'Cancelada'
-
-			WHERE
-				id = $1
-		`
+		u.InfoLogger.Println("Vai cancelar a compra")
 
 		if _, err = tx.Exec(
 			ctx,
-			queryCancelShopping,
-			s.Id,
+			`
+				UPDATE
+					shopping
+				SET
+					status = 'Cancelada'
+
+				WHERE
+					id = $1
+			`,
+			c.ShoppingId,
 		); err != nil {
 			u.ErrorLogger.Printf("Erro no update shopping para cancelado - %s", err)
 			return err
 		}
 
-		queryFromPayMentsForms := `
-			SELECT
-				specie_id,
-				specie,
-				amount_paid
-			FROM
-				shopping_pay_ment
-	
-			WHERE
-				shopping_id = $1
-		`
-
 		payMentFormsSelect, err := tx.Query(
 			ctx,
-			queryFromPayMentsForms,
+			`
+				SELECT
+					specie_id,
+					specie,
+					amount_paid
+				FROM
+					shopping_pay_ment
+		
+				WHERE
+					shopping_id = $1
+			`,
 			s.Id,
 		)
 
@@ -1136,6 +1186,8 @@ func CancelSaleOrShopping(c CancelContract) error {
 		}
 
 		defer payMentFormsSelect.Close()
+
+		var payMentFormsFromShopping []PayMentBody
 
 		for payMentFormsSelect.Next() {
 			var pf PayMentBody
@@ -1149,7 +1201,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 				return err
 			}
 
-			payMentFormsFromSale = append(payMentFormsFromSale, pf)
+			payMentFormsFromShopping = append(payMentFormsFromShopping, pf)
 		}
 
 		customer, err := customer.Show(1)
@@ -1159,7 +1211,7 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return err
 		}
 
-		for _, pf := range payMentFormsFromSale {
+		for _, pf := range payMentFormsFromShopping {
 			if err := createInCashRegister(
 				tx,
 				pf.AmountPaid,

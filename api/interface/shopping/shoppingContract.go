@@ -171,17 +171,9 @@ func (s *ShoppingContract) Create() (int, error) {
 		ctx,
 		`
 			INSERT INTO shopping
-				(
-					load, 
-					operation, 
-					total_shopping
-				)
+				(load, operation, total_shopping)
 
-			VALUES(
-				$1, 
-				'Entrada',
-				$2
-			)
+			VALUES($1, 'Entrada', $2)
 
 			RETURNING
 				id
@@ -201,7 +193,10 @@ func (s *ShoppingContract) Create() (int, error) {
 		if p.ShoppingItensWithCharacteristics != nil {
 			u.InfoLogger.Println("Produto possui caracteristicas, vai inserir na shopping_itens_grid e shopping_itens")
 
-			for _, c := range *p.ShoppingItensWithCharacteristics {
+			var totalQtdeGrid int
+			for _, grid := range *p.ShoppingItensWithCharacteristics {
+				totalQtdeGrid += grid.GridQtde
+
 				if _, err := tx.Exec(
 					ctx,
 					`
@@ -212,9 +207,9 @@ func (s *ShoppingContract) Create() (int, error) {
 					`,
 					s.Id,
 					p.ProductId,
-					c.Id,
-					c.Size,
-					p.QtdePurchased,
+					grid.Id,
+					grid.Size,
+					grid.GridQtde,
 				); err != nil {
 					u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
 					return 0, err
@@ -232,7 +227,7 @@ func (s *ShoppingContract) Create() (int, error) {
 				s.Id,
 				p.ProductId,
 				p.Name,
-				p.QtdePurchased,
+				totalQtdeGrid,
 				p.PurchasedValue,
 			); err != nil {
 				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
@@ -297,7 +292,7 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 		&s.Operation,
 		&s.Status,
 		&s.TotalShopping,
-	); err != nil {
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao pegar os dados da compra: ", err)
 		return nil, err
 	}
@@ -344,6 +339,49 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 			&item.Name,
 			&item.QtdePurchased,
 			&item.PurchasedValue,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao executar a query: ", err)
+			return nil, err
+		}
+
+		shoppingItens = append(shoppingItens, item)
+	}
+
+	return &shoppingItens, nil
+}
+
+func ShowShoppingGridItens(shopingId int) (*[]productcharacteristics.ProductCharacteristicsContract, error) {
+	var shoppingItens []productcharacteristics.ProductCharacteristicsContract
+
+	rowsShoppingGridItens, err := conn.Query(
+		ctx,
+		`
+			SELECT
+				size_saled,
+				grid_qtde
+				
+			FROM
+				shopping_itens_grid
+
+			WHERE
+				shopping_id = $1
+		`,
+		shopingId,
+	)
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao executar a query: ", err)
+		return nil, err
+	}
+
+	defer rowsShoppingGridItens.Close()
+
+	for rowsShoppingGridItens.Next() {
+		var item productcharacteristics.ProductCharacteristicsContract
+
+		if err := rowsShoppingGridItens.Scan(
+			&item.Size,
+			&item.GridQtde,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao executar a query: ", err)
 			return nil, err
