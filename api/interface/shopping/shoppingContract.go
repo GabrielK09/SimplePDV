@@ -38,6 +38,11 @@ type ShoppingItenContract struct {
 	UpdatedAt                        time.Time                                                `json:"updated_at"`
 }
 
+type ProductWithCharacteristics struct {
+	Product         ShoppingItenContract                                    `json:"product"`
+	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"characteristics"`
+}
+
 var conn *pgxpool.Pool
 var ctx = context.Background()
 
@@ -255,31 +260,6 @@ func (s *ShoppingContract) Create() (int, error) {
 				u.ErrorLogger.Println("Erro ao inserir os itens da compra: ", err)
 				return 0, err
 			}
-
-			/*
-				if _, err := tx.Exec(
-					ctx,
-					`
-						UPDATE
-							products
-
-						SET
-							name = $2,
-							price = $3,
-							qtde = qtde + $4
-
-						WHERE
-							id = $1
-					`,
-					p.ProductId,
-					p.Name,
-					p.PurchasedValue,
-					p.QtdePurchased,
-				); err != nil {
-					u.ErrorLogger.Println("Erro ao alterar os itens no estoque, com base na compra: ", err)
-					return 0, err
-				}
-			*/
 		}
 	}
 
@@ -328,7 +308,7 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 	var shoppingItens []ShoppingItenContract
 
-	rows, err := conn.Query(
+	rowsShoppingItens, err := conn.Query(
 		ctx,
 		`
 			SELECT
@@ -352,12 +332,12 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer rowsShoppingItens.Close()
 
-	for rows.Next() {
+	for rowsShoppingItens.Next() {
 		var item ShoppingItenContract
 
-		if err := rows.Scan(
+		if err := rowsShoppingItens.Scan(
 			&item.Id,
 			&item.ShoppingId,
 			&item.ProductId,
@@ -441,7 +421,6 @@ func (s *ShoppingContract) UpdateShopping() error {
 	defer tx.Rollback(ctx)
 
 	for _, p := range s.ShoppingItens {
-
 		if p.ShoppingItensWithCharacteristics != nil {
 			u.InfoLogger.Println("O produto possui caracteristicas, vai alterar a shopping_itens_grid e shopping_itens")
 

@@ -4,12 +4,18 @@ import (
 	"encoding/json"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/shopping"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
+
+type ProductWithCharacteristics struct {
+	Product         shopping.ShoppingItenContract                           `json:"product"`
+	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+}
 
 func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -157,9 +163,8 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
 
@@ -188,9 +193,32 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	productCharacteristics, err := productcharacteristics.GetAll()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos os produtos."))
+		return
+	}
+
+	var productsWithCharacteristics []ProductWithCharacteristics
+	characteristicsMap := make(map[int][]productcharacteristics.ProductCharacteristicsContract)
+
+	for _, c := range productCharacteristics {
+		characteristicsMap[c.ProductId] = append(characteristicsMap[c.ProductId], c)
+	}
+
+	for _, p := range *shoppingIntesData {
+		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
+			Product:         p,
+			Characteristics: characteristicsMap[p.Id],
+		})
+	}
+
 	repsonse := map[string]any{
 		"shopping":             shoppingData,
-		"shoppingWithProducts": shoppingIntesData,
+		"shoppingWithProducts": productsWithCharacteristics,
 	}
 
 	w.WriteHeader(http.StatusOK)

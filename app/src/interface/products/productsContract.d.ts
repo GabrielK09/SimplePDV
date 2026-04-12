@@ -5,7 +5,7 @@ interface ProductContract {
     qtde: number|null;
     commission: number|null;
     use_grid?: boolean|null;
-    productWithCharacteristics?: ProductCharacteristicsContract[]|undefined;
+    product_with_characteristics?: ProductCharacteristicsContract[]|undefined;
     deleted_at?: Date;
 };
 

@@ -7,6 +7,7 @@ import (
 	u "myApi/helpers/logger"
 	"myApi/interface/cashRegister"
 	"myApi/interface/customer"
+	"myApi/interface/product"
 	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
 	"myApi/interface/shopping"
@@ -164,21 +165,19 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 	if payMent.SaleId > 0 {
 		var s sale.SaleContract
 
-		queryForSale := `
-			SELECT
-				customer_id,
-				customer,
-				sale_value,
-				status
-			FROM
-				sales
-			WHERE
-				id = $1
-		`
-
 		if err = tx.QueryRow(
 			ctx,
-			queryForSale,
+			`
+				SELECT
+					customer_id,
+					customer,
+					sale_value,
+					status
+				FROM
+					sales
+				WHERE
+					id = $1
+			`,
 			payMent.SaleId,
 		).Scan(
 			&s.CustomerId,
@@ -206,30 +205,28 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 				continue
 			}
 
-			queryForPayMent := `
-				INSERT INTO sale_pay_ment
-					(
-						sale_id, 
-						specie_id, 
-						specie, 
-						amount_paid
-					)
-	
-				VALUES
-					(
-						$1, 
-						$2, 
-						$3, 
-						$4
-					)
-				
-				RETURNING
-					id
-			`
-
 			if _, err = tx.Exec(
 				ctx,
-				queryForPayMent,
+				`
+					INSERT INTO sale_pay_ment
+						(
+							sale_id, 
+							specie_id, 
+							specie, 
+							amount_paid
+						)
+		
+					VALUES
+						(
+							$1, 
+							$2, 
+							$3, 
+							$4
+						)
+					
+					RETURNING
+						id
+				`,
 				payMent.SaleId,
 				p.SpecieId,
 				p.Specie,
@@ -262,62 +259,179 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 
 		u.GeneralLogger.Println("Venda está pendente, vai finalizar a venda e os itens.")
 
-		queryForUpdateSale := `
-			UPDATE 
-				sales
-			SET
-				status = 'Concluída'		
-			WHERE 
-				id = $1
-		`
-
 		if _, err = tx.Exec(
 			ctx,
-			queryForUpdateSale,
+			`
+				UPDATE 
+					sales
+				SET
+					status = 'Concluída'		
+				WHERE 
+					id = $1
+			`,
 			payMent.SaleId,
 		); err != nil {
 			u.ErrorLogger.Println("Erro no update da venda para Concluída: ", err)
 			return err
 		}
 
-		queryForSaleItem := `
-			UPDATE
-				sale_itens
-			SET
-				status = 'Concluída'	
-			WHERE 
-				sale_id = $1
-		`
-
 		if _, err = tx.Exec(
 			ctx,
-			queryForSaleItem,
+			`
+				UPDATE
+					sale_itens
+				SET
+					status = 'Concluída'	
+				WHERE 
+					sale_id = $1
+			`,
 			payMent.SaleId,
 		); err != nil {
 			u.ErrorLogger.Println("Erro no update dos itens da venda para Concluída: ", err)
 			return err
 		}
+
+		var saleItensGridId int
+
+		if err := tx.QueryRow(
+			ctx,
+			`
+				SELECT
+					id
+				FROM
+					sale_itens_grid				
+				WHERE
+					sale_id = $1
+			`,
+			payMent.SaleId,
+		).Scan(&saleItensGridId); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se existe itens com grade na compra:", err)
+			return err
+		}
+
+		if saleItensGridId < 0 {
+			u.InfoLogger.Println("A venda não possui grade")
+			saleItensRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						qtde
+					FROM
+						sale_itens
+					WHERE
+						status = 'Concluída' AND
+						sale_id = $1
+				`,
+				payMent.ShoppingId,
+			)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar os itens da venda:", err)
+				return err
+			}
+
+			var saleItens []sale.SaleItensContract
+			defer saleItensRows.Close()
+
+			for saleItensRows.Next() {
+				var saleItem sale.SaleItensContract
+
+				if err := saleItensRows.Scan(
+					&saleItem.ProductId,
+					&saleItem.Qtde,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao ler os itens da venda:", err)
+					return err
+				}
+
+				saleItens = append(saleItens, saleItem)
+			}
+
+			for _, i := range saleItens {
+				product := product.ProductContract{
+					Id: i.ProductId,
+				}
+
+				u.InfoLogger.Printf("Vai descontar qtde %d ao item: %d", i.Qtde, product.Id)
+
+				if err := product.DiscountedQtde(ctx, tx, i.Qtde, false, nil); err != nil {
+					u.ErrorLogger.Println("Erro ao descontar a qtde do item ao estoque:", err)
+					return err
+				}
+			}
+
+		} else {
+			u.InfoLogger.Println("A venda possui grade")
+			saleItensGridRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						qtde
+					FROM
+						sale_itens
+					WHERE
+						status = 'Concluída' AND
+						sale_id = $1
+				`,
+				payMent.ShoppingId,
+			)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar os itens da venda:", err)
+				return err
+			}
+
+			var saleItensGrids []product.ProductGrids
+			defer saleItensGridRows.Close()
+
+			for saleItensGridRows.Next() {
+				var saleItemGrids product.ProductGrids
+
+				if err := saleItensGridRows.Scan(
+					&saleItemGrids.ProductId,
+					&saleItemGrids.GridQtde,
+					&saleItemGrids.Size,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao pegar a grade dos itens da compra:", err)
+					return err
+				}
+
+				saleItensGrids = append(saleItensGrids, saleItemGrids)
+			}
+
+			for _, i := range saleItensGrids {
+				product := product.ProductContract{
+					Id: i.ProductId,
+				}
+
+				if err := product.DiscountedQtde(ctx, tx, 0, true, saleItensGrids); err != nil {
+					u.ErrorLogger.Println("Erro ao descontar a qtde da grade do item ao estoque:", err)
+					return err
+				}
+			}
+		}
+
 	} // Processo para pagamento de VENDA
 
 	if payMent.ShoppingId > 0 {
 		var s shopping.ShoppingContract
 
-		querySelectShopping := `
-			SELECT
-				id,
-				load,
-				operation,
-				status
-			FROM			
-				shopping
-
-			WHERE
-				id = $1
-		`
-
 		if err = tx.QueryRow(
 			ctx,
-			querySelectShopping,
+			`
+				SELECT
+					id,
+					load,
+					operation,
+					status
+				FROM			
+					shopping
+
+				WHERE
+					id = $1
+			`,
 			payMent.ShoppingId,
 		).Scan(
 			&s.Id,
@@ -338,30 +452,28 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 				continue
 			}
 
-			queryForPayMent := `
-				INSERT INTO shopping_pay_ment
-					(
-						shopping_id, 
-						specie_id, 
-						specie, 
-						amount_paid
-					)
-	
-				VALUES
-					(
-						$1, 
-						$2, 
-						$3, 
-						$4
-					)
-				
-				RETURNING
-					id
-			`
-
 			if _, err = tx.Exec(
 				ctx,
-				queryForPayMent,
+				`
+					INSERT INTO shopping_pay_ment
+						(
+							shopping_id, 
+							specie_id, 
+							specie, 
+							amount_paid
+						)
+		
+					VALUES
+						(
+							$1, 
+							$2, 
+							$3, 
+							$4
+						)
+					
+					RETURNING
+						id
+				`,
 				payMent.ShoppingId,
 				p.SpecieId,
 				p.Specie,
@@ -394,27 +506,170 @@ func PayMentShoppingOrSale(payMent PayContract) error {
 
 		u.GeneralLogger.Println("A compra está pendente, vai finalizar a compra e os itens.")
 
-		queryForUpdateShopping := `
-			UPDATE
-				shopping
-			SET
-				status = 'Concluída'		
-			WHERE 
-				id = $1
-		`
-
-		if _, err = tx.Exec(
+		if _, err := tx.Exec(
 			ctx,
-			queryForUpdateShopping,
+			`
+				UPDATE
+					shopping
+				SET
+					status = 'Concluída'		
+				WHERE 
+					id = $1
+			`,
 			payMent.ShoppingId,
 		); err != nil {
 			u.ErrorLogger.Println("Erro no update da compra para Concluída: ", err)
 			return err
 		}
-	}
+
+		if _, err := tx.Exec(
+			ctx,
+			`
+				UPDATE
+					shopping_itens
+				SET
+					status = 'Concluída'		
+				WHERE 
+					shopping_id = $1
+			`,
+			payMent.ShoppingId,
+		); err != nil {
+			u.ErrorLogger.Println("Erro no update da compra para Concluída: ", err)
+			return err
+		}
+
+		// Conferir questão de uso de grade ou não
+		u.InfoLogger.Println("Concluíu a compra e os itens, vai adicionar a qtde de cada item")
+
+		var shoppingItensGridId int
+
+		if err := tx.QueryRow(
+			ctx,
+			`
+				SELECT
+					id
+				FROM
+					shopping_itens_grid				
+				WHERE
+					shopping_id = $1
+			`,
+			payMent.ShoppingId,
+		).Scan(&shoppingItensGridId); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			u.ErrorLogger.Println("Erro ao conferir se existe itens com grade na compra:", err)
+			return err
+		}
+
+		if shoppingItensGridId < 0 {
+			u.InfoLogger.Println("A compra não possui grade")
+			shoppingItensRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						qtde_purchased,
+						purchased_value
+					FROM
+						shopping_itens
+					WHERE
+						status = 'Concluída' AND
+						shopping_id = $1
+				`,
+				payMent.ShoppingId,
+			)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar os itens da compra:", err)
+				return err
+			}
+
+			var shoppingItens []shopping.ShoppingItenContract
+			defer shoppingItensRows.Close()
+
+			for shoppingItensRows.Next() {
+				var shoppingItem shopping.ShoppingItenContract
+
+				if err := shoppingItensRows.Scan(
+					&shoppingItem.ProductId,
+					&shoppingItem.QtdePurchased,
+					&shoppingItem.PurchasedValue,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao ler os itens da compra:", err)
+					return err
+				}
+
+				shoppingItens = append(shoppingItens, shoppingItem)
+			}
+
+			for _, i := range shoppingItens {
+				product := product.ProductContract{
+					Id: i.ProductId,
+				}
+
+				u.InfoLogger.Printf("Vai adicionar qtde %d ao item: %d", i.QtdePurchased, product.Id)
+
+				if err := product.AddQtde(ctx, tx, i.QtdePurchased, false, nil); err != nil {
+					u.ErrorLogger.Println("Erro ao adicionar a qtde do item ao estoque:", err)
+					return err
+				}
+			}
+		} else {
+			u.InfoLogger.Println("A compra não grade")
+			shoppingItensGridRows, err := tx.Query(
+				ctx,
+				`
+					SELECT
+						product_id,
+						grid_qtde,
+						size_saled
+
+					FROM
+						shopping_itens_grid
+
+					WHERE
+						shopping_id = $1
+				`,
+				payMent.ShoppingId,
+			)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar a grade dos itens da compra:", err)
+				return err
+			}
+
+			var shoppingItensGrids []product.ProductGrids
+			defer shoppingItensGridRows.Close()
+
+			for shoppingItensGridRows.Next() {
+				var shoppingItenGrid product.ProductGrids
+
+				if err := shoppingItensGridRows.Scan(
+					&shoppingItenGrid.ProductId,
+					&shoppingItenGrid.GridQtde,
+					&shoppingItenGrid.Size,
+				); err != nil {
+					u.ErrorLogger.Println("Erro ao pegar a grade dos itens da compra:", err)
+					return err
+				}
+
+				shoppingItensGrids = append(shoppingItensGrids, shoppingItenGrid)
+			}
+
+			for _, i := range shoppingItensGrids {
+				product := product.ProductContract{
+					Id: i.ProductId,
+				}
+
+				if err := product.AddQtde(ctx, tx, 0, true, shoppingItensGrids); err != nil {
+					u.ErrorLogger.Println("Erro ao adicionar a qtde do item ao estoque:", err)
+					return err
+				}
+			}
+		}
+
+	} // PROCESSAR O PAGAMENTO DA COMPRA
 
 	if err = tx.Commit(ctx); err != nil {
-		u.ErrorLogger.Println("Erro no commit do PayMentShoppingOrSale da compra: ", err)
+		u.ErrorLogger.Println("Erro no commit do PayMentShoppingOrSale: ", err)
 		return err
 	}
 
@@ -651,41 +906,37 @@ func CancelSaleOrShopping(c CancelContract) error {
 			return err
 		}
 
-		queryCancelSaleItem := `
-			UPDATE
-				sale_itens
-
-			SET
-				status = 'Cancelada'
-
-			WHERE
-				sale_id = $1
-		`
-
 		if _, err = tx.Exec(
 			ctx,
-			queryCancelSaleItem,
+			`
+				UPDATE
+					sale_itens
+
+				SET
+					status = 'Cancelada'
+
+				WHERE
+					sale_id = $1
+			`,
 			s.Id,
 		); err != nil {
 			u.ErrorLogger.Printf("Erro no update sale_itens para cancelado - %s", err)
 			return err
 		}
 
-		queryFromPayMentsForms := `
-			SELECT
-				specie_id,
-				specie,
-				amount_paid
-			FROM
-				sale_pay_ment
-	
-			WHERE
-				sale_id = $1
-		`
-
 		payMentFormsSelect, err := tx.Query(
 			ctx,
-			queryFromPayMentsForms,
+			`
+				SELECT
+					specie_id,
+					specie,
+					amount_paid
+				FROM
+					sale_pay_ment
+		
+				WHERE
+					sale_id = $1
+			`,
 			s.Id,
 		)
 

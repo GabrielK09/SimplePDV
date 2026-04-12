@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, onMounted } from 'vue';
+    import { computed } from 'vue';
 
     type SizeOption = {
         name: string;
@@ -44,9 +44,5 @@
         const formated = sizeOptions.filter(o => !props.selectedSizes.includes(o.name));
 
         return formated;
-    });
-
-    onMounted(() => {
-        console.log('props.selectedSizes: ', props.selectedSizes);
-    });
+    });    
 </script>

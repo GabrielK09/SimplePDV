@@ -134,7 +134,7 @@
                                 color="primary"
                                 type="submit"
                                 label="Cadastrar produto"
-                                :disable="product.use_grid && product.productWithCharacteristics.length <= 0"
+                                :disable="product.use_grid && product.product_with_characteristics.length <= 0"
                                 no-caps
                                 :loading="loadingLogin"
                             />
@@ -147,7 +147,7 @@
 
     <CreateGridProduct
         v-if="showCreateGrid"
-        :selected-sizes="product.productWithCharacteristics.map(c => (c.size))"
+        :selected-sizes="product.product_with_characteristics.map(c => (c.size))"
         @return:grids="getReturnedGrid($event)"
         @close="showCreateGrid = !$event"
     />  
@@ -171,7 +171,7 @@
         qtde: null,
         commission: 0,
         use_grid: false,
-        productWithCharacteristics: []
+        product_with_characteristics: []
     });
 
     const formErrors = ref<Record<string, string>>({});
@@ -239,7 +239,7 @@
     const calculateQtde = computed(() => {
         if(!product.value.use_grid) return product.value.qtde;
         
-        const list = product.value.productWithCharacteristics;
+        const list = product.value.product_with_characteristics;
 
         if (!list || list.length === 0) return null;
 
@@ -256,7 +256,7 @@
         loadingLogin.value = true;
 
         try {
-            if(product.value.use_grid && product.value.productWithCharacteristics.length <= 0)
+            if(product.value.use_grid && product.value.product_with_characteristics.length <= 0)
             {
                 notify(
                     'info',
@@ -286,7 +286,7 @@
                 commission: Number(validated.commission),
                 qtde: Number(validated.qtde),
                 use_grid: product.value.use_grid,
-                productWithCharacteristics: product.value.productWithCharacteristics
+                product_with_characteristics: product.value.product_with_characteristics
             };
 
             const res = await createProduct(payLoad);
@@ -297,8 +297,8 @@
             {
                 if(product.value.use_grid && productId > 0)
                 {
-                    const newProductCharacteristics = product.value.productWithCharacteristics.map(c => ({
-                        id: null,
+                    const newProductCharacteristics = product.value.product_with_characteristics.map(c => ({
+                        id: 0,
                         product_id: productId,
                         grid_qtde: c.grid_qtde,
                         size: c.size
@@ -358,7 +358,7 @@
     };
 
     const getReturnedGrid = (grid: ProductCharacteristicsContract) => {
-        product.value.productWithCharacteristics.push({
+        product.value.product_with_characteristics.push({
             grid_qtde: Number(grid.grid_qtde) || 0,
             id: null,
             product_id: null,

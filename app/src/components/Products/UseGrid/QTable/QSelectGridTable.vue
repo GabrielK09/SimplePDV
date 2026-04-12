@@ -1,22 +1,28 @@
 <template>
     <q-dialog v-model="confirm" persistent>
-        <q-card>
-            <div class="fixed inset-0 z-50 items-center justify-center bg-opacity-40 backdrop-blur-sm flex">
-                <q-table
-                    title="Grades"
-                    :rows="props.characteristics || []"
-                    hide-bottom
-                    :columns="gridTableColumn"
-                    row-key="name"
-                    @row-click="selectGrid"
-                >
-                    <template v-slot:top-right>
-                        <q-btn color="red" icon="close" @click="emists('close',true)" />
+        <q-card class="product-dialog">
+            <q-card-section class="dialog-header">
+                <div class="flex justify-end">
+                    <q-btn 
+                        class="mb-4"
+                        color="red" 
+                        icon="close"
+                        @click="emists('close',true)" 
+                    />
+                </div>
+                <div class="mx-auto">
 
-                    </template>
+                    <q-table
+                        title="Grades"
+                        :rows="props.characteristics || []"
+                        hide-bottom
+                        :columns="gridTableColumn"
+                        row-key="name"
+                        @row-click="selectGrid"
 
-                </q-table>
-            </div>
+                    />
+                </div>
+            </q-card-section>
         </q-card>
     </q-dialog>
 </template>
@@ -26,13 +32,13 @@
     import { ref } from 'vue';
 
     const props = defineProps<{
-        characteristics: ProductCharacteristicsContract[]|undefined
+        characteristics: ProductCharacteristicsContract[]
 
     }>();
 
     const emists = defineEmits<{
         (e: 'close', value: boolean): void
-        (e: 'return:selected-grid', value: any): void
+        (e: 'return:selected-grid', value: ProductCharacteristicsContract): void
     }>();
 
     const gridTableColumn: QTableColumn[] = [
@@ -52,9 +58,21 @@
 
     const confirm = ref<boolean>(true);
 
-
     const selectGrid = (_: Event, row: any) => {
         emists('return:selected-grid', row);
         confirm.value = false;
     };
 </script>
+
+<style scoped>
+    .product-dialog {
+        width: 100%;
+        max-width: 100px;
+        min-width: 320px;
+        border-radius: 18px;
+    }
+
+    .dialog-header {
+        background: linear-gradient(to right, #f8fafc, #ffffff);
+    }
+</style>

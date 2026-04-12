@@ -5,12 +5,19 @@ import (
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
+	"myApi/interface/customer"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
+
+type ProductWithCharacteristics struct {
+	Product         sale.SaleItensContract                                  `json:"product"`
+	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"characteristics"`
+}
 
 func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -126,6 +133,23 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	if payload.Customer == "" {
 		payload.Customer = "Consumidor padrão"
+	}
+
+	if payload.CustomerId > 1 && payload.Customer != "Consumidor padrão" {
+		u.InfoLogger.Println("Cliente diferente do padrão")
+		otherCustomer, err := customer.Show(payload.CustomerId)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			u.ErrorLogger.Println("Erro ao validar os dados.", err)
+			resp := responsehelper.Response(false, err, "Erro ao validar os dados.")
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		payload.Customer = otherCustomer.Name
+		payload.CustomerId = otherCustomer.Id
 	}
 
 	if err := payload.Validate(); len(err) > 0 {

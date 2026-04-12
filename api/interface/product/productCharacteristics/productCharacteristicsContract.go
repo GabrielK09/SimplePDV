@@ -6,6 +6,7 @@ import (
 	"fmt"
 	u "myApi/helpers/logger"
 	"myApi/interface/product"
+
 	"time"
 
 	"github.com/jackc/pgx/v5"

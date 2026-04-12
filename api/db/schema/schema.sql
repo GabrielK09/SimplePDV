@@ -125,6 +125,7 @@ CREATE TABLE public.shopping_itens (
   name character varying NOT NULL,
   qtde_purchased integer NOT NULL,
   purchased_value double precision NOT NULL,
+  status character varying DEFAULT 'Pendente'::character varying,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT shopping_itens_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id),

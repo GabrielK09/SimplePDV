@@ -1,80 +1,82 @@
 <template>
     <q-dialog v-model="confirm" persistent>
-        <q-card>
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-40 backdrop-blur-sm">
-                <div class="w-[80vh] bg-white rounded-sm">
-                    <header class="border-gray-100 flex justify-between">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-6 ml-4 mt-auto mb-auto cursor-pointer"
-                            @click="emits('close', true)"
+        <q-card class="product-dialog">
+            <q-card-section class="dialog-header">
+                <div class="mx-auto">
+                    <div class="bg-white rounded-sm">
+                        <header class="border-gray-100 flex justify-between">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                class="size-6 ml-4 mt-auto mb-auto cursor-pointer"
+                                @click="emits('close', true)"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+
+                            <h2 class="text-gray-600 text-center ml-4">Seleção de produtos</h2>
+
+                            <q-input
+                                outlined
+                                v-model="searchInput"
+                                type="text"
+                                stack-label
+                                dense
+                                class="mt-auto mb-auto mr-2"
+                                label-slot
+                                @update:model-value="filterProducts"
+                            >
+                                <template v-slot:append>
+                                    <q-icon name="search" />
+                                </template>
+
+                                <template v-slot:label>
+                                    <span class="text-xs">Buscar por um produto ...</span>
+                                </template>
+                            </q-input>
+                        </header>
+
+                        <q-table
+                            :rows="products"
+                            :columns="columns"
+                            v-model:pagination="pagination"
+                            row-key="id"
                         >
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
+                            <template v-slot:body-cell-select="props">
+                                <q-td :props="props">
+                                    <div v-if="propsComponent.typeSearch === 'single'">
+                                        <q-radio
+                                            v-model="selectedProductsId"
+                                            :val="props.row.id"
+                                            dense
+                                        />
+                                    </div>
 
-                        <h2 class="text-gray-600 text-center ml-4">Seleção de produtos</h2>
-
-                        <q-input
-                            outlined
-                            v-model="searchInput"
-                            type="text"
-                            stack-label
-                            dense
-                            class="mt-auto mb-auto mr-2"
-                            label-slot
-                            @update:model-value="filterProducts"
-                        >
-                            <template v-slot:append>
-                                <q-icon name="search" />
+                                    <div v-else>
+                                        <q-checkbox
+                                            v-model="selectedProductsIds"
+                                            :val="props.row.id"
+                                            dense
+                                        />
+                                    </div>
+                                </q-td>
                             </template>
+                        </q-table>
 
-                            <template v-slot:label>
-                                <span class="text-xs">Buscar por um produto ...</span>
-                            </template>
-                        </q-input>
-                    </header>
-
-                    <q-table
-                        :rows="products"
-                        :columns="columns"
-                        v-model:pagination="pagination"
-                        row-key="id"
-                    >
-                        <template v-slot:body-cell-select="props">
-                            <q-td :props="props">
-                                <div v-if="propsComponent.typeSearch === 'single'">
-                                    <q-radio
-                                        v-model="selectedProductsId"
-                                        :val="props.row.id"
-                                        dense
-                                    />
-                                </div>
-
-                                <div v-else>
-                                    <q-checkbox
-                                        v-model="selectedProductsIds"
-                                        :val="props.row.id"
-                                        dense
-                                    />
-                                </div>
-                            </q-td>
-                        </template>
-                    </q-table>
-
-                    <div class="flex justify-end p-5">
-                        <q-btn
-                            color="primary"
-                            no-caps
-                            label="Confirmar"
-                            @click="emitProducts"
-                        />
+                        <div class="flex justify-end p-5">
+                            <q-btn
+                                color="primary"
+                                no-caps
+                                label="Confirmar"
+                                @click="emitProducts"
+                            />
+                        </div>
                     </div>
                 </div>
-            </div>
+            </q-card-section>
         </q-card>
     </q-dialog>
 
@@ -83,6 +85,7 @@
         :is-just-list="true"
         :characteristics="productCharacteristics"
         @return:selected-grid="handelSelectedGrid($event)"
+        @close="closeQSelectGridTable(!$event)"
     />
 </template>
 
@@ -158,12 +161,19 @@
 
     const searchInput = ref<string>('');
 
+    const closeQSelectGridTable = (event: boolean) => {
+        propsComponent.typeSearch === 'single' 
+            ?  selectedProductsId.value = null
+            : selectedProductsIds.value = [];
+
+        showSizeGrid.value = event;
+    };
+
     const normalizeProduct = (p: ProductContract): SaleItemContract => ({
         id: p.id,
         product_id: p.id,
         name: p.name,
         price: p.price,
-        //@ts-ignore
         product_with_characteristics: p.product_with_characteristics,
         qtde: 1
     });
@@ -192,14 +202,14 @@
         products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : null);
     };
 
-    const selectedProducts = computed<SaleItemContract[]>(() => {
+    const selectedProducts = computed<SaleItemContract[]>(() => {        
         if (propsComponent.typeSearch === 'single') 
-        {
+        {            
             const product = products.value.find(p => p.id === selectedProductsId.value);
 
             return product ? [normalizeProduct(product)] : [];
         };
-
+        
         return products.value
             .filter(p => selectedProductsIds.value.includes(Number(p.id)))
             .map(normalizeProduct);
@@ -214,19 +224,19 @@
                 if (index > -1)
                 {
                     indexOfProductHaveCharacteristics.value = index;
+
+                    productCharacteristics.value = p.product_with_characteristics;
+
+                    showSizeGrid.value = true;
                 };
-
-                productCharacteristics.value = [p.product_with_characteristics];
-
-                showSizeGrid.value = true;
             };
         });
     }, {    
         immediate: true 
     });
 
-    const handelSelectedGrid = (grid: any) => {
-        if(!indexOfProductHaveCharacteristics.value) return;
+    const handelSelectedGrid = (grid: ProductCharacteristicsContract) => {    
+        if(indexOfProductHaveCharacteristics.value < 0) return;
 
         const oldProductData = selectedProducts.value[indexOfProductHaveCharacteristics.value];
 
@@ -236,11 +246,16 @@
             price: oldProductData.price,
             product_id: oldProductData.product_id,
             qtde: oldProductData.qtde,
-            product_with_characteristics: grid
+            product_with_characteristics: [{
+                grid_qtde: 1,
+                id: grid.id,
+                product_id: grid.product_id,
+                size: grid.size
+            }]
         };
 
         selectedProducts.value[indexOfProductHaveCharacteristics.value] = normalizedProduct;
-
+        
         showSizeGrid.value = false;
     };
 
@@ -253,3 +268,21 @@
         getAllProducts(20);
     });
 </script>
+
+<style scoped>
+    .product-dialog {
+        width: 100%;
+        max-width: 750px;
+        min-width: 320px;
+        border-radius: 18px;
+    }
+
+    .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 24px;
+        background: linear-gradient(to right, #f8fafc, #ffffff);
+    }
+</style>

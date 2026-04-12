@@ -40,6 +40,7 @@
         :is-just-list="true"
         :characteristics="productCharacteristics"
         @return:selected-grid="handelSelectedGrid($event)"
+        @close="showSizeGrid = !$event"
     />
 </template>
 
@@ -102,8 +103,7 @@
         product_id: p.id,
         name: p.name,
         price: p.price,
-        //@ts-ignore
-        product_with_characteristics: p.productWithCharacteristics,
+        product_with_characteristics: p.product_with_characteristics,
         qtde: 1
     });
 
@@ -141,7 +141,7 @@
         };
 
         productCharacteristics.value = resCharacteristics;
-        productResData.productWithCharacteristics = resCharacteristics;
+        productResData.product_with_characteristics = resCharacteristics;
 
         const productData: SaleItemContract = {
             id: productResData?.id,
@@ -158,7 +158,7 @@
         return;
     };
 
-    const handelSelectedGrid = (grid: any) => {
+    const handelSelectedGrid = (grid: ProductCharacteristicsContract) => {
         if(!intermediaryProductItemData.value) return;
 
         const parsedProduct: ProductContract = {
@@ -167,15 +167,21 @@
             price: intermediaryProductItemData.value.price,
             qtde: intermediaryProductItemData.value.qtde,
             commission: 0,
-            productWithCharacteristics: grid
+            product_with_characteristics: []
         };
 
+        parsedProduct.product_with_characteristics.push({
+            grid_qtde: 1,
+            id: grid.id,
+            size: grid.size,
+            product_id: grid.product_id
+        });
+        
         emitProduct(normalizeProduct(parsedProduct));
         showSizeGrid.value = false;
     };
 
     const emitProduct = (product: SaleItemContract) => {
-        console.log('called emitProduct', product);
         
         emits('emit:selected-product', product);
         searchInput.value = '';
@@ -232,7 +238,7 @@
         {
             showSizeGrid.value = true;
 
-            productCharacteristics.value = [row.product_with_characteristics];
+            productCharacteristics.value = row.product_with_characteristics;
 
             intermediaryProductItemData.value = row;
             searchInput.value = null;

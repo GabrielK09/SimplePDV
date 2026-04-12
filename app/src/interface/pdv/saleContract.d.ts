@@ -12,7 +12,7 @@ interface SaleItemContract {
     name: string|null;
     price: number|null;
     qtde: number;
-    product_with_characteristics: ProductCharacteristicsContract|null
+    product_with_characteristics: ProductCharacteristicsContract[]
 };
 
 interface PaySaleContract {

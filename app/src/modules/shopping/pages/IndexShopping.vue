@@ -45,38 +45,63 @@
                         <q-tr :props="props">
                             <q-td v-for="col in props.cols">
                                 <template v-if="col.name === 'actions'">
-                                    <div class="text-center flex flex-center">
-                                        <div v-if="props.row.status === 'Concluída' && props.row.status !== 'Cancelado'">
-                                            <q-btn
-                                                size="10px"
-                                                no-caps
-                                                color="red"
-                                                icon="cancel"
-                                                flat
-                                                @click="showCancelShopping(props.row.id)"
-                                            />
-                                        </div>
+                                    <q-btn 
+                                        dense
+                                        flat
+                                        icon="more_vert"
+                                    >
+                                        <q-menu
+                                            anchor="bottom right"
+                                            self="top right"
+                                            class="rounded shadow-xl bg-white"
+                                            transition-show="jump-down"
+                                        >
+                                            <q-list style="min-width: 90px">
+                                                <q-item 
+                                                    clickable 
+                                                    v-close-popup  
+                                                    @click="buildShowShoppingDetails(props.row.id)"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="visibility" color="primary" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Ver detalhes</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
 
-                                        <div v-else-if="props.row.status !== 'Concluída' && props.row.status !== 'Cancelado'">
-                                            <q-btn
-                                                size="10px"
-                                                no-caps
-                                                color="black"
-                                                icon="upload"
-                                                flat
-                                                @click="importShopping(props.row.id)"
-                                            />
-                                        </div>
+                                                <q-item  
+                                                    v-if="props.row.status !== 'Concluída' && props.row.status !== 'Cancelada'" 
+                                                    clickable 
+                                                    v-close-popup 
+                                                    @click="importShopping(props.row.id)"
+                                                >                                                        
+                                                    <q-item-section avatar>
+                                                        <q-icon name="upload" size="20px"/>
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Importar venda</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
 
-                                        <q-btn
-                                            size="10px"
-                                            color="black"
-                                            icon="visibility"
-                                            flat
-                                            @click="buildShowSaleDetails(props.row.id)"
-                                        />
-                                    </div>
+                                                <q-item 
+                                                    v-if="props.row.status === 'Concluída'"
+                                                    clickable 
+                                                    v-close-popup
+                                                    @click="showCancelShopping(props.row.id)"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="cancel" color="red" size="20px"/>
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Cancelar venda</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
+                                            </q-list>
+                                        </q-menu>
+                                    </q-btn>
                                 </template>
+                                    
 
                                 <template v-if="col.name === 'status'">
                                     <div
@@ -237,7 +262,7 @@
         selectedShoppingId.value = shoppingId;
     };
 
-    const buildShowSaleDetails = (shoppingId: number): void => {
+    const buildShowShoppingDetails = (shoppingId: number): void => {
         showShoppingDetails.value = !showShoppingDetails.value;
         selectedShoppingId.value = shoppingId;
     };

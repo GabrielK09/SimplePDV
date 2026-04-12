@@ -5,10 +5,26 @@ import (
 	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
+
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type Size string
+
+const (
+	PP  Size = "PP"
+	P   Size = "P"
+	M   Size = "M"
+	G   Size = "G"
+	GG  Size = "GG"
+	XG  Size = "XG"
+	XGG Size = "XGG"
+	EG  Size = "EG"
+	EGG Size = "EGG"
+	O   Size = "O"
 )
 
 type ProductContract struct {
@@ -21,6 +37,12 @@ type ProductContract struct {
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 	DeletedAt  *time.Time `json:"deleted_at"`
+}
+
+type ProductGrids struct {
+	ProductId int
+	Size      string
+	GridQtde  int
 }
 
 var conn *pgxpool.Pool
@@ -430,52 +452,158 @@ func Active(id int, updatedAt time.Time) error {
 	return nil
 }
 
-func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde int) error {
-	if qtde <= 0 {
+func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grids []ProductGrids) error {
+	if !haveGrid && qtde <= 0 {
 		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
 
-	query := `
-		UPDATE	
-			products 
+	if !haveGrid {
+		_, err := tx.Exec(
+			ctx,
+			`
+				UPDATE	
+					products 
 
-		SET
-			qtde = qtde - $2
+				SET
+					qtde = qtde - $2
 
-		WHERE	
-			id = $1
-
-		RETURNING
-			id,
+				WHERE	
+					id = $1
+			`,
+			p.Id,
 			qtde,
-			name
-	`
+		)
 
-	return tx.QueryRow(ctx, query, p.Id, qtde).Scan(&p.Id, &p.Qtde, &p.Name)
+		return err
+	} else {
+		var err error
+
+		for _, grid := range grids {
+			_, err = tx.Exec(
+				ctx,
+				`
+					UPDATE	
+						product_grids
+
+					SET
+						grid_qtde = grid_qtde - $3
+
+					WHERE	
+						size = $1 AND
+						product_id = $2
+				`,
+				grid.Size,
+				grid.ProductId,
+				grid.GridQtde,
+			)
+		}
+
+		_, err = tx.Exec(
+			ctx,
+			`
+				UPDATE
+					products
+				SET
+					qtde = (
+						SELECT
+							COALESCE(SUM(grid_qtde), 0)
+						FROM
+							product_grids
+						WHERE
+							product_id = $1
+					)
+				WHERE
+					id = $1
+			`,
+		)
+
+		return err
+	}
 }
 
-func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int) error {
-	if qtde <= 0 {
+func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grids []ProductGrids) error {
+	if !haveGrid && qtde <= 0 {
 		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
 
-	query := `
-		UPDATE	
-			products 
+	if !haveGrid {
+		_, err := tx.Exec(
+			ctx,
+			`
+				UPDATE	
+					products 
 
-		SET
-			qtde = qtde + $2
+				SET
+					qtde = qtde + $2
 
-		WHERE	
-			id = $1
-
-		RETURNING
-			id,
+				WHERE	
+					id = $1
+			`,
+			p.Id,
 			qtde,
-			name
-	`
+		)
 
-	return tx.QueryRow(ctx, query, p.Id, qtde).Scan(&p.Id, &p.Qtde, &p.Name)
+		if err != nil {
+			u.InfoLogger.Println(err)
+
+		}
+
+		return err
+	} else {
+		var err error
+
+		for _, grid := range grids {
+			_, err = tx.Exec(
+				ctx,
+				`
+					UPDATE	
+						product_grids
+
+					SET
+						grid_qtde = grid_qtde + $3
+
+					WHERE	
+						size = $1 AND
+						product_id = $2
+				`,
+				grid.Size,
+				grid.ProductId,
+				grid.GridQtde,
+			)
+
+			if err != nil {
+				u.InfoLogger.Println(err)
+
+			}
+		}
+
+		_, err = tx.Exec(
+			ctx,
+			`
+				UPDATE
+					products
+				SET
+					qtde = (
+						SELECT
+							COALESCE(SUM(grid_qtde), 0)
+						FROM
+							product_grids
+						WHERE
+							product_id = $1
+					)
+				WHERE
+					id = $1
+			`,
+			p.Id,
+		)
+
+		if err != nil {
+			u.InfoLogger.Println(err)
+
+		}
+
+		return err
+	}
 }
 
 // Processamento de qtdes futuras e reservadas

@@ -141,7 +141,7 @@
                                 type="submit"
                                 label="Salvar dados do produto"
                                 no-caps
-                                :disable="product.use_grid && product.productWithCharacteristics.length <= 0"
+                                :disable="product.use_grid && product.product_with_characteristics.length <= 0"
                                 :loading="loadingLogin"
                             />
                         </div>
@@ -152,8 +152,8 @@
 
         <CreateGridProduct
             v-if="showCreateGrid"
-            :selected-sizes="product.productWithCharacteristics.map(c => (c.size))"
-            @return:grids="product.productWithCharacteristics.push(formatGridDataForPush($event))"
+            :selected-sizes="product.product_with_characteristics.map(c => (c.size))"
+            @return:grids="product.product_with_characteristics.push(formatGridDataForPush($event))"
             @close="showCreateGrid = !$event"
         />  
     </q-page>
@@ -202,7 +202,7 @@
         qtde: null,
         commission: 0,
         use_grid: false,
-        productWithCharacteristics: []
+        product_with_characteristics: []
     });
 
     const formErrors = ref<Record<string, string>>({});
@@ -235,7 +235,7 @@
 
                 if(product.value.use_grid && productId > 0)
                 {
-                    const newProductCharacteristics = product.value.productWithCharacteristics.map(c => ({
+                    const newProductCharacteristics = product.value.product_with_characteristics.map(c => ({
                         id: c.id,
                         product_id: productId,
                         grid_qtde: c.grid_qtde,
@@ -311,7 +311,7 @@
 
                 console.log(res);
                 
-                product.value.productWithCharacteristics = res.data;
+                product.value.product_with_characteristics = res.data;
             };
         }
     );
@@ -319,7 +319,7 @@
     const calculateQtde = computed((): number => {
         if(!product.value.use_grid) return product.value.qtde;
 
-        const list = product.value.productWithCharacteristics;
+        const list = product.value.product_with_characteristics;
         
         if (!list || list.length === 0) return 0;
 
@@ -356,7 +356,7 @@
             qtde: productData.qtde,
             commission: productData.commission,
             use_grid: productData.use_grid,
-            productWithCharacteristics: productCharacteristicsData
+            product_with_characteristics: productCharacteristicsData
         };
     });
 </script>

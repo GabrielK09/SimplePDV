@@ -46,14 +46,7 @@
                                     </template>
 
                                     <template v-if="col.name === 'name'">
-                                        <span>
-                                            {{ `${props.row.name.substring(0, 20)}...` }}
-
-                                            <q-tooltip>
-                                                {{ props.row.name }}
-                                            </q-tooltip>
-                                        </span>
-
+                                        {{ props.row.name }}
                                     </template>
 
                                     <template v-else>
@@ -70,7 +63,7 @@
                                 <q-icon name="warning" size="30px"/>
                                 <span class="mt-auto mb-auto ml-2 text-xs">Sem produtos cadastrados</span>
 
-                            </div>
+                            </div> 
                         </template>
                     </q-table>
                 </div>
@@ -168,7 +161,6 @@
                                             @click="disassociateCheckedProdutc(props.row.product_id)"
                                         />
                                     </div>  
-
                                 </q-td>
                             </q-tr>
 
@@ -223,7 +215,6 @@
                                     </div>
                                 </q-td>
                             </q-tr>
-
                         </template>
 
                         <template v-slot:no-data>
@@ -321,7 +312,7 @@
     import { useRoute, useRouter } from 'vue-router';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
-    import { createshopping, getLastShoppingLoad, getShoppingById, updateShoppingDetails } from '../../services/shoppingService';
+    import { createshopping, getShoppingById, updateShoppingDetails } from '../../services/shoppingService';
 
     type ProductResponse = {
         product: ProductContract,
@@ -519,9 +510,9 @@
             return;
         };
 
-        if (productStockData.productWithCharacteristics !== null)
+        if (productStockData.product_with_characteristics !== null)
         {
-            const characteristics = productStockData.productWithCharacteristics;
+            const characteristics = productStockData.product_with_characteristics;
             const associateProduct = associateProducts.value.find(ap => ap.product_id === productStockData.id);
 
             if(associateProduct)
@@ -537,7 +528,7 @@
                 product_id: productStockData.id,
                 purchased_value: productStockData.price,
                 qtde_purchased: 1,
-                product_with_characteristics: productStockData.productWithCharacteristics
+                product_with_characteristics: productStockData.product_with_characteristics
             };
 
             showSizeGrid.value = true;
@@ -550,7 +541,7 @@
             name: productStockData.name,
             purchased_value: productStockData.price,
             qtde_purchased: 1,
-            product_with_characteristics: productStockData.productWithCharacteristics ?? null
+            product_with_characteristics: productStockData.product_with_characteristics ?? null
         };
 
         associateProducts.value.push(newProductToAssociate);
@@ -601,7 +592,7 @@
             price: c.product.price,
             qtde: c.product.qtde,
             commission: c.product.commission,
-            productWithCharacteristics: c.characteristics
+            product_with_characteristics: c.characteristics
         }));
                 
         allProductsStockData.value = [...productsStockData.value];
@@ -676,21 +667,14 @@
 
     const submitShopping = async (isSaving: boolean): Promise<void> => 
     {
-        console.log('isSaving é: ', isSaving);
-        
         isSavingRef.value = isSaving;
         const exisitInformedLoad = Number(SessionStorage.getItem('inform_load'));
-
-        console.log('Vai conferir se existe uma carga informada: ', exisitInformedLoad);
         
         if (exisitInformedLoad > 0)
         {
-            console.log('Existe uma carga informada: ', exisitInformedLoad);
             saveShopping(exisitInformedLoad);  
             return;
         };
-
-        console.log('Não Existe uma carga informada, vai abrir para informar');
 
         showInformLoadComponent.value = true;
     };
@@ -705,9 +689,7 @@
      */
     const saveShopping = async (informLoad: number): Promise<void> =>
     {        
-        // Constroi o prePayload da compra
-        console.log('Constroi o prePayload da compra');
-        
+        // Constroi o prePayload da compra        
         shoppingPrePayLoad.value = {
             id: null,
             load: informLoad,
@@ -715,34 +697,18 @@
             total_shopping: Number(totalShopping.value.replace(',', '.'))
         };
 
-        console.log('PrePayload da compra: ', shoppingPrePayLoad.value);
-
         showInformLoadComponent.value = false;
         // Precisa conferir antes se a venda vai ser apenas para salvar ou se é para finalizar, seguindo fluxos diferentes para cada.
-        // isSaving = true
-        console.log('Vai conferir antes se a venda vai ser apenas para salvar ou se é para finalizar, seguindo fluxos diferentes para cada.');
-        console.log('isSavingRef.value: ', isSavingRef.value);
-        
+        // isSaving = true        
         if(isSavingRef.value)
-        {
-            console.log('É apenas para salvar, vai conferir se não era uma venda importada ou se não tem um ID salvo, caso contrário, vai criar a compra e ir para o .index');
-            
+        {            
             const existingShoppingId = Number(SessionStorage.getItem('shopping_id'));
 
             if((routeShoppingId.value > 0 && shoppingPrePayLoad.value.load > 0) || existingShoppingId > 0)
             {
-                console.log('Tem um ID salvo ou foi importado:', {
-                    routeShoppingId: routeShoppingId.value,
-                    existingShoppingId: existingShoppingId
-                });
-
                 shoppingPrePayLoad.value.id = routeShoppingId.value > 0 ? routeShoppingId.value : existingShoppingId;
-
-                console.log('Vai conferir se possui alteração nos itens.');
                 if(hasProductChanged())
-                {
-                    console.log('hasProductChanged() foi true');
-                    
+                {   
                     const res = await updateShoppingDetails(shoppingPrePayLoad.value);
 
                     if(!res.success)
@@ -778,7 +744,6 @@
                 replaceToShoppingIndex();
                 return;
             } else {
-                console.log('Era para salvar e uma nova compra, vai criar a compra e enviar para a .index');
                 const res = await createshopping(shoppingPrePayLoad.value);
 
                 if (!res.success)
@@ -805,21 +770,16 @@
             };    
         } else {
             // Não é para salvar, é para finalizar
-            console.log('Não é para salvar, é para finalizar, vai conferir se não é uma venda importada, caso não seja, vai conferir se existe um ID salvo, caso contrário, será uma nova compra');
             
             const existingShoppingId = Number(SessionStorage.getItem('shopping_id'));
 
             if (routeShoppingId.value > 0 || existingShoppingId > 0)
             {   
-                console.log('É uma venda importada');
                 shoppingPrePayLoad.value.id = routeShoppingId.value > 0 ? routeShoppingId.value : existingShoppingId;
                 showPayMentForms.value = true;
 
-                console.log('Vai conferir se possui alteração nos itens.');
                 if(hasProductChanged())
                 {
-                    console.log('hasProductChanged() foi true');
-                    
                     const res = await updateShoppingDetails(shoppingPrePayLoad.value);
 
                     if(!res.success)
@@ -835,7 +795,6 @@
                 return;
 
             } else {
-                console.log('Não existe, vai criar uma nova compra');
                 SessionStorage.set('inform_load', informLoad);
 
                 const res = await createshopping(shoppingPrePayLoad.value);
@@ -937,8 +896,6 @@
             };
 
             originalProductsShopping.value = cloneProducts(associateProducts.value);
-
-            console.log('shoppingPrePayLoad: ', shoppingPrePayLoad.value);
             
             return;
         };

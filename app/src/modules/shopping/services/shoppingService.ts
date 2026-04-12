@@ -61,26 +61,6 @@ export async function cancelShopping(shoppingId: number): Promise<any>
     };
 };
 
-export async function getLastShoppingLoad(): Promise<any> 
-{
-    try {
-        const res = await api.get('/shopping/return-last-load');
-        const data = res.data;
-
-        return apiResponse(
-            true,
-            data.message,
-            data.data || 0
-        );
-    } catch (error: any) {
-        return apiResponse(
-            false,
-            error.response?.data?.message,
-            error.response
-        );
-    };
-};
-
 export async function getShoppingById(id: number): Promise<any> 
 {
     try {
