@@ -26,7 +26,7 @@ export async function generateQRCodeBuilder(
             payLoad: payLoad
         };
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             'Erro ao gerar QR Code do pagamento.',

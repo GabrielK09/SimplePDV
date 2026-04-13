@@ -12,7 +12,7 @@ export async function getAll(): Promise<any>
             data.message,
             data.data || []
         );
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -21,7 +21,7 @@ export async function getAll(): Promise<any>
     };
 };
 
-export async function createshopping(payLoad: any): Promise<any>
+export async function createshopping(payLoad: ShoppingContract): Promise<any>
 {
     try {
         const res = await api.post('shopping/create', payLoad);
@@ -32,7 +32,7 @@ export async function createshopping(payLoad: any): Promise<any>
             data.message,
             data.data || []
         );
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -52,27 +52,7 @@ export async function cancelShopping(shoppingId: number): Promise<any>
             data.message,
             data.data || []
         );
-    } catch (error) {
-        return apiResponse(
-            false,
-            error.response?.data?.message,
-            error.response
-        );
-    };
-};
-
-export async function getLastShoppingLoad(): Promise<any> 
-{
-    try {
-        const res = await api.get('/shopping/return-last-load');
-        const data = res.data;
-
-        return apiResponse(
-            true,
-            data.message,
-            data.data || 0
-        );
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -92,7 +72,27 @@ export async function getShoppingById(id: number): Promise<any>
             data.message,
             data.data || 0
         );
-    } catch (error) {
+    } catch (error: any) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response
+        );
+    };
+};
+
+export async function updateShoppingDetails(payLoad: ShoppingContract): Promise<any> 
+{
+    try {
+        const res = await api.put(`/shopping/update`, payLoad);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || 0
+        );
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,

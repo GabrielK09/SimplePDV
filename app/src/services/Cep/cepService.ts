@@ -13,7 +13,7 @@ export async function getCepData(cep: string): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error.response.data);
 
         return apiResponse(

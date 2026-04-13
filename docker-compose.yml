@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./api
+      dockerfile: ../docker/backend/dockerfile.dev
+    container_name: backend-go
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    env_file:
+      - ./api/.env
+
+  frontend:
+    build:
+      context: ./app
+      dockerfile: ../docker/frontend/dockerfile.dev
+    container_name: frontend-quasar
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    env_file:
+      - ./app/.env
+    environment:
+      CHOKIDAR_USEPOLLING: "true"

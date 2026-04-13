@@ -136,7 +136,7 @@
             }
             isError.value = false;
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro: ', error);
 
             data.value = error.response?.data;

@@ -50,13 +50,6 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao validar o pagamento da venda."))
 			return
 		}
-
-		if err := processpayment.PayMentShoppingOrSale(payMents); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-
-			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar o pagamento da venda."))
-			return
-		}
 	}
 
 	if payMents.SaleId == 0 && payMents.ShoppingId > 0 {
@@ -69,14 +62,14 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao validar o pagamento da compra."))
 			return
 		}
+	}
 
-		if err := processpayment.PayMentShoppingOrSale(payMents); err != nil {
-			u.ErrorLogger.Println("Erro ao pagar a compra/venda: ", err)
-			w.WriteHeader(http.StatusInternalServerError)
+	if err := processpayment.PayMentShoppingOrSale(payMents); err != nil {
+		u.ErrorLogger.Println("Erro ao pagar a compra/venda: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
 
-			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar o pagamento da venda."))
-			return
-		}
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar o pagamento da venda."))
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

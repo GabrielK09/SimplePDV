@@ -293,16 +293,14 @@ func CreateDefaultCustomer() error {
 
 	u.GeneralLogger.Println("Não possui valores: ", c.Id)
 
-	query := `
-		INSERT INTO customers 
-			(id, name, cpf_cnpj)
-		VALUES
-			(1, 'CONSUMIDOR PADRÃO', '')
-	`
-
 	if _, err = tx.Exec(
 		ctx,
-		query,
+		`
+			INSERT INTO customers 
+				(id, name, cpf_cnpj)
+			VALUES
+				(1, 'CONSUMIDOR PADRÃO', '')
+		`,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao fazer o insert: ", err)
 		return err

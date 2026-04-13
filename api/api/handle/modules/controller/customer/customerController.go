@@ -7,6 +7,7 @@ import (
 	"myApi/interface/customer"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -173,7 +174,7 @@ func HandleDeleteCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := customer.Delete(id); err != nil {
+	if err := customer.Delete(id, time.Now()); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao deletar o cliente: ", err)
 		json.NewEncoder(w).Encode(
@@ -183,9 +184,8 @@ func HandleDeleteCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := responsehelper.Response(true, nil, "Cliente deletado com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
+	w.WriteHeader(http.StatusNoContent)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Cliente deletado com sucesso!"))
 }
 
 func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {

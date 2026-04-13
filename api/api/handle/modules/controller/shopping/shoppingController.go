@@ -4,12 +4,18 @@ import (
 	"encoding/json"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/shopping"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
+
+type ProductWithCharacteristics struct {
+	Product         shopping.ShoppingItenContract                           `json:"product"`
+	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+}
 
 func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -52,9 +58,8 @@ func HandleGetLastShoppingLoad(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao retornar o ID: ", err)
-		resp := responsehelper.Response(false, err, "Falha na operação.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Falha na operação."))
 		return
 	}
 
@@ -114,19 +119,42 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppingId, "Compra cadastrada com sucesso!"))
 }
 
-func HandlePutCancelShopping(w http.ResponseWriter, r *http.Request) {
+func HandlePutUpdateShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
 
+	var shoppingDetails shopping.ShoppingContract
+
+	if err := json.NewDecoder(r.Body).Decode(&shoppingDetails); err != nil {
+		u.ErrorLogger.Println("Erro ao ler os dados da edição da compra:", err)
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao ler os dados da edição da compra."))
+		return
+	}
+
+	if shoppingDetails.Id <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "ID da compra inválido."))
+		return
+	}
+
+	if err := shoppingDetails.UpdateShopping(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao alterar os dados da compra."))
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Forma de pagamento alterada com sucesso!"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Compra alterada com sucesso!"))
 }
 
 func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
@@ -134,9 +162,8 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
 
@@ -156,6 +183,24 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 
 	shoppingIntesData, err := shopping.ShowShoppingItens(shoppingId)
 
+	var shoppinggItens []shopping.ShoppingItenContract
+
+	for _, item := range *shoppingIntesData {
+		productCharacteristics, err := shopping.ShowShoppingGridItens(item.ShoppingId, item.ProductId)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+
+			u.ErrorLogger.Println("Erro ao buscar as grades dos itens da compra: ", err)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar os itens da compra."))
+			return
+		}
+
+		item.ShoppingItensWithCharacteristics = productCharacteristics
+		shoppinggItens = append(shoppinggItens, item)
+	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -165,11 +210,11 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repsonse := map[string]any{
-		"shopping":             shoppingData,
-		"shoppingWithProducts": shoppingIntesData,
+	response := map[string]any{
+		"shopping_data":          shoppingData,
+		"shopping_with_products": shoppinggItens,
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, repsonse, "Forma de pagamento alterada com sucesso!"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, response, "Dados da compra"))
 }

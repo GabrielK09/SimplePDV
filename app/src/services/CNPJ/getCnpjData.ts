@@ -13,7 +13,7 @@ export async function getCnpjDataService(cnpj: string): Promise<any>
             data
         );
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error.response.data);
 
         return apiResponse(

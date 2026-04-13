@@ -1,4 +1,4 @@
-<template>
+ <template>
     <q-page padding>
         <main class="px-4" id="sale-page">
             <section class="flex flex-col laptop:flex-row items-start gap-4">
@@ -24,42 +24,130 @@
                             v-model:pagination="pagination"
                             hide-bottom
                         >
-                            <template v-slot:body-cell-qtde="props">
-                                <q-td :props="props">
-                                    <q-input
-                                        v-model.number="props.row.qtde"
-                                        type="number"
-                                        class="w-12 flex ml-auto mr-auto"
-                                        input-class="text-center"
-                                        dense
-                                        @update:model-value="val => validateQtde(Number(val), props.row)"
-                                    />
-                                </q-td>
-                            </template>
+                            <template v-slot:body="props">
+                                <q-tr :props="props">
+                                    <q-td key="product_id" :props="props">
+                                        <span>{{ props.row.product_id }}</span>
 
-                            <template v-slot:body-cell-total="props">
-                                <q-td :props="props">
-                                    R$ {{
-                                        (props.row.price * props.row.qtde)
-                                        .toFixed(2)
-                                        .replace('.', ',')
-                                    }}
+                                    </q-td>
 
-                                </q-td>
+                                    <q-td key="name" :props="props">
+                                        <span>
+                                            {{ `${props.row.name.substring(0, 20)}...` }}
+                                            <span v-if="hasCharacteristics(props.row)">
+                                                <q-btn 
+                                                    v-if="hasCharacteristics(props.row)"
+                                                    size="10px"
+                                                    color="black"
+                                                    :icon="isExpanded(props.row.product_id) ? 'expand_less' : 'grid_on'"
+                                                    flat
+                                                    @click="toggleExpanded(props.row.product_id)"
+                                                >
+                                                    <q-tooltip>
+                                                        {{ 
+                                                            isExpanded(props.row.product_id)
+                                                                ? 'Ocultar'
+                                                                : 'Ver grade'
+                                                        }}
+                                                    </q-tooltip>
+                                                </q-btn>
+                                            </span>
+                                            
+                                        </span>
+                                    </q-td>
 
-                            </template>
+                                    <q-td key="qtde" :props="props">
+                                        <q-input
+                                            v-model.number="props.row.qtde"
+                                            type="number"
+                                            class="w-12 flex ml-auto mr-auto"
+                                            input-class="text-center"
+                                            dense
+                                            :disable="hasCharacteristics(props.row)"
+                                            @update:model-value="val => validateQtde(Number(val), props.row)"
+                                        />
+                                    </q-td>
+                                    
+                                    <q-td key="price" :props="props">
+                                        R$ {{
+                                            props.row.price
+                                                .toFixed(2)
+                                                .replace('.', ',')
+                                        }}
+                                    </q-td>
 
-                            <template v-slot:body-cell-actions="props">
-                                <q-td :props="props">
-                                    <q-btn
-                                        color="red"
-                                        icon="delete"
-                                        dense
-                                        size="7px"
-                                        @click="deleteProduct(props.row)"
+                                    <q-td key="total" :props="props">
+                                        R$ {{
+                                            hasCharacteristics(props.row) 
+                                                ? (props.row.price * props.row.product_with_characteristics.reduce((total: any, a: any) => total + (a.grid_qtde), 0)).toFixed(2).replace('.', ',')
+                                                : (props.row.price * props.row.qtde).toFixed(2).replace('.', ',')
+                                        }}
+                                    </q-td>
 
-                                    />
-                                </q-td>
+                                    <q-td key="actions" :props="props">
+                                        <q-btn
+                                            color="red"
+                                            icon="delete"
+                                            dense
+                                            size="7px"
+                                            @click="deleteProduct(props.row)"
+
+                                        />
+                                    </q-td>
+                                </q-tr>
+
+                                <q-tr 
+                                    v-if="isExpanded(props.row.product_id) && hasCharacteristics(props.row)"
+                                    :props="props"
+                                >
+                                    <q-td colspan="100%" class="bg-gray-200">
+                                        <div class="q-pa-md">
+                                            <div class="text-subtitle2 text-weight-bold q-mb-sm">
+                                                Grade do produto
+                                            </div>
+
+                                            <div class="row q-col-gutter-sm">
+                                                <div
+                                                    v-for="(characteristic, i) in props.row.product_with_characteristics"
+                                                    :key="`${props.row.product_id}-${characteristic.size}`"
+                                                    class="col-12 col-sm-6 col-md-3"
+                                                >       
+                                                    <q-card flat bordered>
+                                                        <q-card-section class="q-pa-pmd">
+                                                            <div class="text-caption text-gray-700">
+                                                                Tamanho
+
+                                                            </div>
+                                                            <q-btn
+                                                                size="10px"
+                                                                color="red"
+                                                                icon="close"
+                                                                flat
+                                                            />
+
+                                                            <div class="text-body2 text-weight-bold">
+                                                                {{ characteristic.size }}
+                                                            </div>
+
+                                                            <div class="text-caption text-grey-7 q-mt-sm">Quantidade</div>
+
+                                                            <div>
+                                                                <q-input
+                                                                    v-model.number="characteristic.grid_qtde"
+                                                                    type="number"
+                                                                    class="w-12 flex ml-auto mr-auto"
+                                                                    input-class="text-center"
+                                                                    dense
+                                                                    @update:model-value="val => validateGridQtde(Number(val), props.row, Number(i))"
+                                                                />
+                                                            </div>
+                                                        </q-card-section>
+                                                    </q-card>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </q-td>
+                                </q-tr>
                             </template>
                         </q-table>
                     </div>
@@ -140,10 +228,8 @@
         :on-leave="onLeaveConfirmDialog"
         @close="showConfirmDialog = !$event"
         @confirm="handleConfirmDialog(operation, $event)"
-
         @leave:cancel-and-leave="cancelAndLeave($event)"
         @leave:save-and-leave="saveSaleForPay($event)"
-
     />
 
     <PayMentSale
@@ -158,6 +244,7 @@
         v-if="showConfigPayMentForm"
         @close="showConfigPayMentForm = !$event"
     />
+
 </template>
 
 <script setup lang="ts">
@@ -171,7 +258,7 @@
     import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { onBeforeRouteLeave, RouteLocationNormalizedLoadedGeneric, useRoute, useRouter } from 'vue-router';
+    import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
     type DisableButtons = {
         editPayMentsForms: boolean;
@@ -185,7 +272,7 @@
         sortBy: 'product_id'
     });
 
-    let nextRef: any = null
+    let nextRef: any = null;
 
     const { notify } = useNotify();
 
@@ -266,6 +353,25 @@
         products: []
     });
 
+    const expdandeRows = ref<number[]>([]);
+
+    const hasCharacteristics = (row: any): boolean => {
+        return Array.isArray(row.product_with_characteristics) && row.product_with_characteristics.length > 0;
+    };
+
+    const isExpanded = (productId: number) => {
+        return expdandeRows.value.includes(productId);
+    };
+
+    const toggleExpanded = (productId: number): void => {
+        if (isExpanded(productId)) {
+            expdandeRows.value = expdandeRows.value.filter(id => id !== productId);
+            return;
+        };
+
+        expdandeRows.value.push(productId);
+    }; 
+
     const removeSessionData = (key: string): void => {
         SessionStorage.remove(key);
     };
@@ -303,40 +409,66 @@
             disableButtons.deleteSale = true;
             disableButtons.saveSale = true;
             disableButtons.finallySale = true;
-
         };
     };
 
-    const validateQtde = (val: number, row: SaleItemContract) => {
+    const validateQtde = (val: number, row: SaleItemContract): number => {
         if(!val || val <= 0) {
             row.qtde = 1;
+        
             return;
         };
 
         row.qtde = val;
     };
 
-    const pushProducts = (selectedProducts: SaleItemContract[]) => {
+    const validateGridQtde = (val: number, row: SaleItemContract, index?: number) => { 
+        if(!val || val <= 0) {
+            row.product_with_characteristics[index].grid_qtde = 1;
+        
+            return;
+        };
+
+        row.product_with_characteristics[index].grid_qtde = val;
+        row.qtde = row.product_with_characteristics.reduce((total, a) => total + (a.grid_qtde), 0)
+    };
+
+    const pushProducts = (selectedProducts: SaleItemContract[]) => {        
         if(!Array.isArray(productsSale.value)) {
             productsSale.value = [];
+            return;
         };
 
         selectedProducts.forEach(p => {
             const exisit = productsSale.value.find(i => i.product_id === p.id);
 
-            if(exisit)
-            {
+            if(exisit && exisit.product_with_characteristics === null)
+            {                
                 exisit.qtde += p.qtde;
 
-            } else {
-                console.log(p);
+            } else if (exisit && exisit.product_with_characteristics !== null) {
+                p.product_with_characteristics.forEach(grid => {
+                    const existingGrid = exisit.product_with_characteristics.find(characteristic => characteristic.size === grid.size)
 
+                    if (existingGrid) {
+                        existingGrid.grid_qtde += grid.grid_qtde;
+
+                    } else {
+                        exisit.product_with_characteristics.push(grid);
+
+                    };
+                });
+
+                exisit.qtde = exisit.product_with_characteristics.reduce((total, a) => total + a.grid_qtde, 0);
+            } else {
                 productsSale.value.push({
                     id: null,
                     product_id: p.id,
                     name: p.name,
                     price: p.price,
-                    qtde: p.qtde <= 0 ? 1 : p.qtde
+                    qtde: p.qtde ?? 1,
+                    product_with_characteristics: p.product_with_characteristics ?? []
+
                 });
             };
         });
@@ -347,12 +479,23 @@
         disableButtons.finallySale = false;
     };
 
+    const calculateTotalItem = (item: SaleItemContract): number => {
+        hasCharacteristics(item)
+            ? item.product_with_characteristics.reduce((total, item) => {
+                return total + (item.grid_qtde ?? 0)
+            }, 0)
+
+            : item.qtde
+
+        return item.price * item.qtde;
+    };
+
     const cloneProducts = (items: SaleItemContract[]) =>
         items.map(item => ({ ...item }));
 
     const calculateTotal = computed(() => {
         const subTotal = productsSale.value.reduce((total, p) => {
-            return total + (p.price * p.qtde);
+            return total + (Number(p.price) * p.qtde);
         }, 0);
 
         totalSale.value = subTotal;
@@ -392,12 +535,7 @@
             const current = currentMap.get(oldItem.product_id);
 
             if (!current) return true;
-
-            console.log('Itens: ', {
-                current: current,
-                oldItem: oldItem
-            });
-
+            
             if (
                 current.qtde !== oldItem.qtde || current.price !== oldItem.price
             ) return true;
@@ -411,8 +549,6 @@
         {
             if(SessionStorage.getItem('sale') && routeSaleId.value !== 0)
             {
-                console.log('Tem uma venda ainda salva: ', SessionStorage.getItem('sale'), ' e ou é uma venda importada: ', routeSaleId.value, ' valor: ', SessionStorage.getItem('sale') || routeSaleId.value !== 0);
-
                 notify(
                     'positive',
                     'Dados salvos com sucesso!'
@@ -436,8 +572,6 @@
 
                 return;
             };
-
-            console.log('Não tinha uma venda salva, vai salvar e resetar os dados do Session');
 
             saveSaleForPay(true);
             resetSale(false);
@@ -468,49 +602,114 @@
     };
 
     const saveSaleForPay = async (isSave?: boolean) => {
-        console.log('call saveSaleForPay');
-
         disableButtons.finallySale = true;
 
-        const payload: SaleContract = {
-            id: null,
-            customer_id: pdvData.value.customer_id,
-            customer: pdvData.value.customer,
-            specie: pdvData.value.specie,
-            products: productsSale.value,
-        };
+        try {
+            const payload: SaleContract = {
+                id: null,
+                customer_id: pdvData.value.customer_id,
+                customer: pdvData.value.customer,
+                specie: pdvData.value.specie,
+                products: productsSale.value,
+            };
 
-        const existingSale = SessionStorage.getItem('sale_id');
-        const saleId = routeSaleId.value;
+            const existingSale = SessionStorage.getItem('sale_id');
+            const saleId = routeSaleId.value;
 
-        if(isSave)
-        {
-            console.log('Foi apenas para salvar');
-            const res = await saveSaleService(payload);
-
-            if(res.success)
+            if(isSave)
             {
-                if(hasProductChanged()) {
-                    const res = await insertNewItens({
-                        id: Number(existingSale || saleId),
-                        customer: pdvData.value.customer,
-                        customer_id: pdvData.value.customer_id,
-                        products: productsSale.value,
-                        specie: pdvData.value.specie
-                    });
+                const res = await saveSaleService(payload);
 
-                    if (!res.success) {
-                        notify('negative', res.message);
-                        console.error('Erro no insertNewItens');
+                if(res.success)
+                {
+                    if(hasProductChanged()) {
+                        const res = await insertNewItens({
+                            id: Number(existingSale || saleId),
+                            customer: pdvData.value.customer,
+                            customer_id: pdvData.value.customer_id,
+                            products: productsSale.value,
+                            specie: pdvData.value.specie
+                        });
 
-                        resetBtns();
+                        if (!res.success) {
+                            notify('negative', res.message);
+
+                            resetBtns();
+
+                            return;
+                        };
+                    };
+
+                    returningSaleId.value = res.data.id ?? routeSaleId.value;
+
+                    SessionStorage.set('sale_id', returningSaleId.value);
+
+                    if(!res.data.id || res.data.id === 0)
+                    {
+                        notify(
+                            'negative',
+                            'Erro ao finalizar a venda. Identificador inválido!'
+                        );
 
                         return;
                     };
 
-                    console.log('Possui alterações nos produtos.');
+                    notify('positive', 'Dados salvos com sucesso!');
+
+                    removeSessionData('sale_id');
+                    removeSessionData('sale');
+
+                    productsSale.value = [];
+
+                    originalProductsSale.value = [];
+
+                    router.replace({query: {}});
+
+                    return;
+                };
+            };
+
+            // Confirma se a venda não foi reaberta / importada
+            if((existingSale || saleId) && hasProductChanged()) {
+                const res = await insertNewItens({
+                    id: Number(existingSale || saleId),
+                    customer: pdvData.value.customer,
+                    customer_id: pdvData.value.customer_id,
+                    products: productsSale.value,
+                    specie: pdvData.value.specie
+                });
+
+                if (!res.success) {
+                    notify('negative', res.message);
+                    resetBtns();
+
+                    return;
                 };
 
+                originalProductsSale.value = cloneProducts(productsSale.value)
+            };
+
+            if (saleId) {
+                showPayMentForms.value = true;
+                returningSaleId.value = Number(saleId);
+                return;
+            };
+
+            SessionStorage.set('sale', payload);
+
+            if(!isSave && existingSale)
+            {
+                returningSaleId.value = Number(existingSale);
+                showPayMentForms.value = true;
+                return;
+            };
+
+            notify('positive', 'Processando dados da venda.');
+
+            const res = await saveSaleService(payload);
+
+            if(res.success)
+            {
                 returningSaleId.value = res.data.id ?? routeSaleId.value;
 
                 SessionStorage.set('sale_id', returningSaleId.value);
@@ -521,89 +720,27 @@
                         'negative',
                         'Erro ao finalizar a venda. Identificador inválido!'
                     );
-
                     return;
                 };
 
-                notify('positive', 'Dados salvos com sucesso!');
+                showPayMentForms.value = true;
 
-                removeSessionData('sale_id');
-                removeSessionData('sale');
+            } else {
+                isSave
+                    ? null
+                    : notify('negative', res.message);
 
-                productsSale.value = [];
-
-                originalProductsSale.value = [];
-
-                router.replace({query: {}});
-
-                return;
-            };
-        };
-
-        // Confirma se a venda não foi reaberta / importada
-        if((existingSale || saleId) && hasProductChanged()) {
-            const res = await insertNewItens({
-                id: Number(existingSale || saleId),
-                customer: pdvData.value.customer,
-                customer_id: pdvData.value.customer_id,
-                products: productsSale.value,
-                specie: pdvData.value.specie
-            });
-
-            if (!res.success) {
-                console.error('Erro no insertNewItens');
-
-                notify('negative', res.message);
                 resetBtns();
-
-                return;
             };
+        } catch (error: any) {
+            notify(
+                'negative',
+                error.message
+            );
 
-            originalProductsSale.value = cloneProducts(productsSale.value)
-        };
+        } finally {
+            disableButtons.finallySale = false;
 
-        if (saleId) {
-            showPayMentForms.value = true;
-            returningSaleId.value = Number(saleId);
-            return;
-        };
-
-        SessionStorage.set('sale', payload);
-
-        if(!isSave && existingSale)
-        {
-            returningSaleId.value = Number(existingSale);
-            showPayMentForms.value = true;
-            return;
-        };
-
-        notify('positive', 'Processando dados da venda.');
-
-        const res = await saveSaleService(payload);
-
-        if(res.success)
-        {
-            returningSaleId.value = res.data.id ?? routeSaleId.value;
-
-            SessionStorage.set('sale_id', returningSaleId.value);
-
-            if(!res.data.id || res.data.id === 0)
-            {
-                notify(
-                    'negative',
-                    'Erro ao finalizar a venda. Identificador inválido!'
-                );
-                return;
-            };
-
-            showPayMentForms.value = true;
-
-        } else {
-            isSave
-                ? null
-                : notify('negative', res.message);
-
-            resetBtns();
         };
     };
 
@@ -638,6 +775,41 @@
         disableButtons.saveSale = true;
         disableButtons.finallySale = true;
     };
+
+    const resetForCancelPay = (event: boolean) => {
+        showPayMentForms.value = event;
+
+        disableButtons.editPayMentsForms = true;
+        disableButtons.deleteSale = false;
+        disableButtons.saveSale = false;
+        disableButtons.finallySale = false;
+    };
+
+    const cancelAndLeave = (confirm: boolean) => {
+        if (confirm && nextRef)
+        {
+            nextRef();
+        } else if (nextRef){
+            nextRef(false);
+        };
+
+        nextRef = null;
+    };
+
+    onBeforeRouteLeave((to, from, next) => {
+        const hasOpenSale = SessionStorage.getItem('sale_id') || SessionStorage.getItem('sale') || productsSale.value?.length > 0
+
+        if (hasOpenSale) {
+            textOperation.value = 'Existe uma venda aberta!'
+            showConfirmDialog.value = true;
+            onLeaveConfirmDialog.value = true;
+
+            nextRef = next;
+            return;
+        };
+
+        next();
+    });
 
     onMounted(async () => {
         productsSale.value = [];
@@ -679,12 +851,15 @@
             return;
         };
 
-        const existingSaleId: number = SessionStorage.getItem('sale_id');
-        const existingSale: SaleContract = SessionStorage.getItem('sale');
+        const existingSaleId: number|null = SessionStorage.getItem('sale_id');
+        const existingSale = SessionStorage.getItem('sale') as SaleContract;
+        
+        if(existingSaleId === null && existingSale === null) 
+        {
+            return;
+        };
 
-        if(!existingSaleId && !existingSale) return;
-
-        productsSale.value = existingSale.products || [];
+        productsSale.value = existingSale?.products || [];
 
         originalProductsSale.value = cloneProducts(existingSale.products);
 
@@ -703,39 +878,8 @@
 
     });
 
-    const resetForCancelPay = (event: boolean) => {
-        showPayMentForms.value = event;
+    onUnmounted(() => {
 
-        disableButtons.editPayMentsForms = true;
-        disableButtons.deleteSale = false;
-        disableButtons.saveSale = false;
-        disableButtons.finallySale = false;
-    };
-
-    const cancelAndLeave = (confirm: boolean) => {
-        if (confirm && nextRef)
-        {
-            nextRef();
-        } else if (nextRef){
-            nextRef(false);
-        };
-
-        nextRef = null;
-    };
-
-    onBeforeRouteLeave((to, from, next) => {
-        const hasOpenSale = SessionStorage.getItem('sale_id') || SessionStorage.getItem('sale') || productsSale.value?.length > 0
-
-        if (hasOpenSale) {
-            textOperation.value = 'Existe uma venda aberta!'
-            showConfirmDialog.value = true;
-            onLeaveConfirmDialog.value = true;
-
-            nextRef = next;
-            return;
-        };
-
-        next();
     });
 </script>
 

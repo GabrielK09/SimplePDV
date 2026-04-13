@@ -147,7 +147,7 @@
 
             console.log(res);
 
-        } catch (error) {
+        } catch (error: any) {
             if(error.inner)
             {
                 formErrors.value = {};

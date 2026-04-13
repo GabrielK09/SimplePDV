@@ -3,12 +3,13 @@ interface ShoppingContract {
     load: number|null;
     shopping_itens: ShoppingItemContract[];
     total_shopping: number|null;
-    status?: 'Pendente'|'Cancelado'|'Concluída'|'';
+    status?: 'Pendente'|'Cancelada'|'Concluída'|'';
 };
 
 interface ShoppingItemContract {
-    readonly product_id: number;
-    name: string;
-    purchased_value: number;
-    qtde_purchased: number;
+    product_id: number|null;
+    name: string|null;
+    purchased_value: number|null;
+    qtde_purchased: number|null;
+    product_with_characteristics?: ProductCharacteristicsContract[];
 };

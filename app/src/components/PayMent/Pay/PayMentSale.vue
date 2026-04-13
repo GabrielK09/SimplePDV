@@ -3,7 +3,7 @@
         <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
             <div class="bg-white p-4">
                 <div class="text-h6">
-                    Formas de Pagamento - {{ props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId ?? props.shoppingId }}
+                    Formas de Pagamento - {{ props.saleId && props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId > 0 ? props.saleId : props.shoppingId }}
                 </div>
 
                 <q-list bordered separator class="bg-white text-black">
@@ -37,7 +37,7 @@
                                     mask="##,##"
                                     fill-mask="0"
                                     reverse-fill-mask
-                                    :disable="calculatePayMent.totalPaid >= props.totalSale || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
+                                    :disable="calculatePayMent.totalPaid >= (props.totalSale || 0) || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
                                 />
                             </div>
                         </q-item-section>
@@ -51,8 +51,8 @@
                     <q-chip color="red-6" text-color="white">
                         Valor faltante: R$ {{
                             (
-                                (props.totalSale - calculatePayMent.totalPaid > 0)
-                                    ? props.totalSale - calculatePayMent.totalPaid
+                                ((props.totalSale || 0) - calculatePayMent.totalPaid > 0)
+                                    ? (props.totalSale || 0) - calculatePayMent.totalPaid
                                     : 0
                             ).toFixed(2)
                             .toString()
@@ -72,7 +72,7 @@
 
                 <q-banner class="bg-gray-300 q-mb-sm rounded-xl">
                     <div class="text-subtitle2 font-semibold">
-                        Total da venda: R$ {{ props.totalSale.toFixed(2).toString().replace('.', ',') }}
+                        Total da venda: R$ {{ (props.totalSale || 0).toFixed(2).toString().replace('.', ',') }}
                     </div>
                 </q-banner>
 
@@ -91,7 +91,7 @@
                             type="submit"
                             id="finallySale-btn"
                             @click="confirmValues"
-                            :disable="calculatePayMent.totalPaid < props.totalSale || disableBtn"
+                            :disable="calculatePayMent.totalPaid < (props.totalSale || 0) || disableBtn"
                         />
                     </div>
                 </q-card-actions>
@@ -117,14 +117,14 @@
     const { notify } = useNotify();
 
     const props = defineProps<{
-        saleId?: number,
-        shoppingId?: number,
-        totalSale: number;
+        saleId?: number|null;
+        shoppingId?: number|null,
+        totalSale: number|null;
     }>();
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean),
-        (e: 'paide', value: boolean)
+        (e: 'close', value: boolean): void,
+        (e: 'paide', value: boolean): void
     }>();
 
     const payMentForms = ref<PayMentFormContract[]>([]);
@@ -142,6 +142,8 @@
 
     const calculateChange = computed((): number =>
     {
+        if(!props.totalSale) return 0;
+        
         return props.totalSale - calculatePayMent.value.totalPaid > 0 ? 0 : calculatePayMent.value.totalPaid - props.totalSale;
     });
 
@@ -194,6 +196,7 @@
 
     const resetValues = (id: number): void => {
         const payMentForm = payMentValues.value.find(p => p.id === id);
+        if(!payMentForm) return;
 
         payMentForm.amount = '0,00';
     };
@@ -228,7 +231,9 @@
     };
 
     const confirmValues = () => {
-        if(calculatePayMent.value.totalPaid < 0) return;
+        if(!props.totalSale) return;
+        
+        if(calculatePayMent.value.totalPaid < 0 || calculatePayMent.value.totalPaid < props.totalSale) return;
 
         if(havePix.value)
         {
@@ -294,6 +299,7 @@
 
         if (!payMent) return;
 
+        if(!props.totalSale) return;
         payMent.amount = props.totalSale.toString();
 
         finallySale();

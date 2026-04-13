@@ -5,7 +5,7 @@
     >
         <q-input
             outlined
-            v-model="id"
+            v-model="searchInput"
             type="text"
             stack-label
             label-slot
@@ -34,6 +34,14 @@
             v-show="false"
         />
     </q-form>
+
+    <QSelectGridTable
+        v-if="showSizeGrid"
+        :is-just-list="true"
+        :characteristics="productCharacteristics"
+        @return:selected-grid="handelSelectedGrid($event)"
+        @close="showSizeGrid = !$event"
+    />
 </template>
 
 <script setup lang="ts">
@@ -41,10 +49,16 @@
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { findById, findByName } from 'src/modules/products/services/productsService';
     import { ref, watch } from 'vue';
+    import QSelectGridTable from '../Products/UseGrid/QTable/QSelectGridTable.vue';
 
-    const id = ref<number | string | null>(null);
+    const productCharacteristics = ref<ProductCharacteristicsContract[]>([]);
+
+    const intermediaryProductItemData = ref<SaleItemContract>();
+
+    const searchInput = ref<number | string | null>(null);
 
     const habilitStringSearchInput = ref<boolean>(false);
+    const showSizeGrid = ref<boolean>(false);
 
     const itensTableColumn: QTableColumn[] = [
         {
@@ -57,6 +71,12 @@
             name: 'name',
             label: 'Produto',
             field: 'name',
+            align: 'center',
+        },
+        {
+            name: 'qtde',
+            label: 'Qtde',
+            field: 'qtde',
             align: 'center',
         },
         {
@@ -78,43 +98,99 @@
         (e: 'emit:selected-product', value: SaleItemContract): void
     }>();
 
+    const normalizeProduct = (p: ProductContract): SaleItemContract => ({
+        id: p.id,
+        product_id: p.id,
+        name: p.name,
+        price: p.price,
+        product_with_characteristics: p.product_with_characteristics,
+        qtde: 1
+    });
+
     const searchProduct = async (): Promise<void> => {
-        let productQtde: number = 0;
+        if (habilitStringSearchInput.value) return; // Se for busca pelo nome, não valida busca pelo qtde/código
 
-        const input = id.value?.toString().split('') ?? '';
+        if(!searchInput.value) return; // Se não for busca pelo nome, precisa possuir algum valor inserido no campo de busca
 
-        if(!id.value) return;
+        let productQtde: number = 1;
+        let productId: number = Number(searchInput.value);
 
-        if(input[1] === '*') productQtde = Number(input[0]);
+        if(searchInput.value?.toString().split('').includes('*'))
+        {
+            const splitedInput = searchInput.value?.toString().split('*');
+            productQtde = Number(splitedInput[0]);
+            productId = Number(splitedInput[1]);
+        };
+                
+        const resProduct = (await findById(productId)).data.product;
 
-        const product = await findById(Number(input[2] ?? input[0]));
-
-        if(!product)
+        if(!resProduct)
         {
             notify('warning', 'Produto não localizado');
             return;
         };
 
-        const productData: SaleItemContract = {
-            id: product.data?.id,
-            name: product.data?.name,
-            price: product.data?.price,
-            product_id: product.data?.id,
-            qtde: productQtde ?? 1
+        const resCharacteristics = (await findById(productId)).data.characteristics;
+        
+        const productResData: ProductContract = resProduct;
+            
+        if(!productResData.use_grid && !resCharacteristics)
+        {
+            emitProduct(normalizeProduct(productResData));
+            return;
         };
 
-        console.log('Vai enviar: ', productData);
+        productCharacteristics.value = resCharacteristics;
+        productResData.product_with_characteristics = resCharacteristics;
 
-        emits('emit:selected-product', productData);
-        id.value = '';
+        const productData: SaleItemContract = {
+            id: productResData?.id,
+            name: productResData?.name,
+            price: productResData?.price,
+            product_id: productResData?.id,
+            qtde: productQtde ?? 1,
+            product_with_characteristics: null
+        };
+
+        intermediaryProductItemData.value = productData;
+
+        showSizeGrid.value = true;
+        return;
+    };
+
+    const handelSelectedGrid = (grid: ProductCharacteristicsContract) => {
+        if(!intermediaryProductItemData.value) return;
+
+        const parsedProduct: ProductContract = {
+            id: intermediaryProductItemData.value.id,
+            name: intermediaryProductItemData.value.name,
+            price: intermediaryProductItemData.value.price,
+            qtde: intermediaryProductItemData.value.qtde,
+            commission: 0,
+            product_with_characteristics: []
+        };
+
+        parsedProduct.product_with_characteristics.push({
+            grid_qtde: 1,
+            id: grid.id,
+            size: grid.size,
+            product_id: grid.product_id
+        });
+        
+        emitProduct(normalizeProduct(parsedProduct));
+        showSizeGrid.value = false;
+    };
+
+    const emitProduct = (product: SaleItemContract) => {
+        
+        emits('emit:selected-product', product);
+        searchInput.value = '';
     };
 
     watch(
-        () => id.value,
+        () => searchInput.value,
         async (idValue) => {
             const input = idValue?.toString().split('') ?? '';
-
-            console.log(input);
 
             if(input[0] === '/')
             {
@@ -132,13 +208,10 @@
     );
 
     const getProductByName = async () => {
-        console.log('call getProductByName');
-
         if(!habilitStringSearchInput.value) return;
+        if(!searchInput.value) return;
 
-        const search = id.value.toString().slice(1);
-
-        console.log('Vai buscar por: ', search);
+        const search = searchInput.value.toString().slice(1);
 
         if(!search) return;
 
@@ -146,15 +219,37 @@
 
         if(!res.success) return;
 
-        itensData.value = res.data;
+        const data: any[] = res.data;
+
+        itensData.value = data.map(p => ({
+            id: p.product.id,
+            name: p.product.name,
+            price: p.product.price,
+            product_id: p.product.product_id,
+            qtde: 1,
+            use_grid: p.use_grid,
+            //@ts-ignore
+            product_with_characteristics: p.characteristics,
+        }));
     };
 
-    const selectProduct = (evt: Event, row: SaleItemContract) => {
-        console.log('evt: ', evt);
+    const selectProduct = (_: Event, row: SaleItemContract) => {
+        if(row.product_with_characteristics !== null)
+        {
+            showSizeGrid.value = true;
+
+            productCharacteristics.value = row.product_with_characteristics;
+
+            intermediaryProductItemData.value = row;
+            searchInput.value = null;
+            habilitStringSearchInput.value = false;
+            itensData.value = [];
+            return;
+        };
 
         emits('emit:selected-product', row);
 
-        id.value = null;
+        searchInput.value = null;
         habilitStringSearchInput.value = false;
         itensData.value = [];
     };

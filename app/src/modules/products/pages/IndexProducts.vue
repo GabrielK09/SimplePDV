@@ -53,7 +53,7 @@
                                     <div
                                         class="text-center flex flex-center"
                                     >
-                                        <div>
+                                        <div v-if="props.row.deleted_at === null">
                                             <q-btn
                                                 size="10px"
                                                 no-caps
@@ -62,16 +62,25 @@
                                                 flat
                                                 :to="`products/edit/${props.row.id}`"
                                             />
-                                        </div>
 
-                                        <div>
                                             <q-btn
                                                 size="10px"
                                                 no-caps
                                                 color="red"
                                                 icon="delete"
                                                 flat
-                                                @click="showDialogDeleteProduct(props.row.id)"
+                                                @click="showDialogActionProduct(props.row.id, 'delete')"
+                                            />
+                                        </div>
+
+                                        <div v-if="props.row.deleted_at !== null">
+                                            <q-btn
+                                                size="10px"
+                                                no-caps
+                                                color="green"
+                                                icon="rotate_left"
+                                                flat
+                                                @click="showDialogActionProduct(props.row.id, 'active')"
                                             />
                                         </div>
                                     </div>
@@ -79,8 +88,14 @@
 
                                 <template v-else>
                                     <div class="text-center">
-                                        {{ col.value }}
+                                        <span v-if="props.row.deleted_at !== null" class="text-gray-400">
+                                            {{ col.value }}
 
+                                        </span>
+                                        <div v-else>
+                                            {{ col.value }}
+
+                                        </div>
                                     </div>
                                 </template>
                             </q-td>
@@ -103,15 +118,16 @@
 
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
-    import { onMounted, ref } from 'vue';
-    import { getAll, deleteProduct } from '../services/productsService';
+    import { onMounted, ref, watch } from 'vue';
+    import { getAll, manageProductService } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
 
     const $q = useQuasar();
     const { notify } = useNotify();
 
     const pagination = ref({
-        sortBy: 'id' 
+        sortBy: 'id',
+        rowsPerPage: 20
     });
 
     const columns: QTableColumn[] = [
@@ -155,8 +171,46 @@
 
     const searchInput = ref<string>('');
 
-    const getAllProducts = async () => {
-        const res = await getAll();
+    const showDialogActionProduct = (productId: number, operation: 'active'|'delete') => {
+        $q.dialog({
+            title: `${operation === 'delete' ? 'Excluir' : 'Ativar'} produto`,
+            message: `Deseja realmente ${operation === 'delete' ? 'deletear' : 'ativar'} esse produto (${productId})?`,
+            cancel: {
+                push: true,
+                label: 'Não',
+                color: operation === 'delete' ? 'red' : 'green'
+            },
+
+            ok: {
+                push: true,
+                label: 'Sim',
+                color: 'green',
+            },
+
+        }).onOk(() => {
+            manageProduct(productId, operation);
+
+        }).onCancel(() => {
+            return;
+        });
+    };
+
+    const filterProducts = (): void => {
+        products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : null);
+    };
+
+    watch(
+        () => pagination.value.rowsPerPage,
+        async (newRowsPerPage) => {
+            console.log('newRowsPerPage: ', newRowsPerPage);
+
+            await getAllProducts(newRowsPerPage);
+        }
+    );
+
+    const getAllProducts = async (rowsPerPage?: number) => {
+        const res = await getAll(rowsPerPage);
+
         const data = res.data;
 
         if(!res.success)
@@ -169,58 +223,30 @@
             return;
         };
 
-        products.value = data;
+        const productsData = data.map((c: any) => c.product);
+
+        products.value = productsData;
         allProducts.value = [...products.value];
-
     };
 
-    const showDialogDeleteProduct = (productId: number) => {
-        $q.dialog({
-            title: 'Excluir produto',
-            message: `Deseja realmente remover esse produto (${productId})?`,
-            cancel: {
-                push: true,
-                label: 'Não',
-                color: 'red',
-            },
+    const manageProduct = async (productId: number, operation: 'active'|'delete') => {
+        const res = await manageProductService(productId, operation);
 
-            ok: {
-                push: true,
-                label: 'Sim',
-                color: 'green',
-            },
-
-        }).onOk(() => {
-            deleteProductByDialog(productId);
-
-        }).onCancel(() => {
-            return;
-        });
-    };
-
-    const deleteProductByDialog = async (productId: number) => {
-        const res = await deleteProduct(productId);
-
-        if(res.success)
+        if(!res.success)
         {
             notify(
-                'positive',
+                'negative',
                 res.message
             );
-
-        } else {
-            notify(
-                'positive',
-                res.message
-            );
+            return;
         };
 
-        getAllProducts();
-    };
+        notify(
+            'positive',
+            res.message
+        );
 
-    const filterProducts = (): void => {
-        products.value = allProducts.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
-
+        await getAllProducts();
     };
 
     onMounted(() => {

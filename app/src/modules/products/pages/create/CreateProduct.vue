@@ -63,6 +63,7 @@
                             stack-label
                             outlined
                             dense
+                            :disable="product.use_grid"
                             class="mb-4"
                             :error="!!formErrors.qtde"
                             :error-message="formErrors.qtde"
@@ -93,7 +94,7 @@
                                 </template>
                             </q-input>
 
-                            <div class="mx-auto flex gap-4">
+                            <div class="mx-auto flex gap-4">                                
                                 <q-btn
                                     color="primary"
                                     no-caps
@@ -114,7 +115,18 @@
                                     @click="product.commission = 35"
                                     label="35%"
                                 />
+
+                                <q-checkbox 
+                                    v-model="product.use_grid" label="Usa grade"     
+                                />
                             </div>
+                        </div>
+
+                        <div v-if="product.use_grid" class="mx-2 my-4">
+                            <QGridTable
+                                :product-data="product"
+                                @show-create-grid="showCreateGrid = $event"
+                            />
                         </div>
 
                         <div class="flex flex-center">
@@ -122,6 +134,7 @@
                                 color="primary"
                                 type="submit"
                                 label="Cadastrar produto"
+                                :disable="product.use_grid && product.product_with_characteristics.length <= 0"
                                 no-caps
                                 :loading="loadingLogin"
                             />
@@ -131,23 +144,34 @@
             </section>
         </main>
     </q-page>
+
+    <CreateGridProduct
+        v-if="showCreateGrid"
+        :selected-sizes="product.product_with_characteristics.map(c => (c.size))"
+        @return:grids="getReturnedGrid($event)"
+        @close="showCreateGrid = !$event"
+    />  
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { computed, ref, watch } from 'vue';
     import { useRouter } from 'vue-router';
     import * as Yup from 'yup';
-    import { createProduct } from '../../services/productsService';
+    import { createProduct, createProductCharacteristics } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import CreateGridProduct from 'src/components/Products/UseGrid/Create/CreateGridProduct.vue';
+    import QGridTable from 'src/components/Products/UseGrid/QTable/QGridTable.vue';
 
     const priceInput = ref<string>('');
 
     const product = ref<ProductContract>({
-        id: 0,
-        name: '',
+        id: null,
+        name: null,
         price: null,
         qtde: null,
-        commission: 0
+        commission: 0,
+        use_grid: false,
+        product_with_characteristics: []
     });
 
     const formErrors = ref<Record<string, string>>({});
@@ -155,7 +179,8 @@
     const router = useRouter();
     const { notify } = useNotify();
 
-    let loadingLogin = ref<boolean>(false);
+    const loadingLogin = ref<boolean>(false);
+    const showCreateGrid = ref<boolean>(false);
 
     const nameUpper = computed({
         get: () => product.value.name,
@@ -201,18 +226,52 @@
                 .number()
                 .min(0, 'O valor de comissão não pode ser menor que zero.')
                 .max(100, 'O valor de comissão não pode ser maior que 100%.')
-                .required('A quantia do produto é obrigatório!')
         })
     );
 
+    watch(
+        () => product.value.use_grid,
+        (use) => {
+            if(use) return product.value.qtde = null;
+        }
+    );
+
+    const calculateQtde = computed(() => {
+        if(!product.value.use_grid) return product.value.qtde;
+        
+        const list = product.value.product_with_characteristics;
+
+        if (!list || list.length === 0) return null;
+
+        return list.reduce((total, a) => total + (a.grid_qtde || 0), 0);
+    });
+
+    watch(calculateQtde, (value) => {
+        if (value !== null) {
+            product.value.qtde = value;
+        };
+    });
+
     const submitProduct = async () => {
+        loadingLogin.value = true;
+
         try {
+            if(product.value.use_grid && product.value.product_with_characteristics.length <= 0)
+            {
+                notify(
+                    'info',
+                    'Caso seja usado grade, ao menos uma grade precisa ser cadastrada!'
+                );
+                return;
+            };
+
             const formData = {
                 id: product.value.id,
                 name: product.value.name,
                 price: priceInput.value,
                 qtde: product.value.qtde,
-                commission: product.value.commission
+                commission: product.value.commission,
+                use_grid: product.value.use_grid
             };
 
             const validated = await productSchema.value.validate(formData, {
@@ -221,21 +280,44 @@
             });
 
             const payLoad: ProductContract = {
-                id: 0,
+                id: null,
                 name: validated.name,
                 price: Number(validated.price.toFixed(2)),
                 commission: Number(validated.commission),
-                qtde: Number(validated.qtde)
+                qtde: Number(validated.qtde),
+                use_grid: product.value.use_grid,
+                product_with_characteristics: product.value.product_with_characteristics
             };
 
             const res = await createProduct(payLoad);
 
+            const productId = res.data;
+
             if(res.success)
             {
+                if(product.value.use_grid && productId > 0)
+                {
+                    const newProductCharacteristics = product.value.product_with_characteristics.map(c => ({
+                        id: 0,
+                        product_id: productId,
+                        grid_qtde: c.grid_qtde,
+                        size: c.size
+                    }));
+
+                    const resCharacteristics = await createProductCharacteristics(newProductCharacteristics);
+                    
+                    if(!resCharacteristics.success)
+                    {
+                        notify(
+                            'negative',
+                            resCharacteristics.message
+                        );  
+                    };
+                };
+                
                 notify(
                     'positive',
-                    res.data.message
-
+                    res.message
                 );
 
                 router.replace({
@@ -243,25 +325,20 @@
 
                 });
 
-                return;
+            } else {
+                notify(
+                    'negative',
+                    res.message
+
+                );
             };
-
-            notify(
-                'negative',
-                res.message
-
-            );
         } catch (error: any) {
-            console.error('Erro:', error);
-            console.error('Erro:', error?.inner);
-
             if(error.inner)
             {
                 formErrors.value = {};
 
                 error.inner.forEach((err: any) => {
                     formErrors.value[err.path] = err.message;
-
 
                     notify(
                         'negative',
@@ -275,6 +352,17 @@
                     error.response?.data?.message || 'Erro na criação do produto!'
                 );
             };
+        } finally {
+            loadingLogin.value = false;
         };
+    };
+
+    const getReturnedGrid = (grid: ProductCharacteristicsContract) => {
+        product.value.product_with_characteristics.push({
+            grid_qtde: Number(grid.grid_qtde) || 0,
+            id: null,
+            product_id: null,
+            size: grid.size
+        });
     };
 </script>

@@ -1,17 +1,22 @@
+type StatusSale = 'Pendente'|'Concluída'|'Cancelada';
+
 interface SaleContract {
-    readonly id: number;
-    readonly customer_id: number;
+    id: number|null;
+    customer_id: number;
+    sale_value?: number;
     customer: string;
     specie: string;
-    products: SaleItemContract[]
+    products: SaleItemContract[];
+    status?: StatusSale;
 };
 
 interface SaleItemContract {
-    readonly id: number;
-    product_id: number;
-    name: string;
-    price: number;
+    id: number|null;
+    product_id: number|null;
+    name: string|null;
+    price: number|null;
     qtde: number;
+    product_with_characteristics: ProductCharacteristicsContract[]
 };
 
 interface PaySaleContract {
@@ -19,8 +24,6 @@ interface PaySaleContract {
     specie: 'Dinheiro'|'Pix';
     amount_paid: number
 };
-
-type StatusSale = 'Pendente'|'Concluída'|'Cancelada';
 
 interface PDVContract {
     readonly id: number;

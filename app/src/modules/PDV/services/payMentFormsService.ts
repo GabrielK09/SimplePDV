@@ -13,7 +13,7 @@ export async function getAllPayMentFormsService(): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -37,7 +37,7 @@ export async function updatePayMentFormService(payLoad: string): Promise<any>
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -49,7 +49,7 @@ export async function updatePayMentFormService(payLoad: string): Promise<any>
 export async function cancelShoppingOrSale(payLoad: CancelContract): Promise<any> 
 {
     try {
-        const res = await api.put(`/${payLoad.route}/cancel`, payLoad);
+        const res = await api.put('/cancel-operation', payLoad);
         const data = res.data;
 
         return apiResponse(
@@ -57,7 +57,7 @@ export async function cancelShoppingOrSale(payLoad: CancelContract): Promise<any
             data.message,
             data.data || []
         );            
-    } catch (error) {
+    } catch (error: any) {
         return false;      
     };
 };

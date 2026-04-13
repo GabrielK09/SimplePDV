@@ -5,12 +5,19 @@ import (
 	calchelper "myApi/helpers/calc"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
+	"myApi/interface/customer"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/sale"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
+
+type ProductWithCharacteristics struct {
+	Product         sale.SaleItensContract                                  `json:"product"`
+	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"characteristics"`
+}
 
 func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -59,11 +66,32 @@ func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	saleItensData, err := sale.ShowSaleItens(id)
+
+	var saleItens []sale.SaleItensContract
+
+	for _, item := range *saleItensData {
+		productCharacteristics, err := sale.ShowSaleGridItens(id, item.ProductId)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+
+			u.ErrorLogger.Println("Erro ao buscar as grades dos itens da compra: ", err)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar os itens da compra."))
+			return
+		}
+
+		item.SaleItensWithCharacteristics = productCharacteristics
+		saleItens = append(saleItens, item)
+	}
+
 	w.WriteHeader(http.StatusOK)
 
 	responseData := map[string]any{
-		"sale":       saleDetail,
-		"commission": saleCommissionDetails,
+		"sale":               saleDetail,
+		"sale_with_products": saleItens,
+		"commission":         saleCommissionDetails,
 	}
 
 	resp := responsehelper.Response(true, responseData, "Detalhes das vendas!")
@@ -128,6 +156,23 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 		payload.Customer = "Consumidor padrão"
 	}
 
+	if payload.CustomerId > 1 && payload.Customer != "Consumidor padrão" {
+		u.InfoLogger.Println("Cliente diferente do padrão")
+		otherCustomer, err := customer.Show(payload.CustomerId)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			u.ErrorLogger.Println("Erro ao validar os dados.", err)
+			resp := responsehelper.Response(false, err, "Erro ao validar os dados.")
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		payload.Customer = otherCustomer.Name
+		payload.CustomerId = otherCustomer.Id
+	}
+
 	if err := payload.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		u.ErrorLogger.Println("Campos obrigatórios ausentes:", err)
@@ -168,63 +213,6 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 
 }
-
-/*
-	func HandlePutCancelSale(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodPut {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	} // Erro de método da rota
-
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		u.ErrorLogger.Println("Id inválido: ", err)
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err, "Id inválido."),
-		)
-
-		return
-	}
-
-	saleDetail, err := sale.Show(id)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		u.ErrorLogger.Println("Erro ao procurar a venda: ", err)
-		resp := responsehelper.Response(false, err, "Erro ao procurar a venda.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	canceledSale, err := saleDetail.CancelSale()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		u.ErrorLogger.Println("Erro ao cancelar a venda: ", err)
-		resp := responsehelper.Response(false, err, "Erro ao cancelar a venda.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-
-	resp := responsehelper.Response(true, canceledSale, "Venda cancelada com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
-}
-
-*/
 
 func HandleNewItens(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

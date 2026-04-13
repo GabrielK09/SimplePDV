@@ -17,7 +17,7 @@ export async function getDashBoardData(startDate: string, endDate: string): Prom
             data.data || []
         );
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
@@ -42,7 +42,7 @@ export async function filterPopularItensData(per_page: number): Promise<any>
         );
 
 
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,

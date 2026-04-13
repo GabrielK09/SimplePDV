@@ -141,7 +141,7 @@
     import { createProduct } from 'src/modules/products/services/productsService';
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean)
+        (e: 'close', value: boolean): void
     }>();
 
     const internalDialog = ref<boolean>(true);

@@ -2,19 +2,19 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "jsx": "preserve",
     "esModuleInterop": true,
+    "strictNullChecks": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "baseUrl": ".",
     "paths": {
-      "src/*": ["src/*"],
-      "#q-app/*": ["src/*"]
-    }    
+      "src/*": ["./src/*"],
+      "#q-app/*": ["./src/*"]
+    }
   },
   "include": [
     "src/**/*.ts",

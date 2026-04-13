@@ -12,6 +12,7 @@ import (
 	paymentcontroller "myApi/api/handle/modules/controller/payMent"
 	paymentFormscontroller "myApi/api/handle/modules/controller/payMentForms"
 	productController "myApi/api/handle/modules/controller/product"
+	productcharacteristicscontroller "myApi/api/handle/modules/controller/product/productCharacteristics"
 	reportController "myApi/api/handle/modules/controller/report"
 	root "myApi/api/handle/modules/controller/root"
 	saleController "myApi/api/handle/modules/controller/sale"
@@ -103,65 +104,72 @@ func StartServer() {
 	r := mux.NewRouter()
 	c := cors.WithCORS(r)
 
-	r.HandleFunc("/api/ping", root.HandleRoot)
-	r.HandleFunc("/api/auth/login", authcontroller.HandleAuth).Methods(http.MethodPost, http.MethodOptions)
+	api := r.PathPrefix("/api").Subrouter()
 
-	// Adiciona o prefixo, e usa a função handler como middleware
-	proteced := r.PathPrefix("/api").Subrouter()
-	proteced.Use(AuthMiddleware)
+	r.HandleFunc("/api/ping", root.HandleRoot)
+	r.HandleFunc("/api/auth/login", authcontroller.HandleAuth)
+
+	api.Use(AuthMiddleware)
 
 	// Products \\
-	proteced.HandleFunc("/products/all", productController.HandleGetProduct).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/products/find/{id}", productController.HandleGetByIdProduct).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/products/find-by-name", productController.HandleGetByNameProduct).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/products/create", productController.HandlePostProduct).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/products/update/{id}", productController.HandlePutProduct).Methods(http.MethodPut, http.MethodOptions)
-	proteced.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct).Methods(http.MethodDelete, http.MethodOptions)
+	api.HandleFunc("/products/all", productController.HandleGetProduct)
+	api.HandleFunc("/products/find/{id}", productController.HandleGetByIdProduct)
+	api.HandleFunc("/products/find-by-name", productController.HandleGetByNameProduct)
+	api.HandleFunc("/products/create", productController.HandlePostProduct)
+	api.HandleFunc("/products/create/characteristics", productcharacteristicscontroller.HandlePostCreateProductCharacteristics)
+	api.HandleFunc("/products/update/characteristics", productcharacteristicscontroller.HandlePutUpdateProductCharacteristics)
+	api.HandleFunc("/products/{product_id}/find/characteristics/{grid_id}", productcharacteristicscontroller.HandleGetProductCharacteristicsByGridId)
+	api.HandleFunc("/products/find/characteristics/{id}", productcharacteristicscontroller.HandleGetShowProductCharacteristics)
+	api.HandleFunc("/products/{product_id}/delete/characteristics/{id}", productcharacteristicscontroller.HandleDeleteProductCharacteristics)
+	api.HandleFunc("/products/update/{id}", productController.HandlePutProduct)
+	api.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct)
+	api.HandleFunc("/products/active/{id}", productController.HandleActiveProduct)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Cash Register \\
-	proteced.HandleFunc("/cash-register/all", cashregisterController.HandleGetCashRegister).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/cash-register/create", cashregisterController.HandlePostCashRegister).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/cash-register/all", cashregisterController.HandleGetCashRegister)
+	api.HandleFunc("/cash-register/create", cashregisterController.HandlePostCashRegister)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Sale \\
-	proteced.HandleFunc("/sale/all", saleController.HandleGetSale).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/sale/details/{id}", saleController.HandleGetSaleWithProducts).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/sale/cancel", paymentcontroller.HandlePutCancelSaleOrShopping).Methods(http.MethodPut, http.MethodOptions)
-	proteced.HandleFunc("/sale/create", saleController.HandlePostSale).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/sale/new-itens", saleController.HandleNewItens).Methods(http.MethodPut, http.MethodOptions)
+	api.HandleFunc("/sale/create", saleController.HandlePostSale)
+	api.HandleFunc("/sale/new-itens", saleController.HandleNewItens)
+	api.HandleFunc("/sale/all", saleController.HandleGetSale)
+	api.HandleFunc("/sale/details/{id}", saleController.HandleGetSaleWithProducts)
 
 	// Customers \\
-	proteced.HandleFunc("/customer/all", customerController.HandleGetCustomer).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/customer/find/{id}", customerController.HandleGetCustomerById).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/customer/create", customerController.HandlePostCustomer).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/customer/update/{id}", customerController.HandlePutCustomer).Methods(http.MethodPut, http.MethodOptions)
-	proteced.HandleFunc("/customer/delete/{id}", customerController.HandleDeleteCustomer).Methods(http.MethodDelete, http.MethodOptions)
+	api.HandleFunc("/customer/all", customerController.HandleGetCustomer)
+	api.HandleFunc("/customer/find/{id}", customerController.HandleGetCustomerById)
+	api.HandleFunc("/customer/create", customerController.HandlePostCustomer)
+	api.HandleFunc("/customer/update/{id}", customerController.HandlePutCustomer)
+	api.HandleFunc("/customer/delete/{id}", customerController.HandleDeleteCustomer)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// DashBoard \\
-	proteced.HandleFunc("/dash-board/totales", dashboardcontroller.HandleProcessGetDashBoard).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/dash-board/popular-itens", dashboardcontroller.HandleProcessGetDashBoardPopularItens).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/dash-board/totales", dashboardcontroller.HandleProcessGetDashBoard)
+	api.HandleFunc("/dash-board/popular-itens", dashboardcontroller.HandleProcessGetDashBoardPopularItens)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Relatórios \\
-	proteced.HandleFunc("/report", reportController.HandlePostReports).Methods(http.MethodPost, http.MethodOptions)
+	api.HandleFunc("/report", reportController.HandlePostReports)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Compras \\
-	proteced.HandleFunc("/shopping/all", shoppingcontroller.HandleGetAllShopping).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/shopping/return-last-load", shoppingcontroller.HandleGetLastShoppingLoad).Methods(http.MethodGet, http.MethodOptions)
-	proteced.HandleFunc("/shopping/create", shoppingcontroller.HandlePostCreateShopping).Methods(http.MethodPost, http.MethodOptions)
-	proteced.HandleFunc("/shopping/cancel", paymentcontroller.HandlePutCancelSaleOrShopping).Methods(http.MethodPut, http.MethodOptions)
-	proteced.HandleFunc("/shopping/details/{id}", shoppingcontroller.HandleGetShoppingById).Methods(http.MethodGet, http.MethodOptions)
+	api.HandleFunc("/shopping/all", shoppingcontroller.HandleGetAllShopping)
+	api.HandleFunc("/shopping/return-last-load", shoppingcontroller.HandleGetLastShoppingLoad)
+	api.HandleFunc("/shopping/create", shoppingcontroller.HandlePostCreateShopping)
+	api.HandleFunc("/shopping/details/{id}", shoppingcontroller.HandleGetShoppingById)
+	api.HandleFunc("/shopping/update", shoppingcontroller.HandlePutUpdateShopping)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Pagamentos \\
-	proteced.HandleFunc("/pay-ment-forms/pay", paymentcontroller.HandlePutPaySaleOrShopping).Methods(http.MethodPut, http.MethodOptions)
+	api.HandleFunc("/pay-ment-forms/pay", paymentcontroller.HandlePutPaySaleOrShopping)
 
-	proteced.HandleFunc("/pay-ment-forms/all", paymentFormscontroller.HandleGetPayMentForms).Methods(http.MethodGet, http.MethodOptions)
+	api.HandleFunc("/pay-ment-forms/all", paymentFormscontroller.HandleGetPayMentForms)
 
-	proteced.HandleFunc("/pay-ment-forms/update/pix-key", paymentFormscontroller.HandlePutPayMentForms).Methods(http.MethodPut, http.MethodOptions)
+	api.HandleFunc("/pay-ment-forms/update/pix-key", paymentFormscontroller.HandlePutPayMentForms)
+
+	api.HandleFunc("/cancel-operation", paymentcontroller.HandlePutCancelSaleOrShopping)
 
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 

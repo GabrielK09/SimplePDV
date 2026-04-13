@@ -28,7 +28,7 @@ func hashPassword(password string) (string, error) {
 }
 
 func CreateUser(db *pgxpool.Pool, ctx context.Context) {
-	fmt.Println("Executando job ...")
+	fmt.Println("Executando job - create user ...")
 
 	tx, err := db.Begin(ctx)
 
@@ -46,10 +46,19 @@ func CreateUser(db *pgxpool.Pool, ctx context.Context) {
 
 	if _, err := tx.Exec(
 		ctx,
+		`
+			TRUNCATE users RESTART IDENTITY CASCADE;
+		`,
+	); err != nil {
+		u.ErrorLogger.Fatal("Erro ao truncar usuários: ", err)
+	}
+
+	if _, err := tx.Exec(
+		ctx,
 		insertSql,
 		cryptedPass,
 	); err != nil {
-		u.ErrorLogger.Fatal("Erro ao criar o usuário.", err)
+		u.ErrorLogger.Fatal("Erro ao criar o usuário: ", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

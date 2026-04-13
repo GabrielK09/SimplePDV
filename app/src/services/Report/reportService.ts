@@ -26,7 +26,7 @@ export async function generateReport(payLoad: ReportContract, fileName: string)
         return {
             success: true
         };
-    } catch (error) {
+    } catch (error: any) {
         return apiResponse(
             false,
             error.response?.data?.message,
