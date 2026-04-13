@@ -124,6 +124,7 @@ func StartServer() {
 	api.HandleFunc("/products/update/{id}", productController.HandlePutProduct)
 	api.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct)
 	api.HandleFunc("/products/active/{id}", productController.HandleActiveProduct)
+	api.HandleFunc("/products/verify-qtdes", productController.HandleVerifyQtdes)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Cash Register \\

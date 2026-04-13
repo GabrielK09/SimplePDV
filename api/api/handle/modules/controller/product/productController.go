@@ -388,6 +388,28 @@ func HandlePutProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto alterado com sucesso!"))
+}
+
+func HandleVerifyQtdes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
+		return
+	}
+
+	qtdesData, err := product.VerifyQtdes()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Erro ao retornar os dados das qtdes."))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, qtdesData, "Dados das qtdes do estoque."))
 }

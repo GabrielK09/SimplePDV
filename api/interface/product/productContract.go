@@ -45,6 +45,11 @@ type ProductGrids struct {
 	GridQtde  int
 }
 
+type VerifyQtde struct {
+	TotalFuture    int `json:"total_future"`
+	TotalReservate int `json:"total_reservate"`
+}
+
 var conn *pgxpool.Pool
 var ctx = context.Background()
 
@@ -600,15 +605,38 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, have
 
 // Processamento de qtdes futuras e reservadas
 
-func VerifyQtdes() error {
-	tx, err := conn.Begin(ctx)
+func VerifyQtdes() (*VerifyQtde, error) {
+	var qtdesData VerifyQtde
 
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao iniciar a transiction:", err)
-		return err
+	var totalFutureShopping int
+	var totalReservateSale int
+
+	if err := conn.QueryRow(
+		ctx,
+		`
+			SELECT COALESCE(SUM(qtde_purchased), 0) FROM shopping_itens WHERE status = 'Pendente'
+		`,
+	).Scan(
+		&totalFutureShopping,
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao coletar os dados da qtde futura ( compras ):", err)
+		return nil, err
 	}
 
-	defer tx.Rollback(ctx)
+	if err := conn.QueryRow(
+		ctx,
+		`
+			SELECT COALESCE(SUM(qtde), 0) FROM sale_itens WHERE status = 'Pendente'
+		`,
+	).Scan(
+		&totalReservateSale,
+	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao coletar os dados da qtde reservada ( vendas ):", err)
+		return nil, err
+	}
 
-	return nil
+	qtdesData.TotalFuture = totalFutureShopping
+	qtdesData.TotalReservate = totalReservateSale
+
+	return &qtdesData, nil
 }
