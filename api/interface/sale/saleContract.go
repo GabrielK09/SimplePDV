@@ -31,12 +31,13 @@ type SaleContract struct {
 }
 
 type SaleItensContract struct {
-	ProductId           int     `json:"product_id"`
-	Name                string  `json:"name"`
-	SaleValue           float64 `json:"sale_value"`
-	Qtde                int     `json:"qtde"`
-	Commission          float64 `json:"commission_by_produtc"`
-	CommissionGenerated float64 `json:"commission_generated"`
+	ProductId                    int                                                      `json:"product_id"`
+	Name                         string                                                   `json:"name"`
+	SaleValue                    float64                                                  `json:"sale_value"`
+	Qtde                         int                                                      `json:"qtde"`
+	SaleItensWithCharacteristics *[]productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+	Commission                   float64                                                  `json:"commission_by_produtc"`
+	CommissionGenerated          float64                                                  `json:"commission_generated"`
 }
 
 var conn *pgxpool.Pool
@@ -122,24 +123,22 @@ func GetAll() ([]SaleContract, error) {
 func Show(id int) (*SaleContract, error) {
 	var s SaleContract
 
-	query := `
-		SELECT
-			id,
-			customer_id,
-			customer,
-			sale_value,
-			status
-			
-		FROM
-			sales
-
-		WHERE
-			id = $1
-	`
-
 	if err := conn.QueryRow(
 		ctx,
-		query,
+		`
+			SELECT
+				id,
+				customer_id,
+				customer,
+				sale_value,
+				status
+				
+			FROM
+				sales
+
+			WHERE
+				id = $1
+		`,
 		id,
 	).Scan(
 		&s.Id,
@@ -152,100 +151,98 @@ func Show(id int) (*SaleContract, error) {
 		return nil, err
 	}
 
-	queryFromItens := `
-		SELECT
-			id,
-			sale_id,
-			product_id,
-			name,
-			qtde,
-			sale_value,
-			status
-		FROM
-			sale_itens
+	return &s, nil
+}
 
-		WHERE
-			sale_id = $1
-	`
+func ShowSaleItens(id int) (*[]SaleItensContract, error) {
+	var saleItens []SaleItensContract
 
-	rows, err := conn.Query(
+	rowsSaleItens, err := conn.Query(
 		ctx,
-		queryFromItens,
+		`
+			SELECT
+				product_id,
+				name,
+				qtde,
+				sale_value
+			FROM
+				sale_itens
+			WHERE
+				sale_id = $1
+		`,
 		id,
 	)
 
-	if err != nil {
-		u.ErrorLogger.Println("Erro ao fazer o select")
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao executar a query:", err)
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer rowsSaleItens.Close()
 
-	for rows.Next() {
-		var productCharacteristic productcharacteristics.ProductCharacteristicsContract
+	for rowsSaleItens.Next() {
+		var saleItem SaleItensContract
 
-		var p struct {
-			Id                         int                                                      `json:"id"`
-			SaleId                     int                                                      `json:"sale_id"`
-			ProductId                  int                                                      `json:"product_id"`
-			Name                       string                                                   `json:"name"`
-			Qtde                       int                                                      `json:"qtde"`
-			SaleValue                  float64                                                  `json:"price"`
-			Status                     string                                                   `json:"status"`
-			ProductWithCharacteristics *[]productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
-			CreatedAt                  time.Time                                                `json:"created_at"`
-			UpdatedAt                  time.Time                                                `json:"cpdated_at"`
-		}
-
-		if err := rows.Scan(
-			&p.Id,
-			&p.SaleId,
-			&p.ProductId,
-			&p.Name,
-			&p.Qtde,
-			&p.SaleValue,
-			&p.Status,
+		if err := rowsSaleItens.Scan(
+			&saleItem.ProductId,
+			&saleItem.Name,
+			&saleItem.Qtde,
+			&saleItem.SaleValue,
 		); err != nil {
-			u.ErrorLogger.Printf("Erro no select dos itens da venda - %s", err)
+			u.ErrorLogger.Println("Erro ao executar a query:", err)
 			return nil, err
 		}
 
-		err := conn.QueryRow(
-			ctx,
-			`
-				SELECT
-					product_id,
-					sale_id,
-					product_grid_id,
-					size_saled,
-					grid_qtde
-
-				FROM
-					sale_itens_grid
-
-				WHERE
-					sale_id = $1 AND
-					product_id = $2
-			`,
-			id,
-			p.ProductId,
-		).Scan(
-			&productCharacteristic.ProductId,
-			&productCharacteristic.SaleId,
-			&productCharacteristic.Id,
-			&productCharacteristic.Size,
-			&productCharacteristic.GridQtde,
-		)
-
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			u.ErrorLogger.Println("Erro ao pegar os dados da sale_itens_grid:", err)
-			return nil, err
-		}
-
-		s.Products = append(s.Products, p)
+		saleItens = append(saleItens, saleItem)
 	}
 
-	return &s, nil
+	return &saleItens, nil
+}
+
+func ShowSaleGridItens(saleId, productId int) (*[]productcharacteristics.ProductCharacteristicsContract, error) {
+	var saleGridItens []productcharacteristics.ProductCharacteristicsContract
+
+	rowsSaleGridItens, err := conn.Query(
+		ctx,
+		`
+			SELECT
+				product_id,
+				size_saled,
+				grid_qtde
+			FROM
+				sale_itens_grid
+
+			WHERE
+				sale_id = $1 AND
+				product_id = $2
+		`,
+		saleId,
+		productId,
+	)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao executar a query: ", err)
+		return nil, err
+	}
+
+	defer rowsSaleGridItens.Close()
+
+	for rowsSaleGridItens.Next() {
+		var saleGridItem productcharacteristics.ProductCharacteristicsContract
+
+		if err := rowsSaleGridItens.Scan(
+			&saleGridItem.ProductId,
+			&saleGridItem.Size,
+			&saleGridItem.GridQtde,
+		); err != nil {
+			u.ErrorLogger.Println("Erro ao executar a query: ", err)
+			return nil, err
+		}
+
+		saleGridItens = append(saleGridItens, saleGridItem)
+	}
+
+	return &saleGridItens, nil
 }
 
 func ShowTotalCommission(id int) (*[]SaleItensContract, error) {

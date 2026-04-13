@@ -1,9 +1,13 @@
+type StatusSale = 'Pendente'|'Concluída'|'Cancelada';
+
 interface SaleContract {
     id: number|null;
     customer_id: number;
+    sale_value?: number;
     customer: string;
     specie: string;
-    products: SaleItemContract[]
+    products: SaleItemContract[];
+    status?: StatusSale;
 };
 
 interface SaleItemContract {
@@ -20,8 +24,6 @@ interface PaySaleContract {
     specie: 'Dinheiro'|'Pix';
     amount_paid: number
 };
-
-type StatusSale = 'Pendente'|'Concluída'|'Cancelada';
 
 interface PDVContract {
     readonly id: number;

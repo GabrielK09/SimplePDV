@@ -66,11 +66,32 @@ func HandleGetSaleWithProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	saleItensData, err := sale.ShowSaleItens(id)
+
+	var saleItens []sale.SaleItensContract
+
+	for _, item := range *saleItensData {
+		productCharacteristics, err := sale.ShowSaleGridItens(id, item.ProductId)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+
+			u.ErrorLogger.Println("Erro ao buscar as grades dos itens da compra: ", err)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar os itens da compra."))
+			return
+		}
+
+		item.SaleItensWithCharacteristics = productCharacteristics
+		saleItens = append(saleItens, item)
+	}
+
 	w.WriteHeader(http.StatusOK)
 
 	responseData := map[string]any{
-		"sale":       saleDetail,
-		"commission": saleCommissionDetails,
+		"sale":               saleDetail,
+		"sale_with_products": saleItens,
+		"commission":         saleCommissionDetails,
 	}
 
 	resp := responsehelper.Response(true, responseData, "Detalhes das vendas!")

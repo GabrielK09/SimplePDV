@@ -20,50 +20,49 @@
                         </span>
 
                         <div class="mt-4 p-2">
-                            <pre>{{ shoppingData.shopping_itens }}</pre>
                             <q-table
                                 v-model:pagination="pagination"
                                 :rows="shoppingData.shopping_itens"
                                 :columns="columnsForShoppingItens"
-                                :hide-bottom="shoppingData.shopping_itens.length < 10"
+
                                 row-key="product_id"
                             >
                                 <template v-slot:body="props">
                                     <q-tr :props="props">
                                         <q-td key="name" :props="props">
                                             <span>
-                                                {{ `${props.row.product.name.substring(0, 20)}...` }}
+                                                {{ `${props.row.name.substring(0, 20)}...` }}
 
                                                 <q-tooltip>
-                                                    {{ props.row.product.name }}
+                                                    {{ props.row.name }}
                                                 </q-tooltip>
                                             </span>
                                         </q-td>
 
                                         <q-td key="qtde_purchased" :props="props">
                                             <span>
-                                                {{ props.row.product.qtde_purchased }}
+                                                {{ props.row.qtde_purchased }}
                                             </span>
                                         </q-td>
 
                                         <q-td key="purchased_value" :props="props">
                                              <span>
-                                                R$ {{ props.row.product.purchased_value.toFixed(2).replace('.', ',') }}
+                                                R$ {{ props.row.purchased_value.toFixed(2).replace('.', ',') }}
                                             </span>
                                         </q-td>
 
                                         <q-td key="actions" :props="props">
                                             <div class="flex flex-row items-center gap-1">
-                                                <q-btn 
-                                                    v-if="hasCharacteristics(props.row.product)"
+                                                <q-btn
+                                                    v-if="hasCharacteristics(props.row)"
                                                     size="10px"
                                                     color="black"
-                                                    :icon="isExpanded(props.row.product.product_id) ? 'expand_less' : 'grid_on'"
+                                                    :icon="isExpanded(props.row.product_id) ? 'expand_less' : 'grid_on'"
                                                     flat
-                                                    @click="toggleExpanded(props.row.product.product_id)"
+                                                    @click="toggleExpanded(props.row.product_id)"
                                                 >
                                                     <q-tooltip>
-                                                        {{ 
+                                                        {{
                                                             isExpanded(props.row.product_id)
                                                                 ? 'Ocultar'
                                                                 : 'Ver grade'
@@ -74,8 +73,8 @@
                                         </q-td>
                                     </q-tr>
 
-                                    <q-tr 
-                                        v-if="isExpanded(props.row.product.product_id) && hasCharacteristics(props.row.product_with_characteristics)"
+                                    <q-tr
+                                        v-if="isExpanded(props.row.product_id) && hasCharacteristics(props.row)"
                                         :props="props"
                                     >
                                         <q-td colspan="100%" class="bg-gray-200">
@@ -89,7 +88,7 @@
                                                         v-for="(characteristic, i) in props.row.product_with_characteristics"
                                                         :key="`${props.row.product_id}-${characteristic.size}`"
                                                         class="col-12 col-sm-6 col-md-3"
-                                                    >   
+                                                    >
                                                         <q-card flat bordered>
                                                             <q-card-section class="q-pa-pmd">
                                                                 <div class="text-caption text-gray-700">
@@ -227,7 +226,7 @@
 
     const hasCharacteristics = (row: any): boolean => {
         console.log(row);
-        
+
         return Array.isArray(row.product_with_characteristics) && row.product_with_characteristics.length > 0;
     };
 
@@ -242,11 +241,11 @@
         };
 
         expdandeRows.value.push(productId);
-    }; 
+    };
 
     onMounted(async() => {
         const res = await getShoppingById(props.shoppingId);
-        
+
         if(!res.success)
         {
             notify(
@@ -256,11 +255,8 @@
             emits('close', true);
         };
 
-        console.log(res.data);
-        
-
-        const shoppingDetails: ShoppingContract = res.data.shopping;
-        const shoppingWithProducts: ShoppingItemContract[] = res.data.shoppingWithProducts;
+        const shoppingDetails: ShoppingContract = res.data.shopping_data || [];
+        const shoppingWithProducts: ShoppingItemContract[] = res.data.shopping_with_products || [];
 
         shoppingData.value = {
             id: shoppingDetails.id,

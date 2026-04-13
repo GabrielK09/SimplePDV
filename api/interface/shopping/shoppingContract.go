@@ -350,26 +350,28 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 	return &shoppingItens, nil
 }
 
-func ShowShoppingGridItens(shopingId int) (*[]productcharacteristics.ProductCharacteristicsContract, error) {
+func ShowShoppingGridItens(shopingId, productId int) (*[]productcharacteristics.ProductCharacteristicsContract, error) {
 	var shoppingItens []productcharacteristics.ProductCharacteristicsContract
 
 	rowsShoppingGridItens, err := conn.Query(
 		ctx,
 		`
 			SELECT
+				product_id,
 				size_saled,
 				grid_qtde
-				
 			FROM
 				shopping_itens_grid
 
 			WHERE
-				shopping_id = $1
+				shopping_id = $1 AND
+				product_id = $2
 		`,
 		shopingId,
+		productId,
 	)
 
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil {
 		u.ErrorLogger.Println("Erro ao executar a query: ", err)
 		return nil, err
 	}
@@ -380,6 +382,7 @@ func ShowShoppingGridItens(shopingId int) (*[]productcharacteristics.ProductChar
 		var item productcharacteristics.ProductCharacteristicsContract
 
 		if err := rowsShoppingGridItens.Scan(
+			&item.ProductId,
 			&item.Size,
 			&item.GridQtde,
 		); err != nil {

@@ -183,6 +183,24 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 
 	shoppingIntesData, err := shopping.ShowShoppingItens(shoppingId)
 
+	var shoppinggItens []shopping.ShoppingItenContract
+
+	for _, item := range *shoppingIntesData {
+		productCharacteristics, err := shopping.ShowShoppingGridItens(item.ShoppingId, item.ProductId)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+
+			u.ErrorLogger.Println("Erro ao buscar as grades dos itens da compra: ", err)
+
+			json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao buscar os itens da compra."))
+			return
+		}
+
+		item.ShoppingItensWithCharacteristics = productCharacteristics
+		shoppinggItens = append(shoppinggItens, item)
+	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -192,29 +210,11 @@ func HandleGetShoppingById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productCharacteristics, err := shopping.ShowShoppingGridItens(shoppingId)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos os produtos."))
-		return
-	}
-
-	var productsWithCharacteristics []ProductWithCharacteristics
-
-	for _, p := range *shoppingIntesData {
-		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
-			Product:         p,
-			Characteristics: *productCharacteristics,
-		})
-	}
-
-	repsonse := map[string]any{
-		"shopping":             shoppingData,
-		"shoppingWithProducts": productsWithCharacteristics,
+	response := map[string]any{
+		"shopping_data":          shoppingData,
+		"shopping_with_products": shoppinggItens,
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, repsonse, "Forma de pagamento alterada com sucesso!"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, response, "Dados da compra"))
 }

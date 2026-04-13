@@ -1,6 +1,6 @@
 <template>
     <q-dialog v-model="confirm" persistent>
-        <q-card v-show="showInternal" class="text-base">
+        <q-card class="text-base dialog">
             <q-card-section>
                 <header class="text-gray-600 text-center">
                     <h2>Detalhes da venda N° {{ props.saleId }}</h2>
@@ -133,9 +133,9 @@
             align: 'center'
         },
         {
-            field: 'price',
+            field: 'sale_value',
             label: 'Valor da venda',
-            name: 'price',
+            name: 'sale_value',
             align: 'center',
             format(val): string {
                 return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
@@ -148,10 +148,7 @@
             field: 'name',
             label: 'Nome',
             name: 'name',
-            align: 'left',
-            format(val): string {
-                return val.substring(0, 10) + '...'
-            }
+            align: 'left'
         },
         {
             field: 'commission_by_produtc',
@@ -179,7 +176,7 @@
     const showInternal = ref<boolean>(false);
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean)
+        (e: 'close', value: boolean): void
     }>();
 
     const props = defineProps<{
@@ -221,9 +218,32 @@
 
         const data = res.data;
 
-        saleData.value = data.sale || [];
+        console.log(data);
+
+        const saleDetails: DetailSaleContract = data.sale;
+        const saleWithProducts: SaleItemContract[] = data.sale_with_products;
         commissionData.value = data.commission || [];
+
+        saleData.value = {
+            id: saleDetails.id,
+            customer: saleDetails.customer,
+            customer_id: saleDetails.customer_id,
+            sale_value: saleDetails.sale_value,
+            products: saleWithProducts,
+            status: saleDetails.status
+        };
+
+        console.log(saleData.value);
 
         showInternal.value = !showInternal.value;
     });
 </script>
+
+<style>
+    .dialog {
+        width: 100%;
+        max-width: 1150px;
+        min-width: 320px;
+        border-radius: 18px;
+    }
+</style>
