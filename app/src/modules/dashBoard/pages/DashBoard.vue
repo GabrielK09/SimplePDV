@@ -1,41 +1,47 @@
 <template>
     <q-page padding class="bg-grey-2">
         <div class="q-gutter-lg">
-            <q-card class="q-pa-md">
-                <q-form
-                    @submit.prevent="filterDashBoard"
-                >
-                    <div class="row q-col-gutter-md items-end">
-                        <div class="col-12 col-md-3">
-                            <q-input v-model="startDate" type="date" label="Data inicial" outlined />
-                        </div>
-
-                        <div class="col-12 col-md-3">
-                            <q-input v-model="endDate" type="date" label="Data final" outlined />
-                        </div>
-
-                        <div class="my-auto">
-                            <q-btn
-                                type="submit"
-                                no-caps
-                                label="Filtrar"
-                                class="full-width bg-[#2563EB] text-white"
-                            />
-                        </div>
-
-                        <div class="my-auto">
-                            <q-btn
-                                no-caps
-                                class="full-width bg-[#1D4ED8] text-white"
-                                label="Relatórios"
-                                @click="showReports = !showReports"
-                            />
-                        </div>
+            <q-card class="q-pa-md mr-6">
+                <div class="row q-col-gutter-md items-end">
+                    <div class="col-12 col-md-3">
+                        <q-input v-model="startDate" type="date" label="Data inicial" outlined />
                     </div>
-                </q-form>
+
+                    <div class="col-12 col-md-3">
+                        <q-input v-model="endDate" type="date" label="Data final" outlined />
+                    </div>
+
+                    <div class="my-auto">
+                        <q-btn
+                            @click="filterDashBoard"
+                            no-caps
+                            label="Filtrar"
+                            class="full-width bg-[#2563EB] text-white"
+                        />
+                    </div>
+
+                    <div class="my-auto">
+                        <q-btn
+                            no-caps
+                            class="full-width bg-[#1D4ED8] text-white"
+                            label="Relatórios"
+                            @click="showReports = !showReports"
+                        />
+                    </div>
+
+                    <div class="my-auto">
+                        <q-btn 
+                            no-caps
+                            color="primary" 
+                            label="Resumo de qtdes"
+                            class="full-width bg-[#1b2747] text-white"
+                            @click="showResumeQtde = !showResumeQtde"
+                        />
+                    </div>
+                </div>
             </q-card>
 
-            <div class="row q-col-gutter-md mr-6">
+            <div class="row q-col-gutter-md ml-2 mr-6">
                 <div class="col-12 col-md-3">
                     <q-card class="q-pa-md shadow-2">
                         <div class="text-grey">Total vendido</div>
@@ -159,16 +165,21 @@
         v-if="showReports"
         @close="showReports = !$event"
     />
+
+    <VerifyQtdesDialog
+        v-if="showResumeQtde"
+        @close="showResumeQtde = !$event"
+    />
 </template>
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
-    import { onMounted, ref, watch } from 'vue';
-    //import ApexChart from 'vue3-apexcharts';
+    import { onMounted, ref } from 'vue';
     import { filterPopularItensData, getDashBoardData } from '../services/dashBoardService';
     import { getAll } from 'src/modules/cashRegister/services/cashRegisterService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import ManagementReport from 'src/components/Reports/ManagementReport.vue';
+    import VerifyQtdesDialog from 'src/components/DashBoard/VerifyQtdesDialog.vue';
 
     const { notify } = useNotify();
     const startDate = ref<string>('');
@@ -177,6 +188,7 @@
     const totalBalance = ref<number>(0);
     const showCashRegisterInformation = ref<boolean>(false);
     const showReports = ref<boolean>(false);
+    const showResumeQtde = ref<boolean>(false);
 
     const popularItensTableColumn: QTableColumn[] = [
         {
@@ -189,7 +201,7 @@
             name: 'produto',
             label: 'Produto',
             field: 'produto',
-            align: 'center',
+            align: 'left',
         },
         {
             name: 'item_sale_value',

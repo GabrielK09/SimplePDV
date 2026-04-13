@@ -72,7 +72,7 @@
     };
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean)
+        (e: 'close', value: boolean): void
     }>();
 
     const internalDialog = ref<boolean>(true);

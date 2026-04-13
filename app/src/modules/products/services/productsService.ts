@@ -217,12 +217,30 @@ export async function findById(id: number): Promise<any>
 export async function findByName(name: string): Promise<any>
 {
     try {
-        const res = await api.get(`products/find-by-name ?name=${name}`);
+        const res = await api.get(`products/find-by-name?name=${name}`);
         const data = res.data.data;
 
         return apiResponse(
             true,
             data.message || 'Dados do produto',
+            data
+        );
+
+    } catch (error: any) {
+        return null;
+
+    };
+};
+
+export async function returnVerifyQtdes(): Promise<any>
+{
+    try {
+        const res = await api.get(`products/verify-qtdes`);
+        const data = res.data.data;
+
+        return apiResponse(
+            true,
+            data.message || 'Dados das qtdes dos produtos',
             data
         );
 
