@@ -24,7 +24,7 @@
                                 v-model:pagination="pagination"
                                 :rows="shoppingData.shopping_itens"
                                 :columns="columnsForShoppingItens"
-
+                                :hide-bottom="shoppingData.shopping_itens.length < 10"
                                 row-key="product_id"
                             >
                                 <template v-slot:body="props">
@@ -225,8 +225,6 @@
     }>();
 
     const hasCharacteristics = (row: any): boolean => {
-        console.log(row);
-
         return Array.isArray(row.product_with_characteristics) && row.product_with_characteristics.length > 0;
     };
 
