@@ -23,6 +23,10 @@
                                 color="grey"
                                 class="w-[120%] mb-4 rounded-xl"
                                 hide-bottom-space
+                                maxlength="100"
+                                :rules="[
+                                    val => !!val || 'O e-mail é obrigatório.'
+                                ]"
                             >
                                 <template v-slot:label>
                                     <div>Login <span class="text-red-500 text-xs relative bottom-1">*</span></div>
@@ -47,6 +51,10 @@
                                 color="grey"
                                 class="w-[120%] mb-4 rounded-xl"
                                 required
+                                maxlength="100"
+                                :rules="[
+                                    val => !!val || 'A senha é obrigatória.'
+                                ]"
                             >
                                 <template v-slot:label>
                                     <div>Senha <span class="text-red-500 text-xs relative bottom-1">*</span></div>

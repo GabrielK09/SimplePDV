@@ -20,6 +20,7 @@ import (
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -50,21 +51,72 @@ func verifyToken(tokenString string) error {
 	return nil
 }
 
+/*
+	func AuthMiddleware(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+
+			authHeader := r.Header.Get("Authorization")
+
+			if authHeader == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				resp := responsehelper.Response(false, nil, "Token inválido.")
+
+				json.NewEncoder(w).Encode(resp)
+				return
+			}
+
+			parts := strings.SplitN(authHeader, " ", 2)
+
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+				w.WriteHeader(http.StatusUnauthorized)
+				resp := responsehelper.Response(false, nil, "Token inválido.")
+
+				json.NewEncoder(w).Encode(resp)
+				return
+			}
+
+			tokenString := strings.TrimSpace(parts[1])
+
+			if tokenString == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				resp := responsehelper.Response(false, nil, "Token inválido.")
+
+				json.NewEncoder(w).Encode(resp)
+				return
+			}
+
+			if err := verifyToken(tokenString); err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				resp := responsehelper.Response(false, nil, "Token inválido.")
+
+				json.NewEncoder(w).Encode(resp)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+*/
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
 		if r.Method == http.MethodOptions {
-			next.ServeHTTP(w, r)
+			w.WriteHeader(http.StatusNoContent)
+			return
 		}
+
+		w.Header().Set("Content-Type", "application/json")
 
 		authHeader := r.Header.Get("Authorization")
 
 		if authHeader == "" {
 			w.WriteHeader(http.StatusUnauthorized)
-			resp := responsehelper.Response(false, nil, "Token inválido.")
-
-			json.NewEncoder(w).Encode(resp)
+			json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Token inválido."))
 			return
 		}
 
@@ -72,9 +124,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
 			w.WriteHeader(http.StatusUnauthorized)
-			resp := responsehelper.Response(false, nil, "Token inválido.")
-
-			json.NewEncoder(w).Encode(resp)
+			json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Token inválido."))
 			return
 		}
 
@@ -82,17 +132,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		if tokenString == "" {
 			w.WriteHeader(http.StatusUnauthorized)
-			resp := responsehelper.Response(false, nil, "Token inválido.")
-
-			json.NewEncoder(w).Encode(resp)
+			json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Token inválido."))
 			return
 		}
 
 		if err := verifyToken(tokenString); err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			resp := responsehelper.Response(false, nil, "Token inválido.")
-
-			json.NewEncoder(w).Encode(resp)
+			json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Token inválido."))
 			return
 		}
 
@@ -174,6 +220,11 @@ func StartServer() {
 
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+
 	log.Println("Servidor rodando em http://localhost:8000/api")
-	u.ErrorLogger.Fatal(http.ListenAndServe(":8000", c))
+	u.ErrorLogger.Fatal(http.ListenAndServe(":"+port, c))
 }

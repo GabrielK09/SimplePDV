@@ -4,3 +4,6 @@
 /log
 /db/schema
 /db/bkp
+/jobs
+.vercel
+.env*.local
