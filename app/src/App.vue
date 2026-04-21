@@ -7,15 +7,15 @@
     import { api } from './boot/axios';
     import { useRouter } from 'vue-router';
     import { useNotify } from './helpers/QNotify/useNotify';
+    import { LocalStorage } from 'quasar';
 
     const router = useRouter();
     const { notify } = useNotify();
 
     onMounted(async() => {
         const res = await api.get('/ping');
-        const data = res.data;
 
-        if (data.data !== 'pong' || data.data === '')
+        if (res.data.data !== 'pong' && !res.data.success)
         {
             notify(
                 'negative',
@@ -23,6 +23,8 @@
 
             );
 
+            LocalStorage.remove("authToken");
+            
             router.replace({
                 path: '/auth/login'
             });

@@ -63,7 +63,7 @@ export async function payMentService(payMentValues: PayMentValue[], saleId: numb
             }))
         };
 
-        const res = await api.put('/pay-ment-forms/pay', payLoad);
+        const res = await api.patch('/pay-ment-forms/pay', payLoad);
         const data = res.data;
 
         return apiResponse(

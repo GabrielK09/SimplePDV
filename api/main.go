@@ -9,6 +9,7 @@ import (
 	processpayment "myApi/api/services/payMent"
 	reports "myApi/api/services/reports"
 	"myApi/db"
+	dbaction "myApi/db/dbActions/seeder"
 	u "myApi/helpers/logger"
 	"myApi/interface/cashRegister"
 	"myApi/interface/customer"
@@ -19,6 +20,7 @@ import (
 	"myApi/interface/sale"
 	"myApi/interface/shopping"
 	"myApi/interface/user"
+	"myApi/jobs"
 	"os"
 )
 
@@ -43,28 +45,27 @@ func main() {
 
 	flag.Parse()
 
-	/*
-		appEnv := os.Getenv("APP_ENV")
+	appEnv := os.Getenv("APP_ENV")
 
-		if appEnv == "dev" {
-			switch jobFlag {
-			case "createUser":
-				jobs.CreateUser(dbConn, ctx)
-				return
+	if appEnv == "dev" {
+		switch jobFlag {
+		case "createUser":
+			jobs.CreateUser(dbConn, ctx)
+			return
 
-			case "resetSite":
-				jobs.ResetSite(dbConn, ctx)
-				return
-			}
-
-			switch dbFlag {
-			case "seed":
-				dbaction.DBSeed(dbConn, ctx)
-
-				return
-			}
+		case "resetSite":
+			jobs.ResetSite(dbConn, ctx)
+			return
 		}
-	*/
+
+		switch dbFlag {
+		case "seed":
+			dbaction.DBSeed(dbConn, ctx)
+
+			return
+		}
+	}
+
 	log.Println("Banco de dados conectado com sucesso!")
 
 	product.SetConnection(dbConn)

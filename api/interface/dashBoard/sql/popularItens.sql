@@ -7,7 +7,6 @@ SELECT
 FROM 
     sales s
 
-
 INNER JOIN
     sale_itens si ON si.sale_id = s.id
 

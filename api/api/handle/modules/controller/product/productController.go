@@ -179,48 +179,23 @@ func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
 
 	u.InfoLogger.Println("Name - recebido: ", r.URL.Query().Get("name"))
 
-	var productsWithCharacteristics []ProductWithCharacteristics
-	productData, err := product.ShowByName(r.URL.Query().Get("name"))
+	productsData, err := product.ShowByName(r.URL.Query().Get("name"))
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao localizar o produto pelo nome: ", err)
 
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produtos."))
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar os produtos."))
 		return
-	}
-
-	productCharacteristics, err := productcharacteristics.GetAll()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos os produtos."))
-		return
-	}
-
-	characteristicsMap := make(map[int][]productcharacteristics.ProductCharacteristicsContract)
-
-	for _, c := range productCharacteristics {
-		characteristicsMap[c.ProductId] = append(characteristicsMap[c.ProductId], c)
-	}
-
-	for _, p := range productData {
-		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
-			Product:         p,
-			Characteristics: characteristicsMap[p.Id],
-		})
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(responsehelper.Response(true, productsWithCharacteristics, "Produto"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, productsData, "Produto"))
 }
 
 func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	var productsWithCharacteristics ProductWithCharacteristics
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -236,9 +211,7 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 
 		u.ErrorLogger.Println("Id inválido: ", err)
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err, "Id inválido."),
-		)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Id inválido."))
 
 		return
 	}
@@ -247,9 +220,7 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 
 		u.ErrorLogger.Println("Id inválido: ", err)
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, nil, "Id inválido."),
-		)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Id inválido."))
 
 		return
 	}
@@ -259,27 +230,24 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produtos."))
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produto."))
 		return
 	}
 
-	productCharacteristicsData, err := productcharacteristics.Show(productId)
+	allProductCharacteristics, err := productcharacteristics.GetAllByProductId(productData.Id)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produtos."))
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar a grade do produto."))
 		return
 	}
 
-	productsWithCharacteristics = ProductWithCharacteristics{
-		Product:         *productData,
-		Characteristics: *productCharacteristicsData,
-	}
+	productData.ProductWithCharacteristics = allProductCharacteristics
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(responsehelper.Response(true, productsWithCharacteristics, "Produto"))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, productData, "Produto"))
 }
 
 func HandlePostProduct(w http.ResponseWriter, r *http.Request) {

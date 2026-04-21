@@ -46,17 +46,6 @@ const routes: RouteRecordRaw[] = [
                         path: '',
                         name: 'products.index',
                         component: () => import('src/modules/products/pages/IndexProducts.vue')
-                    },
-                    {
-                        path: 'create',
-                        name: 'products.create',
-                        component: () => import('src/modules/products/pages/create/CreateProduct.vue')
-                    },
-                    {
-                        path: 'edit/:id',
-                        name: 'products.edit',
-                        props: true,
-                        component: () => import('src/modules/products/pages/update/UpdateProduct.vue')
                     }
                 ]
             },
@@ -82,17 +71,6 @@ const routes: RouteRecordRaw[] = [
                         path: '',
                         name: 'customers.index',
                         component: () => import('src/modules/customer/pages/IndexCustomer.vue')
-                    },
-                    {
-                        path: 'create',
-                        name: 'customers.create',
-                        component: () => import('src/modules/customer/pages/create/CreateCustomer.vue')
-                    },
-                    {
-                        path: 'edit/:id',
-                        name: 'customers.edit',
-                        props: true,
-                        component: () => import('src/modules/customer/pages/update/UpdateCustomer.vue')
                     }
                 ]
             },
@@ -124,3 +102,5 @@ const routes: RouteRecordRaw[] = [
     ];
 
 export default routes;
+
+

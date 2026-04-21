@@ -60,6 +60,7 @@
                             @click="showResumeQtde = !showResumeQtde"
                         />
                     </div>
+
                 </div>
             </q-card>
 
@@ -189,7 +190,7 @@
     const popularItensTableColumn: QTableColumn[] = [
         {
             name: 'produto_id',
-            label: 'Cód. Produto',
+            label: 'Cód produto',
             field: 'produto_id',
             align: 'left',
         },

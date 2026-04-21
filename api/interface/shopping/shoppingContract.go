@@ -423,7 +423,7 @@ func checkExistLoad(load int) (bool, error) {
 		return false, nil
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func ReturnLastShoppingLoad() (int, error) {

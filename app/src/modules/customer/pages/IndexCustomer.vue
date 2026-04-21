@@ -8,15 +8,16 @@
                     <q-btn
                         no-caps
                         color="blue"
-                        to="/admin/customers/create"
+                        @click="manageCustomerModal.create.show = !manageCustomerModal.create.show"
+                        class="max-phone:mb-5"
                         label="Cadastrar novo cliente"
-
                     />
                 </div>
             </div>
 
             <div>
                 <q-table
+                    v-model:pagination="pagination"
                     borded
                     :rows="customers"
                     :columns="columns"
@@ -41,41 +42,51 @@
                     </template>
 
                     <template v-slot:body="props">
-                        <q-tr
-                            :props="props"
-                        >
-                            <q-td
-                                v-for="col in props.cols"
-                            >
+                        <q-tr :props="props">
+                            <q-td v-for="col in props.cols">
                                 <template v-if="col.name === 'actions'">
-                                    <div
-                                        class="text-center flex flex-center"
+                                    <q-btn 
+                                        dense
+                                        flat
+                                        icon="more_vert"
                                     >
-                                        <div>
-                                            <q-btn 
-                                                size="10px" 
-                                                no-caps 
-                                                color="black" 
-                                                icon="edit" 
-                                                flat 
-                                                :disable="props.row.id === 1"
-                                                :to="`customers/edit/${props.row.id}`"
-                                            />
-
-                                        </div>
-
-                                        <div>
-                                            <q-btn 
-                                                size="10px" 
-                                                no-caps 
-                                                color="red" 
-                                                icon="delete" 
-                                                flat 
-                                                @click="showDialogDeleteProduct(props.row.id)"
-                                                :disable="props.row.id === 1"
-                                            />
-                                        </div>
-                                    </div>
+                                        <q-menu
+                                            anchor="bottom right"
+                                            self="top right"
+                                            class="rounded shadow-xl bg-white"
+                                            transition-show="jump-down"
+                                        >
+                                            <q-list style="min-width: 90px">
+                                                <q-item 
+                                                    clickable 
+                                                    v-close-popup  
+                                                    @click="buildShowCustomerUpdate(props.row.id)"
+                                                    :disable="props.row.id === 1"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="edit" color="black" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Editar</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
+                                                
+                                                <q-item 
+                                                    clickable 
+                                                    v-close-popup                                          
+                                                    @click="showDialogDeleteProduct(props.row.id)"
+                                                    :disable="props.row.id === 1"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="delete" color="red" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Deletar</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
+                                            </q-list>
+                                        </q-menu>
+                                    </q-btn>
                                 </template>
 
                                 <template v-else>
@@ -101,6 +112,17 @@
             </div>
         </div>
     </q-page>
+
+    <UpdateCustomer
+        v-if="manageCustomerModal.update.show"
+        :customer-id="manageCustomerModal.update.customerId"
+        @close="manageCustomerModal.update.show = !$event"
+    />
+
+    <CreateCustomer
+        v-if="manageCustomerModal.create.show"
+        @close="manageCustomerModal.create.show = !$event"
+    />
 </template>
 
 <script setup lang="ts">
@@ -108,6 +130,37 @@
     import { onMounted, ref } from 'vue';
     import { deleteCustomer, getAll } from '../services/customerService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import UpdateCustomer from './update/UpdateCustomer.vue';    
+    import CreateCustomer from './create/CreateCustomer.vue';
+    
+    type UpdateCustomer = {
+        show: boolean;
+        customerId: number|null;
+    };
+
+    type CreateCustomer = {
+        show: boolean;
+    };
+
+    type ManageCustomer = {
+        update: UpdateCustomer;
+        create: CreateCustomer
+    };
+
+    const pagination = ref({
+        sortBy: 'id',
+        rowsPerPage: 20
+    });
+
+    const manageCustomerModal = ref<ManageCustomer>({
+        create: {
+            show: false,
+        },
+        update: {
+            show: false,
+            customerId: null
+        }
+    });
 
     const $q = useQuasar();
     const { notify } = useNotify();
@@ -133,9 +186,9 @@
         },
         {
             name: 'actions',
-            label: 'Ações',
+            label: '',
             field: 'actions',
-            align: 'center'
+            align: 'right'
         }
     ];
 
@@ -159,6 +212,15 @@
         customers.value = data;
         allCustomers.value = [...customers.value];
 
+    };
+
+    const buildShowCustomerUpdate = (customerId: number) => { 
+        console.log('Cliente da edição: ', customerId);
+        
+        manageCustomerModal.value.update = {
+            show: true,
+            customerId: customerId
+        };        
     };
 
     const showDialogDeleteProduct = (customerId: number) => {
@@ -215,10 +277,7 @@
     };
 
     const filterCustomers = () => {
-        console.log(searchInput.value);
-
         customers.value = allCustomers.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
-        console.log(allCustomers.value);
 
     };
 

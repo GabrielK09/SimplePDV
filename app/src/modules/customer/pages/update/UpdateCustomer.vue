@@ -1,88 +1,98 @@
 <template>
-    <q-page padding>
-        <main class="min-h-[60vh] flex flex-center text-xl">
-            <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
-                <header class="border-gray-100 flex">
-                    <span class="text-black cursor-pointer">
-                        <router-link to="/admin/products">
-                            <q-avatar size="30px" icon="arrow_back" />
+    <q-dialog v-model="internalDialog" persistent>
+        <q-card>
+            <main class="min-h-[60vh] flex flex-center text-xl">
+                <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
+                    <header class="border-gray-100 flex">
+                        <h2 class="text-gray-600 flex flex-1 justify-center">Edição do cliente</h2>
 
-                        </router-link>
-                    </span>
-                    <h2 class="text-gray-600 text-center">Edição cliente</h2>
+                        <q-btn
+                            color="red" 
+                            icon="close"
+                            class="w-12 h-12 my-auto ml-auto"
+                            @click="closeUpdate"
+                        />
 
-                </header>
+                    </header>
 
-                <q-form
-                    @submit.prevent="submitProduct"
-                    class="q-gutter-md mt-4"
-                >
-                    <div class="p-4 inputs">
-                        <q-input
-                            v-model="nameUpper"
-                            type="text"
-                            label="E-mail *"
-                            stack-label
-                            outlined
-                            dense
-                            class="mb-4"
-                            :error="!!formErrors.trade_name"
-                            :error-message="formErrors.trade_name"
-                        >
-                            <template v-slot:label>
-                                <div class="text-sm">
-                                    Nome <span class="text-red-500">*</span>
-                                </div>
-                            </template>
-                        </q-input>
+                    <q-form
+                        @submit.prevent="submitCustomer"
+                        class="q-gutter-md mt-4"
+                    >
+                        <div class="p-4 inputs">
+                            <q-input
+                                v-model="nameUpper"
+                                type="text"
+                                label="E-mail *"
+                                stack-label
+                                outlined
+                                dense
+                                class="mb-4"
+                                :error="!!formErrors.trade_name"
+                                :error-message="formErrors.trade_name"
+                            >
+                                <template v-slot:label>
+                                    <div class="text-sm">
+                                        Nome <span class="text-red-500">*</span>
+                                    </div>
+                                </template>
+                            </q-input>
 
-                        <q-input
-                            v-model="customer.cpf_cnpj"
-                            type="text"
-                            label-slot
-                            stack-label
-                            outlined
-                            dense
-                            @update:model-value="cpfCnpjMask"
-                            maxlength="18"
-                            class="mb-4"
-                        >
-                            <template v-slot:label>
-                                <div class="text-sm">
-                                    CPF/CNPJ<span class="text-red-500">*</span>
-                                </div>
-                            </template>
-                        </q-input>
+                            <q-input
+                                v-model="customer.cpf_cnpj"
+                                type="text"
+                                label-slot
+                                stack-label
+                                outlined
+                                dense
+                                @update:model-value="cpfCnpjMask(customer.cpf_cnpj)"
+                                :rules="[
+                                    val => {
+                                        return !val || validateCPF(val) || 'CPF inválido' 
+                                    }
+                                ]"
+                                maxlength="18"
+                                class="mb-4"
+                            >
+                                <template v-slot:label>
+                                    <div class="text-sm">
+                                        CPF/CNPJ<span class="text-red-500">*</span>
+                                    </div>
+                                </template>
+                            </q-input>
 
-                        <div class="flex flex-center">
-                            <q-btn
-                                color="primary"
-                                type="submit"
-                                label="Cadastrar cliente"
-                                no-caps
-                                :loading="loadingLogin"
-                            />
+                            <div class="flex flex-center">
+                                <q-btn
+                                    color="primary"
+                                    type="submit"
+                                    label="Cadastrar cliente"
+                                    no-caps
+                                    :loading="loadingLogin"
+                                />
+                            </div>
                         </div>
-                    </div>
-                </q-form>
-            </section>
-        </main>
-    </q-page>
+                    </q-form>
+                </section>
+            </main>
+        </q-card>
+    </q-dialog>
 </template>
 
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
-    import { useRoute, useRouter } from 'vue-router';
-    import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { createCustomer, findCustomerById } from '../../services/customerService';
+    import { findCustomerById, updateCustomerById } from '../../services/customerService';
     import { getCnpjDataService } from 'src/services/CNPJ/getCnpjData';
+    import customerSchema from '../../schema/customerSchema';
+import validateCPF from 'src/helpers/CPF_CNPJ/validateCPF';
 
-    const customerSchema = computed(() =>
-        Yup.object({
-            name: Yup.string().required('O nome do produto é obrigatório!'),
-        })
-    );
+    const props = defineProps<{
+        customerId: number;
+    }>();
+
+    const emits = defineEmits<{
+        (e: 'close', value: boolean): void
+    }>();
 
     const customer = ref<CustomerContract>({
         id: 0,
@@ -91,9 +101,8 @@
     });
 
     const formErrors = ref<Record<string, string>>({});
+    const internalDialog = ref<boolean>(true);
 
-    const router = useRouter();
-    const route = useRoute();
     const { notify } = useNotify();
 
     let loadingLogin = ref<boolean>(false);
@@ -105,11 +114,11 @@
         }
     });
 
-    const submitProduct = async () => {
+    const submitCustomer = async () => {
         try {
-            await customerSchema.value.validate(customer.value, { abortEarly: false });
+            await customerSchema().validate(customer.value, { abortEarly: false });
 
-            const res = await createCustomer(customer.value);
+            const res = await updateCustomerById(customer.value.id, customer.value);
 
             if(res.success)
             {
@@ -119,9 +128,7 @@
 
                 );
 
-                router.replace({
-                    name: 'customers.index'
-                });
+                internalDialog.value = false;
 
             } else {
                 notify(
@@ -183,30 +190,31 @@
     const getCnpjData = async (newCnpj: string) => {
         const res = await getCnpjDataService(newCnpj.replace(/\D/, ''));
 
-        console.log(res);
-        
-
         if(!res.success) return;
 
         customer.value.name = res.data.alias;    
     };
 
+    const closeUpdate = () => {
+        emits('close', true);
+        internalDialog.value = false;
+    };
+
     onMounted(async() => {
-        const customerId = Number(route.params.id);
-        if(!customerId) return;
         
-        if(customerId === 1)
+        if(!props.customerId) emits('close', true);
+        
+        if(props.customerId === 1)
         {
             notify(
                 'negative',
                 'O cliente padrão não pode ser alterado'
             );
-            router.replace({
-                name: 'customers.index'
-            });
+
+            internalDialog.value = false;
         };
     
-        const res = await findCustomerById(customerId);
+        const res = await findCustomerById(props.customerId);
 
         if(!res.success) return;
 

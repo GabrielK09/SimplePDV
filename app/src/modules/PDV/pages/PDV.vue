@@ -1,9 +1,9 @@
  <template>
     <q-page padding>
         <main class="px-4" id="sale-page">
-            <section class="flex flex-col laptop:flex-row items-start gap-4">
-                <div class="w-full laptop:max-w-2xl h-[75vh] flex flex-col bg-white rounded-lg p-4">
-                    <div class="flex items-center gap-2">
+            <section class="section_pdv">
+                <div class="left-bar rounded-lg">
+                    <div class="flex items-center gap-2 mb-6">
                         <q-btn
                             icon="menu"
                             flat
@@ -17,8 +17,9 @@
                         />
                     </div>
 
-                    <div class="mt-4 overflow-y-auto h-full flex-1 scrollbar-thin border w-[100%]">
+                    <div class="sale_products border">
                         <q-table
+                            class="full-width"
                             :rows="productsSale"
                             :columns="columns"
                             v-model:pagination="pagination"
@@ -32,8 +33,9 @@
                                     </q-td>
 
                                     <q-td key="name" :props="props">
-                                        <span>
-                                            {{ `${props.row.name.substring(0, 20)}...` }}
+                                        <span class="product_name">
+                                            {{ props.row.name }}
+
                                             <span v-if="hasCharacteristics(props.row)">
                                                 <q-btn 
                                                     v-if="hasCharacteristics(props.row)"
@@ -100,42 +102,31 @@
                                     v-if="isExpanded(props.row.product_id) && hasCharacteristics(props.row)"
                                     :props="props"
                                 >
-                                    <q-td colspan="100%" class="bg-gray-200">
+                                    <q-td colspan="80%" class="bg-gray-200">
                                         <div class="q-pa-md">
-                                            <div class="text-subtitle2 text-weight-bold q-mb-sm">
-                                                Grade do produto
-                                            </div>
-
                                             <div class="row q-col-gutter-sm">
                                                 <div
                                                     v-for="(characteristic, i) in props.row.product_with_characteristics"
                                                     :key="`${props.row.product_id}-${characteristic.size}`"
                                                     class="col-12 col-sm-6 col-md-3"
                                                 >       
-                                                    <q-card flat bordered>
-                                                        <q-card-section class="q-pa-pmd">
-                                                            <div class="text-caption text-gray-700">
-                                                                Tamanho
-
+                                                    <q-card flat bordered class="w-max">
+                                                        <q-card-section>
+                                                            <div class="text-caption text-gray-700 flex mt-2">
+                                                                Tamanho: 
+                                                                
+                                                                <div class="text-body2 text-weight-bold ml-3">
+                                                                    {{ characteristic.size }}
+                                                                </div>
                                                             </div>
-                                                            <q-btn
-                                                                size="10px"
-                                                                color="red"
-                                                                icon="close"
-                                                                flat
-                                                            />
-
-                                                            <div class="text-body2 text-weight-bold">
-                                                                {{ characteristic.size }}
-                                                            </div>
-
-                                                            <div class="text-caption text-grey-7 q-mt-sm">Quantidade</div>
 
                                                             <div>
                                                                 <q-input
                                                                     v-model.number="characteristic.grid_qtde"
                                                                     type="number"
-                                                                    class="w-12 flex ml-auto mr-auto"
+                                                                    label="Qtde"
+                                                                    stack-label
+                                                                    label-slot
                                                                     input-class="text-center"
                                                                     dense
                                                                     @update:model-value="val => validateGridQtde(Number(val), props.row, Number(i))"
@@ -153,8 +144,7 @@
                     </div>
                 </div>
 
-                <!-- Barra da direita-->
-                <div class="bg-white rounded-lg h-auto laptop:h-[75vh] p-4 w-full laptop:w-[25rem] laptop:mr-6 flex flex-col">
+                <div class="right-bar rounded-lg">
                     <div class="flex-1 overflow-y-auto">
                         <q-checkbox
                             right-label
@@ -249,7 +239,7 @@
 
 <script setup lang="ts">
     import { SessionStorage, QTableColumn } from 'quasar';
-    import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+    import { computed, onMounted, reactive, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
@@ -298,41 +288,43 @@
             name: 'product_id',
             label: 'ID',
             field: 'product_id',
-            align: 'left'
+            align: 'left',
+            style: 'width: 60px'
         },
         {
             name: 'name',
             label: 'Produto',
             field: 'name',
-            align: 'center'
+            align: 'left'
         },
         {
             name: 'qtde',
             label: 'Qtde',
             field: 'qtde',
-            align: 'center'
+            align: 'center',
+            style: 'width: 90px'
         },
         {
             name: 'price',
             label: 'Preço',
             field: 'price',
-            align: 'center',
-            format(val: number) {
-                return `R$ ${val.toFixed(2).toString().replace('.', ',')}`
-            }
+            align: 'right',
+            style: 'width: 100px'
         },
         {
             name: 'total',
             label: 'Total',
             field: 'total',
-            align: 'center'
+            align: 'right',
+            style: 'width: 110px'
         },
         {
             name: 'actions',
             label: '',
             field: 'actions',
-            align: 'right'
-        },
+            align: 'center',
+            style: 'width: 60px'
+        }
     ];
 
     const returningSaleId = ref<number>();
@@ -877,16 +869,79 @@
         disableButtons.finallySale = false;
 
     });
-
-    onUnmounted(() => {
-
-    });
 </script>
 
 <style lang="scss">
+    .section_pdv {    
+        margin: 1rem 0 0 0;
+
+        .left-bar {            
+            background-color: #fff;
+            padding: 15px;
+        }
+
+        .right-bar {
+            background-color: #fff;
+            padding: 15px;
+            height: auto;
+        }
+    }
+
     @media (min-width: 1536px) {
         body {
             overflow-y: hidden !important;
+        }
+    }
+
+    @media (min-width: 1536px) {
+        body {
+            overflow-y: hidden !important;
+        }
+
+        .section_pdv {
+            display: flex;
+            
+            .left-bar {            
+                width: 80%;   
+                display: flex;
+                flex-direction: column;
+                height: 75vh;
+
+                .sale_products {
+                    flex: 1;
+                    overflow-y: auto;
+                    margin-top: 10px;
+                }
+            }
+
+            .right-bar {
+                width: 30%;
+                margin: 0 0 0 2rem;
+                display: flex;
+                flex-direction: column;
+                height: 75vh;        
+            }
+        }
+    }
+
+    @media (max-width: 1536px) {
+        .left-bar {     
+            width: 100%;        
+            height: 75vh;
+            display: flex;
+            flex-direction: column;
+
+            .sale_products {
+                flex: 1;
+                overflow-y: auto;
+                margin-top: 10px;
+            }
+        }
+
+        .right-bar {            
+            margin: 1.5rem 0 0 0;
+            display: flex;
+            flex-direction: column;
         }
     }
 </style>

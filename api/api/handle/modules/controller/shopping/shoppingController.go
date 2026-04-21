@@ -89,6 +89,8 @@ func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := payload.Validate(); len(err) > 0 {
+		u.ErrorLogger.Println("Erros: ", err)
+
 		if err["load"] != "" {
 			w.WriteHeader(http.StatusInternalServerError)
 			u.ErrorLogger.Println("Carga duplicada.", err)

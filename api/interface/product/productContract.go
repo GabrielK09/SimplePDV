@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 
 	"time"
 
@@ -28,15 +29,16 @@ const (
 )
 
 type ProductContract struct {
-	Id         int        `json:"id"`
-	Name       string     `json:"name"`
-	Price      float64    `json:"price"`
-	Qtde       int        `json:"qtde"`
-	Commission float64    `json:"commission"`
-	UseGrid    bool       `json:"use_grid"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	DeletedAt  *time.Time `json:"deleted_at"`
+	Id                         int                                                     `json:"id"`
+	Name                       string                                                  `json:"name"`
+	Price                      float64                                                 `json:"price"`
+	Qtde                       int                                                     `json:"qtde"`
+	Commission                 float64                                                 `json:"commission"`
+	UseGrid                    bool                                                    `json:"use_grid"`
+	ProductWithCharacteristics []productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
+	CreatedAt                  time.Time                                               `json:"created_at"`
+	UpdatedAt                  time.Time                                               `json:"updated_at"`
+	DeletedAt                  *time.Time                                              `json:"deleted_at"`
 }
 
 type ProductGrids struct {
@@ -64,7 +66,7 @@ func (p ProductContract) Validate() map[string]string {
 		errorsField["name"] = "O nome do produto é obrigatório!"
 	}
 
-	if p.Qtde <= 0 {
+	if p.Qtde < 0 {
 		errorsField["qtde"] = "A quantidade do produto é obrigatória!"
 	}
 
@@ -261,6 +263,17 @@ func ShowByName(productName string) ([]ProductContract, error) {
 			return nil, err
 		}
 
+		if p.UseGrid {
+			allProductCharacteristics, err := productcharacteristics.GetAllByProductId(p.Id)
+
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao pegar a grade do produto:", err)
+				return nil, err
+			}
+
+			p.ProductWithCharacteristics = allProductCharacteristics
+		}
+
 		products = append(products, p)
 	}
 
@@ -305,7 +318,7 @@ func GetAll(perPage any) ([]ProductContract, error) {
 	)
 
 	if err != nil {
-		u.ErrorLogger.Println("Erro: ", err)
+		u.ErrorLogger.Println("Erro ao realizar a query:", err)
 		return nil, err
 	}
 

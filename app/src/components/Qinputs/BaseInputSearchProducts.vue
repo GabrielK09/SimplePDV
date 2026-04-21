@@ -63,7 +63,7 @@
     const itensTableColumn: QTableColumn[] = [
         {
             name: 'id',
-            label: 'Cód. Produto',
+            label: 'Cód produto',
             field: 'id',
             align: 'left',
         },
@@ -91,8 +91,6 @@
     ];
 
     const itensData = ref<SaleItemContract[]>([]);
-
-    const { notify } = useNotify();
 
     const emits = defineEmits<{
         (e: 'emit:selected-product', value: SaleItemContract): void
@@ -122,26 +120,18 @@
             productId = Number(splitedInput[1]);
         };
                 
-        const resProduct = (await findById(productId)).data.product;
-
-        if(!resProduct)
-        {
-            notify('warning', 'Produto não localizado');
-            return;
-        };
-
-        const resCharacteristics = (await findById(productId)).data.characteristics;
-        
+        const resProduct = (await findById(productId)).data as ProductContract;
+    
         const productResData: ProductContract = resProduct;
             
-        if(!productResData.use_grid && !resCharacteristics)
+        if(!productResData.use_grid)
         {
             emitProduct(normalizeProduct(productResData));
             return;
         };
 
-        productCharacteristics.value = resCharacteristics;
-        productResData.product_with_characteristics = resCharacteristics;
+        productCharacteristics.value = resProduct.product_with_characteristics;
+        productResData.product_with_characteristics = resProduct.product_with_characteristics;
 
         const productData: SaleItemContract = {
             id: productResData?.id,
@@ -182,17 +172,14 @@
     };
 
     const emitProduct = (product: SaleItemContract) => {
-        
         emits('emit:selected-product', product);
         searchInput.value = '';
     };
 
     watch(
-        () => searchInput.value,
+        () => searchInput.value, 
         async (idValue) => {
-            const input = idValue?.toString().split('') ?? '';
-
-            if(input[0] === '/')
+            if(idValue?.toString().split('')[0] === '/')
             {
                 habilitStringSearchInput.value = true;
                 await getProductByName();
@@ -219,22 +206,25 @@
 
         if(!res.success) return;
 
-        const data: any[] = res.data;
+        const data: ProductContract[] = res.data;
+
+        console.log(data);      
 
         itensData.value = data.map(p => ({
-            id: p.product.id,
-            name: p.product.name,
-            price: p.product.price,
-            product_id: p.product.product_id,
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            product_id: p.id,
             qtde: 1,
             use_grid: p.use_grid,
-            //@ts-ignore
-            product_with_characteristics: p.characteristics,
+            product_with_characteristics: p.product_with_characteristics,
         }));
     };
 
     const selectProduct = (_: Event, row: SaleItemContract) => {
-        if(row.product_with_characteristics !== null)
+        console.log(row);
+        
+        if(row.product_with_characteristics !== null && row.use_grid)
         {
             showSizeGrid.value = true;
 

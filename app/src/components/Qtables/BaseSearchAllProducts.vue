@@ -65,18 +65,31 @@
                                 </q-td>
                             </template>
                         </q-table>
-
-                        <div class="flex justify-end p-5">
-                            <q-btn
-                                color="primary"
-                                no-caps
-                                label="Confirmar"
-                                @click="emitProducts"
-                            />
-                        </div>
                     </div>
                 </div>
             </q-card-section>
+
+            <div id="action_bar">
+                <div class="bg-[#03202e] w-[60%] mb-4 p-3 text-white flex justify-end rounded-lg">
+                    <q-btn
+                        no-caps
+                        dense
+                        color="red"
+                        label="Cancelar seleção"
+                        :disable="selectedProductsId === 0"
+                        @click="selectedProductsId = 0"
+                        class="mr-6"
+                    />
+
+                    <q-btn
+                        color="primary"
+                        no-caps
+                        label="Confirmar"
+                        @click="emitProducts"
+                    />
+                </div>
+            </div>
+
         </q-card>
     </q-dialog>
 
@@ -175,7 +188,8 @@
         name: p.name,
         price: p.price,
         product_with_characteristics: p.product_with_characteristics,
-        qtde: 1
+        qtde: 1,
+        use_grid: p.use_grid
     });
 
     const getAllProducts = async (perPager: number) => {
@@ -215,9 +229,23 @@
             .map(normalizeProduct);
     });
 
+    watch(
+        () => selectedProductsIds.value,
+        (ids) => {
+            const actionBar = document.getElementById('action_bar') as HTMLElement;
+
+            if(actionBar && ids.length > 0)
+            {                
+                actionBar.style.display = 'flex';
+            } else {
+                actionBar.style.display = 'none';  
+            };
+        }
+    )
+
     watch(selectedProducts, (newProducts) => {
-        newProducts.forEach(p => {
-            if(p.product_with_characteristics !== null) 
+        newProducts.forEach(p => {            
+            if(p.product_with_characteristics !== null && p.use_grid) 
             {   
                 const index = newProducts.findIndex(item => item.id === p.id);
 
@@ -284,5 +312,36 @@
         gap: 16px;
         padding: 20px 24px;
         background: linear-gradient(to right, #f8fafc, #ffffff);
+    }
+
+        @keyframes up_action_bar {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes hidde_action_bar {
+        from { transform: translateY(0); }
+
+        to { transform: translateY(100%); }
+    }
+
+    #action_bar {
+        position: sticky;
+        z-index: 3000;
+        bottom: 0;
+        display: none;
+        justify-content: center;
+        animation: up_action_bar 0.4s ease-in-out;   
+    }
+
+    #action_bar.hidde {
+        animation: hidde_action_bar 0.4s ease-in-out;
     }
 </style>

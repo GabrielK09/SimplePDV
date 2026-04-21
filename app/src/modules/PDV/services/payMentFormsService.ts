@@ -4,7 +4,7 @@ import apiResponse from "src/helpers/response/apiResponse";
 export async function getAllPayMentFormsService(): Promise<any>
 {
     try {
-        const res = await api.get('/pay-ment-forms/pay');
+        const res = await api.get('/pay-ment-forms/all');
         const data = res.data;
 
         return apiResponse(

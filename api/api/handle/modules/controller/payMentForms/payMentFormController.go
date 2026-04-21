@@ -13,9 +13,8 @@ func HandleGetPayMentForms(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
 
@@ -23,17 +22,14 @@ func HandleGetPayMentForms(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao retornar todos as formas de pagamento.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos as formas de pagamento."))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, payMentForms, "Todas as formas de pagamento.")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, payMentForms, "Todas as formas de pagamento."))
 }
 
 func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
@@ -41,9 +37,8 @@ func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	} // Erro de método da rota
 
@@ -52,18 +47,16 @@ func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&payMent); err != nil {
 		u.ErrorLogger.Println("Erro no decode dos dados: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
 		return
 	}
 
 	if err := payMent.Validate(); len(err) > 0 {
 		u.ErrorLogger.Println("Erro na validação dos dados: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao validar o pagamento da venda.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao validar o pagamento da venda."))
 		return
 	}
 
@@ -81,7 +74,5 @@ func HandlePutPayMentForms(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, updated, "Forma de pagamento alterada com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, updated, "Forma de pagamento alterada com sucesso!"))
 }

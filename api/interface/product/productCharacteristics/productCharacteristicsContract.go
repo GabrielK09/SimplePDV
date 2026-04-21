@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	u "myApi/helpers/logger"
-	"myApi/interface/product"
 
 	"time"
 
@@ -30,7 +29,6 @@ const (
 
 type ProductCharacteristicsContract struct {
 	Id        int        `json:"id"`
-	SaleId    int        `json:"sale_id"`
 	ProductId int        `json:"product_id"`
 	Size      string     `json:"size"`
 	GridQtde  int        `json:"grid_qtde"`
@@ -58,20 +56,6 @@ func (s Size) isValidSize() bool {
 
 func (p ProductCharacteristicsContract) Validate() map[string]string {
 	errorsField := make(map[string]string)
-
-	verifyProduct, err := product.Show(p.ProductId)
-
-	if p.ProductId <= 0 {
-		errorsField["product_id"] = "Identificador do produto inválido."
-	}
-
-	if err != nil {
-		errorsField["database"] = fmt.Sprintf("Ocorreu um erro ao localizar o produto: %s", err)
-	}
-
-	if verifyProduct == nil {
-		errorsField["database"] = fmt.Sprintf("Produto não localizado: %s", err)
-	}
 
 	size := Size(p.Size)
 

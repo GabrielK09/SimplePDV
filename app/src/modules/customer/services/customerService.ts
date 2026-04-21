@@ -84,3 +84,24 @@ export async function findCustomerById(customerId: number): Promise<any>
         );
     };    
 };
+
+export async function updateCustomerById(customerId: number, payLoad: CustomerContract): Promise<any> 
+{
+    try {
+        const res = await api.put(`/customer/update/${customerId}`, payLoad);
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            data.message,
+            data.data || []
+        );
+
+    } catch (error: any) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
+        );
+    };    
+};

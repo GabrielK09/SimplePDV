@@ -1,9 +1,9 @@
 <template>
     <q-dialog v-model="internalDialog" persistent>
-        <div class="flex flex-col bg-white w-full phone:bg-black shadow-lg">
+        <div class="flex flex-col bg-white w-full shadow-lg">
             <div class="bg-white p-4">
                 <div class="text-h6">
-                    Formas de Pagamento - {{ props.saleId && props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId > 0 ? props.saleId : props.shoppingId }}
+                    Formas de Pagamento - {{ props.saleId > 0 ? 'Venda' : 'Compra' }} : {{ props.saleId > 0 ? props.saleId : props.shoppingId }}
                 </div>
 
                 <q-list bordered separator class="bg-white text-black">
@@ -45,7 +45,6 @@
                 </q-list>
             </div>
 
-
             <div class="px-8">
                 <div class="flex flex-col gap-2 mb-6">
                     <q-chip color="red-6" text-color="white">
@@ -65,7 +64,7 @@
                         Valor pago: R$ {{ calculatePayMent.totalPaid.toFixed(2).toString().replace('.', ',') }}
                     </q-chip>
 
-                    <q-chip color="blue-6" text-color="white">
+                    <q-chip color="blue-6" text-color="white" v-if="props.saleId > 0">
                         Troco: R$ {{ calculateChange.toFixed(2).toString().replace('.', ',') }}
                     </q-chip>
                 </div>
@@ -158,15 +157,14 @@
             {
                 havePix.value = true;
                 getPixKey.value = pixPayment.pix_key;
-                valueForPix.value = Number(pixPayment.amount.replace(',', '.'));
+                valueForPix.value = Number(pixPayment.amount.replace(',', '.')) ?? 0;
 
             } else {
                 showQrCodePix.value = false;
                 havePix.value = false;
-                valueForPix.value = 0;
+                valueForPix.value = 0; 
 
             };
-
         },
         { deep: true }
     );
@@ -280,7 +278,8 @@
         disableBtn.value = false;
     };
 
-    const onKeyDownEnter = (e: KeyboardEvent) => {
+    const onKeyDownEnter = (e: KeyboardEvent) =>
+    {
         if(disableBtn.value) return;
 
         if(e.key.toLocaleLowerCase() !== 'enter') return;
@@ -323,5 +322,4 @@
             overflow-y: auto !important;
         }
     }
-
 </style>

@@ -213,14 +213,12 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if id <= 1 {
+	if id <= 0 {
 		//O cliente padrão não pode ser desativado.
 		w.WriteHeader(http.StatusBadRequest)
 
 		u.ErrorLogger.Println("O Id precisa ser maior que 1")
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err, "Id inválido."),
-		)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Id inválido."))
 
 		return
 	}
@@ -230,12 +228,12 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 
 		u.ErrorLogger.Println("O cliente padrão não pode ser alterado.")
 
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, nil, "O cliente padrão não pode ser desativado."),
-		)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "O cliente padrão não pode ser desativado."))
 
 		return
 	}
+
+	u.SuccessLoger.Println("ID válidado")
 
 	customer, err := customer.Show(id)
 
@@ -254,11 +252,9 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&customer); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
-		u.ErrorLogger.Println("O cliente padrão não pode ser alterado.")
+		u.ErrorLogger.Println("Erro ao processar dados:", err)
 
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err.Error(), "Erro ao processar dados"),
-		)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar dados"))
 
 		return
 	}

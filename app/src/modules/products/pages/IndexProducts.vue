@@ -8,7 +8,7 @@
                     <q-btn
                         no-caps
                         color="blue"
-                        to="/admin/products/create"
+                        @click="manageProductModal.create.show = !manageProductModal.create.show"
                         class="max-phone:mb-5"
                         label="Cadastrar novo produto"
 
@@ -30,6 +30,7 @@
                             outlined
                             v-model="searchInput"
                             type="text"
+                            dense
                             label=""
                             @update:model-value="filterProducts"
                         >
@@ -43,47 +44,65 @@
                     </template>
 
                     <template v-slot:body="props">
-                        <q-tr
-                            :props="props"
-                        >
-                            <q-td
-                                v-for="col in props.cols"
-                            >
+                        <q-tr :props="props">
+                            <q-td v-for="col in props.cols">
                                 <template v-if="col.name === 'actions'">
-                                    <div
-                                        class="text-center flex flex-center"
+                                    <q-btn 
+                                        dense
+                                        flat
+                                        icon="more_vert"
                                     >
-                                        <div v-if="props.row.deleted_at === null">
-                                            <q-btn
-                                                size="10px"
-                                                no-caps
-                                                color="black"
-                                                icon="edit"
-                                                flat
-                                                :to="`products/edit/${props.row.id}`"
-                                            />
+                                        <q-menu
+                                            anchor="bottom right"
+                                            self="top right"
+                                            class="rounded shadow-xl bg-white"
+                                            transition-show="jump-down"
+                                        >
+                                            <q-list style="min-width: 90px">
+                                                <q-item 
+                                                    clickable 
+                                                    v-close-popup  
+                                                    v-if="props.row.deleted_at === null"
+                                                    @click="buildUpdateProduct(props.row.id)"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="edit" color="primary" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Editar</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
 
-                                            <q-btn
-                                                size="10px"
-                                                no-caps
-                                                color="red"
-                                                icon="delete"
-                                                flat
-                                                @click="showDialogActionProduct(props.row.id, 'delete')"
-                                            />
-                                        </div>
+                                                <q-item
+                                                    clickable 
+                                                    v-close-popup  
+                                                    v-if="props.row.deleted_at === null"
+                                                    @click="showDialogActionProduct(props.row.id, 'delete')"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="delete" color="red" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Deletar produto</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
 
-                                        <div v-if="props.row.deleted_at !== null">
-                                            <q-btn
-                                                size="10px"
-                                                no-caps
-                                                color="green"
-                                                icon="rotate_left"
-                                                flat
-                                                @click="showDialogActionProduct(props.row.id, 'active')"
-                                            />
-                                        </div>
-                                    </div>
+                                                <q-item
+                                                    clickable 
+                                                    v-close-popup  
+                                                    v-if="props.row.deleted_at !== null"
+                                                    @click="showDialogActionProduct(props.row.id, 'active')"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="rotate_left" color="green" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Ativar produto</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
+                                            </q-list>
+                                        </q-menu>
+                                    </q-btn>
                                 </template>
 
                                 <template v-else>
@@ -109,11 +128,21 @@
 
                         </div>
                     </template>
-
                 </q-table>
             </div>
         </div>
     </q-page>
+
+    <UpdateProduct
+        v-if="manageProductModal.update.show"
+        :product-id="manageProductModal.update.productId"
+        @close="manageProductModal.update.show = !$event"
+    />
+
+    <CreateProduct
+        v-if="manageProductModal.create.show"
+        @close="manageProductModal.create.show = !$event"
+    />
 </template>
 
 <script setup lang="ts">
@@ -121,6 +150,22 @@
     import { onMounted, ref, watch } from 'vue';
     import { getAll, manageProductService } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
+    import UpdateProduct from './update/UpdateProduct.vue';
+    import CreateProduct from './create/CreateProduct.vue';
+
+    type UpdateProduct = {
+        show: boolean;
+        productId: number|null;
+    };
+
+    type CreateProduct = {
+        show: boolean;
+    };
+
+    type ManageProduct = {
+        update: UpdateProduct;
+        create: CreateProduct
+    };
 
     const $q = useQuasar();
     const { notify } = useNotify();
@@ -130,10 +175,20 @@
         rowsPerPage: 20
     });
 
+    const manageProductModal = ref<ManageProduct>({
+        create: {
+            show: false,
+        },
+        update: {
+            show: false,
+            productId: null
+        }
+    });
+
     const columns: QTableColumn[] = [
         {
             name: 'id',
-            label: 'ID',
+            label: 'Cód produto',
             field: 'id',
             align: 'center'
         },
@@ -145,7 +200,7 @@
         },
         {
             name: 'price',
-            label: 'Preço',
+            label: 'Preço de venda',
             field: 'price',
             align: 'center',
             format(val: number) {
@@ -160,9 +215,9 @@
         },
         {
             name: 'actions',
-            label: 'Ações',
+            label: '',
             field: 'actions',
-            align: 'center'
+            align: 'right'
         }
     ];
 
@@ -247,6 +302,13 @@
         );
 
         await getAllProducts();
+    };
+
+    const buildUpdateProduct = (productId: number): void => {
+        manageProductModal.value.update = {
+            show: true,
+            productId: productId
+        };
     };
 
     onMounted(() => {

@@ -29,6 +29,7 @@
                             outlined
                             v-model="searchInput"
                             type="text"
+                            dense
                             label=""
                             @update:model-value="filtershopping"
                         >
@@ -100,8 +101,7 @@
                                             </q-list>
                                         </q-menu>
                                     </q-btn>
-                                </template>
-                                    
+                                </template>                                    
 
                                 <template v-if="col.name === 'status'">
                                     <div
@@ -174,7 +174,7 @@
     const columns: QTableColumn[] = [
         {
             name: 'id',
-            label: 'ID',
+            label: 'Cód compra',
             field: 'id',
             align: 'center'
         },

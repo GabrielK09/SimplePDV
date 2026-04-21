@@ -1,5 +1,5 @@
-export default function formatNumber(val?: number) {
-    if (!val) return '0';
+export default function formatValueToNumber(val?: string) {
+    const formatVal = val.replace(',', '.');
 
-    return new Intl.NumberFormat('pt-BR').format(val);
+    return Number(formatVal);
 };
