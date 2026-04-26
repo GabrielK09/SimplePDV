@@ -22,23 +22,36 @@ declare module 'vue' {
 const api = axios.create({
     baseURL: process.env.API_URL,
     headers: {
-        Accept: 'application/json'
+        Accept: 'application/json',
+        "Content-Type": 'application/json'
     }
 });
 
 const apiCep = axios.create({
     baseURL: process.env.API_CEP,
     headers: {
-        Accept: 'application/json'
+        Accept: 'application/json',
+        "Content-Type": 'application/json'
     }
 });
 
 const apiCnpj = axios.create({
     baseURL: process.env.API_CNPJ,
     headers: {
-        Accept: 'application/json'
+        Accept: 'application/json',
+        "Content-Type": 'application/json'
     }
 });
+
+const showConsoleMessage = (error: any) => {
+    if(process.env.APP_ENV === 'dev')
+    {
+        console.error('Erro:', error);
+        console.error('Status:', error.response.status);
+        console.error('Mensagem:', error.response.data.message);
+        console.error('Erro:', error.response.data.data);
+    };  
+};
 
 export default boot(({ app, router }) => {
     api.interceptors.request.use(
@@ -81,13 +94,10 @@ export default boot(({ app, router }) => {
             };
 
             if (error.response) {
-                console.error('Eror:', error);
-                console.error('Status:', error.response.status);
-                console.error('Mensagem:', error.response.data.message);
-                console.error('Erro:', error.response.data.data);
+                showConsoleMessage(error);
 
             } else {
-                console.error('Erro de rede:', error.message);
+                showConsoleMessage(error);
             };
 
             return Promise.reject(error);

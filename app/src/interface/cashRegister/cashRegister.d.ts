@@ -1,8 +1,9 @@
 interface CashRegisterContract {
     readonly id: number;
-    readonly sale_id: number;
-    readonly shopping_id: number;
+    sale_id: number;
+    shopping_id: number;
     description: string;
+    customer_id: unknown;
     customer: string;
     specie_id: number;
     specie: string;

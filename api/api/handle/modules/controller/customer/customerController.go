@@ -188,6 +188,42 @@ func HandleDeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Cliente deletado com sucesso!"))
 }
 
+func HandleActiveCustomer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPatch {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp := responsehelper.Response(false, nil, "Método não permetido.")
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		u.ErrorLogger.Println("Id inválido: ", err)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Id inválido."))
+
+		return
+	}
+
+	if err := customer.Active(id, time.Now()); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro ao ativar o cliente: ", err)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err.Error(), "Erro ao ativar o Cliente."))
+
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Cliente ativado com sucesso!"))
+}
+
 func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -214,10 +250,9 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if id <= 0 {
-		//O cliente padrão não pode ser desativado.
 		w.WriteHeader(http.StatusBadRequest)
-
 		u.ErrorLogger.Println("O Id precisa ser maior que 1")
+
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Id inválido."))
 
 		return
@@ -225,15 +260,12 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 
 	if id == 1 {
 		w.WriteHeader(http.StatusBadRequest)
-
 		u.ErrorLogger.Println("O cliente padrão não pode ser alterado.")
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "O cliente padrão não pode ser desativado."))
 
 		return
 	}
-
-	u.SuccessLoger.Println("ID válidado")
 
 	customer, err := customer.Show(id)
 
@@ -242,16 +274,13 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 
 		u.ErrorLogger.Println("Cliente não localizado.")
 
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, nil, "Cliente não localizado."),
-		)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Cliente não localizado."))
 
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&customer); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-
 		u.ErrorLogger.Println("Erro ao processar dados:", err)
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar dados"))
@@ -261,9 +290,7 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 
 	customer.Id = id
 
-	updated, err := customer.Update()
-
-	if err != nil {
+	if err := customer.Update(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
 		u.ErrorLogger.Println("O cliente padrão não pode ser alterado.")
@@ -275,8 +302,7 @@ func HandlePutCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := responsehelper.Response(true, updated, "Cliente alterado com sucesso!")
-
-	json.NewEncoder(w).Encode(resp)
+	w.WriteHeader(http.StatusNoContent)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Cliente alterado com sucesso!"))
 
 }

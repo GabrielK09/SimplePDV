@@ -170,7 +170,6 @@ func StartServer() {
 	api.HandleFunc("/products/update/{id}", productController.HandlePutProduct)
 	api.HandleFunc("/products/delete/{id}", productController.HandleDeleteProduct)
 	api.HandleFunc("/products/active/{id}", productController.HandleActiveProduct)
-	api.HandleFunc("/products/verify-qtdes", productController.HandleVerifyQtdes)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// Cash Register \\
@@ -190,6 +189,7 @@ func StartServer() {
 	api.HandleFunc("/customer/create", customerController.HandlePostCustomer)
 	api.HandleFunc("/customer/update/{id}", customerController.HandlePutCustomer)
 	api.HandleFunc("/customer/delete/{id}", customerController.HandleDeleteCustomer)
+	api.HandleFunc("/customer/active/{id}", customerController.HandleActiveCustomer)
 	// -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == -- == \\
 
 	// DashBoard \\

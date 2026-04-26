@@ -13,7 +13,7 @@
                             :class="{
                                 'border-b border-blue-500 font-bold cursor-pointer': pay.specie === 'Pix'
                             }"
-                            @click.prevent="pay.specie === 'Pix' && pixKey === '' ? showChangePixKey = !showChangePixKey : null"
+                            @click.prevent="pay.specie === 'Pix' ? showChangePixKey = !showChangePixKey : null"
                         >
                             {{ pay.specie }}
                         </span>
@@ -70,7 +70,6 @@
 
     const getPayMentForms = async () => {
         const res = await getAllPayMentFormsService();
-        console.log(res);
 
         payMentForms.value = res.data;
 
@@ -85,20 +84,20 @@
     const savePayMentForm = async () => {
         const res = await updatePayMentFormService(pixKey.value);
 
-        if(res.success)
+        if(!res.success)
         {
-            notify(
-                'positive',
-                res.message
-            );
-
-            emits('close', true)
-        } else {
             notify(
                 'negative',
                 res.message
             );
         };
+
+        notify(
+            'positive',
+            res.message
+        );
+
+        emits('close', true)
     };
 
     const onKeyDownEnter = (e: KeyboardEvent) =>

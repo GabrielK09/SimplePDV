@@ -5,7 +5,7 @@
                 <div class="row q-col-gutter-md items-end">
                     <div class="col-12 col-md-3">
                         <q-input 
-                            v-model="startDate" 
+                            v-model="filterDashBoardValues.startDate" 
                             type="date" 
                             label="Data inicial" 
                             outlined
@@ -13,23 +13,27 @@
                             max="9999-12-31"
                             hide-bottom-space
                             bottom-slots
+                            :error="!!formErrors.filterDashBoardValues"
+                            :error-message="formErrors.filterDashBoardValues"
                         />
                     </div>
 
                     <div class="col-12 col-md-3">
                         <q-input 
-                            v-model="endDate" 
+                            v-model="filterDashBoardValues.endDate" 
                             type="date" 
                             label="Data final" 
                             outlined 
                             min="0001-01-01"
                             max="9999-12-31"
                             :rules="[
-                                val => validateYearDate(startDate, val) || 'A data final deve ser maior ou igual à inicial.'
+                                val => validateYearDate(filterDashBoardValues.startDate, val) || 'A data final deve ser maior ou igual à inicial.'
                             ]"
                             hide-bottom-space
                             bottom-slots
                             class="my-auto"
+                            :error="!!formErrors.filterDashBoardValues"
+                            :error-message="formErrors.filterDashBoardValues"
                         />
                     </div>
                     
@@ -50,17 +54,6 @@
                             @click="showReports = !showReports"
                         />
                     </div>
-
-                    <div class="my-auto">
-                        <q-btn 
-                            no-caps
-                            color="primary" 
-                            label="Resumo de qtdes"
-                            class="full-width bg-[#1b2747] text-white"
-                            @click="showResumeQtde = !showResumeQtde"
-                        />
-                    </div>
-
                 </div>
             </q-card>
 
@@ -124,11 +117,6 @@
         v-if="showReports"
         @close="showReports = !$event"
     />
-
-    <VerifyQtdesDialog
-        v-if="showResumeQtde"
-        @close="showResumeQtde = !$event"
-    />
 </template>
 
 <script setup lang="ts">
@@ -138,16 +126,26 @@
     import { getAll } from 'src/modules/cashRegister/services/cashRegisterService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import ManagementReport from 'src/components/Reports/ManagementReport.vue';
-    import VerifyQtdesDialog from 'src/components/DashBoard/VerifyQtdesDialog.vue';
     import { formatValueToMoney, formatValueToNumber } from 'src/helpers/FormatValue/FormatMoney';
+    import reportFilterSchema from '../schema/reportFilterSchema';
     
+    type ReportFilterDashBoard = {
+        startDate: string;
+        endDate: string;
+    };
+
     const { notify } = useNotify();
-    const startDate = ref<string>('');
-    const endDate = ref<string>('');
+
+    const filterDashBoardValues = ref<ReportFilterDashBoard>({
+        startDate: '',
+        endDate: ''
+    });
+
+    const formErrors = ref<Record<string, string>>({});
+
     const dashBoardData = ref<DashBoardContract>();
     const totalBalance = ref<number>(0);
     const showReports = ref<boolean>(false);
-    const showResumeQtde = ref<boolean>(false);
 
     const dashBoardCards = computed(() => [
         {
@@ -235,17 +233,45 @@
     };
 
     const filterDashBoard = async () => {
-        const res = await getDashBoardData(startDate.value, endDate.value);
+        try {
+            await reportFilterSchema().validate(filterDashBoardValues.value, { abortEarly: false });
+            
+            const res = await getDashBoardData(filterDashBoardValues.value.startDate, filterDashBoardValues.value.startDate);
 
-        if(!res.success)
-        {
-           notify(
-                'negative',
-                res.message
-            );
+            if(!res.success)
+            {
+            notify(
+                    'negative',
+                    res.message
+                );
+            };
+
+            dashBoardData.value = res.data;
+            
+        } catch (error: any) {
+            console.error('Erro:', error.inner);
+
+            if(error.inner)
+            {
+                formErrors.value = {};
+
+                error.inner.forEach((err: any) => {
+                    formErrors.value[err.path] = err.message;
+
+                    notify(
+                        'negative',
+                        err.message
+
+                    );
+                });
+            } else {
+                notify(
+                    'negative',
+                    error.response?.data?.message || 'Erro na criação do cliente!'
+                );
+            };
+
         };
-
-        dashBoardData.value = res.data;
     };
 
     const validateYearDate = (startDate: string, endDate: string): boolean => {

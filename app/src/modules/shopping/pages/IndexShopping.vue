@@ -25,21 +25,40 @@
                     class="rounded-xl"
                 >
                     <template v-slot:top-right>
-                        <q-input
-                            outlined
-                            v-model="searchInput"
-                            type="text"
-                            dense
-                            label=""
-                            @update:model-value="filtershopping"
-                        >
-                            <template v-slot:append>
-                                <q-icon name="search" />
-                            </template>
-                            <template v-slot:label>
-                                <span class="text-xs">Buscar por uma compra ...</span>
-                            </template>
-                        </q-input>
+                        <div class="flex">
+                            <div class="mr-4">
+                                <q-select 
+                                    v-model="byStatus" 
+                                    :options="statusOptions" 
+                                    option-label="Status"
+                                    emit-value
+                                    map-options
+                                    outlined
+                                    dense
+                                    :display-value="selectedLabel"
+                                    :clearable="true"
+                                    @update:model-value="applyFilters"
+                                />
+                            </div>
+
+                            <div>
+                                <q-input
+                                    outlined
+                                    v-model="searchInput"
+                                    type="text"
+                                    dense
+                                    label=""
+                                    @update:model-value="applyFilters"
+                                >
+                                    <template v-slot:append>
+                                        <q-icon name="search" />
+                                    </template>
+                                    <template v-slot:label>
+                                        <span class="text-xs">Buscar por uma compra ...</span>
+                                    </template>
+                                </q-input>
+                            </div>
+                        </div>
                     </template>
 
                     <template v-slot:body="props">
@@ -155,13 +174,21 @@
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
-    import { onMounted, ref } from 'vue';
+    import { computed, onMounted, ref } from 'vue';
     import { getAll } from '../services/shoppingService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { cancelShoppingOrSale } from 'src/modules/PDV/services/payMentFormsService';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import { useRouter } from 'vue-router';
     import ShoppingDetails from './Show/ShoppingDetails.vue';
+
+    const statusOptions: Exclude<FilterByStatus, null>[] = [
+        'Pendente', 
+        'Concluída', 
+        'Cancelada'
+    ];
+
+    const byStatus = ref<FilterByStatus>(null);
 
     const { notify } = useNotify();
     const showConfirmDialog = ref<boolean>(false);
@@ -207,8 +234,8 @@
         }
     ];
 
-    const allshopping = ref<ProductContract[]>([]);
-    const shopping = ref<ProductContract[]>([]);
+    const allshopping = ref<ShoppingContract[]>([]);
+    const shopping = ref<ShoppingContract[]>([]);
 
     const searchInput = ref<string>('');
     const selectedShoppingId = ref<number | null>(0);
@@ -216,15 +243,43 @@
 
     const getAllshopping = async () => {
         const res = await getAll();
-        const data = res.data;
+        const data = res.data as ShoppingContract[];
 
-        shopping.value = data;
-        allshopping.value = [...shopping.value];
+        if(!res.success)
+        {
+            notify(
+                'negative',
+                res.message
+            );
+        };
+    
+        allshopping.value = data;
+        applyFilters();
     };
 
-    const filtershopping = () => {
-        //shopping.value = allshopping.value.filter(shoop => shoop.name.toLowerCase().includes(searchInput.value));
+    const applyFilters = () => {
+        let filtred = [...allshopping.value];
+
+        if (byStatus.value) {
+            filtred = filtred.filter(s => s.status === byStatus.value);
+        };
+
+        if(searchInput.value.trim()) {
+            const search = searchInput.value.trim().toLocaleLowerCase();
+
+            filtred = filtred.filter(s => 
+                String(s.id).includes(search) ||
+                String(s.load ?? '').toLowerCase().includes(search) ||
+                String(s.status ?? '').toLowerCase().includes(search)
+            );
+        };
+
+        shopping.value = filtred;
     };
+
+    const selectedLabel = computed(() => {
+        return byStatus.value ?? 'Todos';
+    }); 
 
     const handleConfirmDialog = async (event: boolean): Promise<void> => {
         if(!event) return;

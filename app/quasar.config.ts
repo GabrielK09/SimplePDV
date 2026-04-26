@@ -111,6 +111,7 @@ export default defineConfig((ctx) => {
         'Dialog',
         'Loading',
         'LoadingBar',
+        'Meta'
       ],
     },
 

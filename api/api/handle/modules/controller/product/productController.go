@@ -6,6 +6,7 @@ import (
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/product"
 	_ "myApi/interface/product/productCharacteristics"
+	productcharacteristics "myApi/interface/product/productCharacteristics"
 
 	"net/http"
 	"strconv"
@@ -83,17 +84,35 @@ func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	productID, err := product.VerifyExists(id)
+
+	if err != nil {
+		u.ErrorLogger.Println("Ocorreu um erro ao consultar o produto: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao deletar o produto."))
+
+		return
+	}
+
+	if productID == 0 {
+		u.ErrorLogger.Println("Produto não localizado.")
+		w.WriteHeader(http.StatusNotFound)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Produto não localizado."))
+
+		return
+	}
+
 	if err := product.Delete(id, time.Now()); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(
-			responsehelper.Response(false, err.Error(), "Erro ao deletar o produto."),
-		)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err.Error(), "Erro ao deletar o produto."))
 
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto deletado com sucesso!"))
 }
 
 func HandleActiveProduct(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +140,26 @@ func HandleActiveProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	productID, err := product.VerifyExists(id)
+
+	if err != nil {
+		u.ErrorLogger.Println("Ocorreu um erro ao consultar o produto: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao deletar o produto."))
+
+		return
+	}
+
+	if productID == 0 {
+		u.ErrorLogger.Println("Produto não localizado.")
+		w.WriteHeader(http.StatusNotFound)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Produto não localizado."))
+
+		return
+	}
+
 	if err := product.Active(id, time.Now()); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(
@@ -130,9 +169,7 @@ func HandleActiveProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto ativado com sucesso!"))
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func HandleGetByNameProduct(w http.ResponseWriter, r *http.Request) {
@@ -202,6 +239,24 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produto."))
 		return
 	}
+
+	if productData == nil {
+		w.WriteHeader(http.StatusNotFound)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Produto não localizado."))
+		return
+	}
+
+	allProductCharacteristics, err := productcharacteristics.GetAllByProductId(productData.Id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar a grade do produto."))
+		return
+	}
+
+	productData.ProductWithCharacteristics = allProductCharacteristics
 
 	w.WriteHeader(http.StatusOK)
 
@@ -315,27 +370,4 @@ func HandlePutProduct(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(responsehelper.Response(true, nil, "Produto alterado com sucesso!"))
-}
-
-func HandleVerifyQtdes(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
-		return
-	}
-
-	qtdesData, err := product.VerifyQtdes()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Erro ao retornar os dados das qtdes."))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, qtdesData, "Dados das qtdes do estoque."))
 }

@@ -46,9 +46,8 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 	if err := c.Validate(); len(err) > 0 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		u.ErrorLogger.Println("Erro ao validar o registro no caixa:", err)
-		resp := responsehelper.Response(false, err, "Campos incorretos.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Campos incorretos."))
 		return
 	} // Valida os dados
 
@@ -57,9 +56,8 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao iniciar a transação:", err)
-		resp := responsehelper.Response(false, err, "Erro ao iniciar a transação.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao iniciar a transação."))
 		return
 	}
 
@@ -68,9 +66,8 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao localizar o cliente da venda:", err)
-		resp := responsehelper.Response(false, err, "Erro ao localizar o cliente da venda.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao localizar o cliente da venda."))
 		return
 
 	}
@@ -86,17 +83,14 @@ func HandlePostCashRegister(w http.ResponseWriter, r *http.Request) {
 	if err := c.Create(tx, c.InputValue, c.OutputValue); len(err) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.ErrorLogger.Println("Erro ao salvar o registro no caixa:", err)
-		resp := responsehelper.Response(false, err, "Erro ao salvar o registro no caixa.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao salvar o registro no caixa."))
 		return
 	} // Cria
 
 	w.WriteHeader(http.StatusCreated)
 
-	resp := responsehelper.Response(true, c, "Todo movimento do caixa.")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, c, "Todo movimento do caixa."))
 
 }
 
@@ -105,9 +99,8 @@ func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	}
 
@@ -115,16 +108,13 @@ func HandleGetCashRegister(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		resp := responsehelper.Response(false, err, "Erro ao retornar todo o caixa.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todo o caixa."))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	resp := responsehelper.Response(true, cashRegisters, "Todo movimento do caixa.")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, cashRegisters, "Todo movimento do caixa."))
 
 }

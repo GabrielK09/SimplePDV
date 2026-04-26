@@ -43,7 +43,7 @@ export async function createCustomer(payLoad: CustomerContract): Promise<any>
     };
 };
 
-export async function deleteCustomer(customerId: number): Promise<any>
+/*export async function deleteCustomer(customerId: number): Promise<any>
 {
     try {
         const res = await api.delete(`/customer/delete/${customerId}`);
@@ -56,6 +56,31 @@ export async function deleteCustomer(customerId: number): Promise<any>
         );
 
     } catch (error: any) {
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
+        );
+    };
+};*/
+
+export async function manageCustomerService(id: number, operation: 'active'|'delete'): Promise<any>
+{
+    try {
+        const label = operation === 'delete' ? 'desativado' : 'ativado';
+        const res = operation === 'delete' ? await api.delete(`customer/${operation}/${id}`) : await api.patch(`customer/${operation}/${id}`);
+
+        const data = res.data;
+
+        return apiResponse(
+            true,
+            `Cliente ${label} com sucesso!`,
+            data.data || []
+        );
+
+    } catch (error: any) {
+        console.error(error.response.data);
+
         return apiResponse(
             false,
             error.response?.data?.message,

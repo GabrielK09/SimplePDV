@@ -21,23 +21,37 @@ import (
 
 // func CreateReport(data map[string]interface{}) (string, error) {
 func CreateReport(data map[string]interface{}) ([]byte, error) {
+	appEnv := os.Getenv("APP_ENV")
+
+	if appEnv == "" {
+		appEnv = "dev"
+	}
+
+	var dir string
+
+	if appEnv == "dev" {
+		dir = "./files/"
+	} else {
+		dir = filepath.Join(os.TempDir(), "files")
+	}
+
 	var fileName string
 
 	switch data["report_type"] {
 	case "cash-register":
-		fileName = "Relatório_caixa.pdf"
+		fileName = "Relatório_caixa"
 
 	case "pay-ment-forms":
-		fileName = "Relatório_formas_de_pagamento.pdf"
+		fileName = "Relatório_formas_de_pagamento"
 
 	case "saled-itens":
-		fileName = "Relatório_itens_vendidos.pdf"
+		fileName = "Relatório_itens_vendidos"
 
 	case "shopping-itens":
-		fileName = "Relatório_itens_comprados.pdf"
+		fileName = "Relatório_itens_comprados"
 
 	case "shoppings":
-		fileName = "Relatório_compras.pdf"
+		fileName = "Relatório_compras"
 	}
 
 	u.InfoLogger.Println("InitReportProps started")
@@ -49,8 +63,6 @@ func CreateReport(data map[string]interface{}) ([]byte, error) {
 		u.ErrorLogger.Println("Erro ao gerar o PDF.", err)
 		return nil, err
 	}
-
-	dir := "./files/"
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		u.ErrorLogger.Println("Erro ao criar o diretório do PDF.", err)

@@ -83,8 +83,7 @@ func GetAllByProductId(productId int) ([]ProductCharacteristicsContract, error) 
 			FROM
 				product_grids
 			WHERE
-				product_id = $1 AND
-				deleted_at IS NULL
+				product_id = $1
 		`,
 		productId,
 	)

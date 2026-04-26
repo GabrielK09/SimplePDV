@@ -46,7 +46,6 @@
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
-    import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { findById, findByName } from 'src/modules/products/services/productsService';
     import { ref, watch } from 'vue';
     import QSelectGridTable from '../Products/UseGrid/QTable/QSelectGridTable.vue';
@@ -59,6 +58,7 @@
 
     const habilitStringSearchInput = ref<boolean>(false);
     const showSizeGrid = ref<boolean>(false);
+    const productQtdeByOperator = ref<number|null>(1);
 
     const itensTableColumn: QTableColumn[] = [
         {
@@ -100,9 +100,9 @@
         id: p.id,
         product_id: p.id,
         name: p.name,
-        price: p.price,
+        sale_value: p.price,
         product_with_characteristics: p.product_with_characteristics,
-        qtde: 1
+        qtde: !p.use_grid ? productQtdeByOperator.value : 1
     });
 
     const searchProduct = async (): Promise<void> => {
@@ -110,14 +110,15 @@
 
         if(!searchInput.value) return; // Se não for busca pelo nome, precisa possuir algum valor inserido no campo de busca
 
-        let productQtde: number = 1;
         let productId: number = Number(searchInput.value);
 
         if(searchInput.value?.toString().split('').includes('*'))
-        {
+        {            
             const splitedInput = searchInput.value?.toString().split('*');
-            productQtde = Number(splitedInput[0]);
+
+            productQtdeByOperator.value = Number(splitedInput[0]);
             productId = Number(splitedInput[1]);
+            
         };
                 
         const resProduct = (await findById(productId)).data as ProductContract;
@@ -132,13 +133,13 @@
 
         productCharacteristics.value = resProduct.product_with_characteristics;
         productResData.product_with_characteristics = resProduct.product_with_characteristics;
-
+        
         const productData: SaleItemContract = {
             id: productResData?.id,
             name: productResData?.name,
-            price: productResData?.price,
+            sale_value: productResData?.price,
             product_id: productResData?.id,
-            qtde: productQtde ?? 1,
+            qtde: 1,
             product_with_characteristics: null
         };
 
@@ -154,8 +155,9 @@
         const parsedProduct: ProductContract = {
             id: intermediaryProductItemData.value.id,
             name: intermediaryProductItemData.value.name,
-            price: intermediaryProductItemData.value.price,
+            price: intermediaryProductItemData.value.sale_value,
             qtde: intermediaryProductItemData.value.qtde,
+            use_grid: true,
             commission: 0,
             product_with_characteristics: []
         };
@@ -208,12 +210,10 @@
 
         const data: ProductContract[] = res.data;
 
-        console.log(data);      
-
         itensData.value = data.map(p => ({
             id: p.id,
             name: p.name,
-            price: p.price,
+            sale_value: p.price,
             product_id: p.id,
             qtde: 1,
             use_grid: p.use_grid,
@@ -222,8 +222,6 @@
     };
 
     const selectProduct = (_: Event, row: SaleItemContract) => {
-        console.log(row);
-        
         if(row.product_with_characteristics !== null && row.use_grid)
         {
             showSizeGrid.value = true;

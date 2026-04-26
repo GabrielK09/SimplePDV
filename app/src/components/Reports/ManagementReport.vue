@@ -144,9 +144,6 @@
 
                 );
             };
-
-            console.log(res);
-
         } catch (error: any) {
             if(error.inner)
             {

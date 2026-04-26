@@ -29,8 +29,8 @@
     }>();
 
     const emits = defineEmits<{
-        (e: 'selected:customer', value: any),
-        (e: 'return:customer-name', value: any)
+        (e: 'selected:customer', value: any): void
+        (e: 'return:customer-name', value: any): void
     }>();
 
     const { notify } = useNotify();
@@ -41,8 +41,6 @@
     watch(
         () => props.isRegisteredCustomer,
         (newVal) => {
-            console.log(newVal);
-
             if(!newVal) 
             {
                 customerId.value = 1;
@@ -68,8 +66,6 @@
     watch(
         customerId,
         () => {
-            console.log('watch customerId');
-
             if(customerId.value < 1)
             {
                 emits('return:customer-name', 'Consumidor padrão');

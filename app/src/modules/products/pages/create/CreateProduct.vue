@@ -156,11 +156,11 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue'    
-    import productSchema from '../schema/producSchema';
     import { createProduct, createProductCharacteristics } from '../../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import CreateGridProduct from 'src/components/Products/UseGrid/Create/CreateGridProduct.vue';
     import QGridTable from 'src/components/Products/UseGrid/QTable/QGridTable.vue';
+    import productSchema from '../../schema/productSchema';
 
     const emits = defineEmits<{
         (e: 'close', value: boolean): void

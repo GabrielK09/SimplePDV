@@ -79,8 +79,6 @@ export async function createProductCharacteristics(payLoads: ProductCharacterist
 
 export async function getProductCharacteristicsById(productGridId: number): Promise<any>
 {
-    console.log('called getProductCharacteristicsById');
-
     try {
         const res = await api.get(`products/find/characteristics/${productGridId}`);
 
@@ -152,13 +150,14 @@ export async function updateProduct(payLoad: ProductContract): Promise<any>
 export async function manageProductService(id: number, operation: 'active'|'delete'): Promise<any>
 {
     try {
+        const label = operation === 'delete' ? 'desativado' : 'ativado';
         const res = operation === 'delete' ? await api.delete(`products/${operation}/${id}`) : await api.patch(`products/${operation}/${id}`);
 
         const data = res.data;
 
         return apiResponse(
             true,
-            data.message,
+            `Produto ${label} com sucesso!`,
             data.data || []
         );
 
@@ -200,6 +199,7 @@ export async function findById(id: number): Promise<any>
 {
     try {
         const res = await api.get(`products/find/${id}`);
+    
         const data = res.data.data;
 
         return apiResponse(
@@ -209,8 +209,12 @@ export async function findById(id: number): Promise<any>
         );
 
     } catch (error: any) {
-        return null;
-
+        
+        return apiResponse(
+            false,
+            error.response?.data?.message,
+            error.response?.data
+        );
     };
 };
 

@@ -14,7 +14,7 @@ interface SaleItemContract {
     id: number|null;
     product_id: number|null;
     name: string|null;
-    price: number|null;
+    sale_value: number|null;
     qtde: number;
     use_grid?: boolean;
     product_with_characteristics: ProductCharacteristicsContract[]

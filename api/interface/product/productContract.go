@@ -176,8 +176,8 @@ func (p *ProductContract) Update() error {
 func Show(id int) (*ProductContract, error) {
 	var p ProductContract
 
-	if err := conn.QueryRow(
-		context.Background(),
+	err := conn.QueryRow(
+		ctx,
 		`
 			SELECT
 				id,
@@ -189,7 +189,8 @@ func Show(id int) (*ProductContract, error) {
 			FROM
 				products
 			WHERE
-				id = $1
+				id = $1 AND
+				deleted_at IS NULL
 		`,
 		id,
 	).Scan(
@@ -199,21 +200,16 @@ func Show(id int) (*ProductContract, error) {
 		&p.Qtde,
 		&p.Commission,
 		&p.UseGrid,
-	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	)
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao consultar o produto")
 		return nil, err
 	}
 
-	if p.UseGrid {
-		productGrids, err := productcharacteristics.GetAllByProductId(p.Id)
-
-		if err != nil {
-			u.ErrorLogger.Println("Erro ao consultar a grade dos produtos:", err)
-			return nil, err
-		}
-
-		for _, grid := range productGrids {
-			p.ProductWithCharacteristics = append(p.ProductWithCharacteristics, grid)
-		}
+	if errors.Is(err, pgx.ErrNoRows) {
+		u.InfoLogger.Println("Produto não localizado ou desativado.")
+		return nil, nil
 	}
 
 	return &p, nil
@@ -224,30 +220,26 @@ func ShowByName(productName string) ([]ProductContract, error) {
 
 	u.InfoLogger.Println("ShowByName:", productName)
 
-	query := `
-		SELECT
-			id,
-			name, 
-			price, 
-			qtde, 
-			commission,
-			use_grid
-		FROM
-			products
-
-		WHERE
-			name ILIKE '%'||$1||'%'
-
-		ORDER BY 
-			name
-
-		LIMIT 
-			20
-	`
-
 	rows, err := conn.Query(
 		context.Background(),
-		query,
+		`
+			SELECT
+				id,
+				name, 
+				price, 
+				qtde, 
+				commission,
+				use_grid
+			FROM
+				products
+			WHERE
+				name ILIKE '%'||$1||'%' AND
+				deleted_at IS NULL
+			ORDER BY 
+				name
+			LIMIT 
+				20
+		`,
 		productName,
 	)
 
@@ -309,7 +301,8 @@ func GetAll(perPage any) ([]ProductContract, error) {
 			price,
 			qtde,           
 			commission,
-			use_grid
+			use_grid,
+			deleted_at
 		FROM
 			products
 
@@ -344,33 +337,25 @@ func GetAll(perPage any) ([]ProductContract, error) {
 			&p.Qtde,
 			&p.Commission,
 			&p.UseGrid,
+			&p.DeletedAt,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao ler os dados do select:", err)
 			return nil, err
 		}
 
-		products = append(products, p)
-	}
+		if p.UseGrid {
+			grids, err := productcharacteristics.GetAllByProductId(p.Id)
 
-	for i := range products {
-		productID := products[i].Id
-
-		if products[i].UseGrid {
-			grids, err := productcharacteristics.GetAllByProductId(productID)
- 
 			if err != nil {
 				u.ErrorLogger.Println("Erro ao localizar os dados da grade do produto:", err)
 				return nil, err
 			}
 
-			if len(grids) == 0 {
-				products[i].ProductWithCharacteristics = nil
-
-			} else {
-				products[i].ProductWithCharacteristics = grids
-
-			}
+			u.InfoLogger.Printf("Produto %d, usa grade: %v", p.Id, grids)
+			p.ProductWithCharacteristics = grids
 		}
+
+		products = append(products, p)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -379,6 +364,17 @@ func GetAll(perPage any) ([]ProductContract, error) {
 	}
 
 	return products, nil
+}
+
+func VerifyExists(id int) (int, error) {
+	var productID int
+
+	if err := conn.QueryRow(ctx, `SELECT id FROM products WHERE id = $1`, id).Scan(&productID); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		u.ErrorLogger.Println("Erro ao pegar os dados do produto pelo ID:", err)
+		return 0, err
+	}
+
+	return productID, nil
 }
 
 func Delete(id int, deletedAt time.Time) error {
@@ -391,19 +387,7 @@ func Delete(id int, deletedAt time.Time) error {
 
 	defer tx.Rollback(ctx)
 
-	product, err := Show(id)
-
-	if err != nil {
-		u.ErrorLogger.Println("Ocorreu um erro ao consultar o produto: ", err)
-		return err
-	}
-
-	if product == nil {
-		u.ErrorLogger.Println("Produto não localizado.")
-		return fmt.Errorf("Produto não localizado.")
-	}
-
-	if _, err = conn.Exec(
+	if _, err = tx.Exec(
 		ctx,
 		`
 			UPDATE
@@ -420,7 +404,7 @@ func Delete(id int, deletedAt time.Time) error {
 		return err
 	}
 
-	if _, err = conn.Exec(
+	if _, err = tx.Exec(
 		ctx,
 		`
 			UPDATE
@@ -470,6 +454,24 @@ func Active(id int, updatedAt time.Time) error {
 		updatedAt,
 	); err != nil {
 		u.ErrorLogger.Println("Erro ao ativar o produto: ", err)
+		return err
+	}
+
+	if _, err = tx.Exec(
+		ctx,
+		`
+			UPDATE
+				product_grids
+			SET
+				updated_at = $2,
+				deleted_at = NULL
+			WHERE 
+				product_id = $1
+		`,
+		id,
+		updatedAt,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao deletar a grade do produto: ", err)
 		return err
 	}
 
@@ -624,41 +626,4 @@ func AddQtde(ctx context.Context, tx pgx.Tx, productID, qtde int, haveGrid bool,
 	}
 
 	return nil
-}
-
-// Processamento de qtdes futuras e reservadas
-func VerifyQtdes() (*VerifyQtde, error) {
-	var qtdesData VerifyQtde
-
-	var totalFutureShopping int
-	var totalReservateSale int
-
-	if err := conn.QueryRow(
-		ctx,
-		`
-			SELECT COALESCE(SUM(qtde_purchased), 0) FROM shopping_itens WHERE status = 'Pendente'
-		`,
-	).Scan(
-		&totalFutureShopping,
-	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		u.ErrorLogger.Println("Erro ao coletar os dados da qtde futura ( compras ):", err)
-		return nil, err
-	}
-
-	if err := conn.QueryRow(
-		ctx,
-		`
-			SELECT COALESCE(SUM(qtde), 0) FROM sale_itens WHERE status = 'Pendente'
-		`,
-	).Scan(
-		&totalReservateSale,
-	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		u.ErrorLogger.Println("Erro ao coletar os dados da qtde reservada ( vendas ):", err)
-		return nil, err
-	}
-
-	qtdesData.TotalFuture = totalFutureShopping
-	qtdesData.TotalReservate = totalReservateSale
-
-	return &qtdesData, nil
 }

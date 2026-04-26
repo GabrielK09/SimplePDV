@@ -83,7 +83,7 @@
                                                         <q-icon name="delete" color="red" size="20px" />
                                                     </q-item-section>
                                                     <q-item-section>
-                                                        <q-item-label>Deletar produto</q-item-label>
+                                                        <q-item-label>Deletar</q-item-label>
                                                     </q-item-section>
                                                 </q-item>
 
@@ -97,7 +97,7 @@
                                                         <q-icon name="rotate_left" color="green" size="20px" />
                                                     </q-item-section>
                                                     <q-item-section>
-                                                        <q-item-label>Ativar produto</q-item-label>
+                                                        <q-item-label>Ativar</q-item-label>
                                                     </q-item-section>
                                                 </q-item>
                                             </q-list>
@@ -257,8 +257,6 @@
     watch(
         () => pagination.value.rowsPerPage,
         async (newRowsPerPage) => {
-            console.log('newRowsPerPage: ', newRowsPerPage);
-
             await getAllProducts(newRowsPerPage);
         }
     );
@@ -277,7 +275,7 @@
 
             return;
         };
-    
+
         products.value = data;
         allProducts.value = [...products.value];
     };
@@ -303,8 +301,6 @@
     };
 
     const buildUpdateProduct = (productId: number): void => {
-        console.log(productId);
-        
         manageProductModal.value.update = {
             show: true,
             productId: productId

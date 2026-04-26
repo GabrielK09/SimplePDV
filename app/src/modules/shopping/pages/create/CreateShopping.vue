@@ -360,11 +360,6 @@
     import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
     import { createshopping, getShoppingById, updateShoppingDetails } from '../../services/shoppingService';
 
-    type ProductResponse = {
-        product: ProductContract,
-        characteristics: ProductCharacteristicsContract
-    };
-
     const { notify } = useNotify();
 
     const router = useRouter();
@@ -666,18 +661,14 @@
             );
         };
 
-        // productsStockData.value = res.data.map((c: ProductResponse) => ({
-        //     id: c.product.id,
-        //     name: c.product.name,
-        //     price: c.product.price,
-        //     qtde: c.product.qtde,
-        //     commission: c.product.commission,
-        //     product_with_characteristics: c.characteristics
-        // }));
-
-        console.log(res.data);
-
-        productsStockData.value = res.data;
+        productsStockData.value = res.data.filter((p: ProductContract) => p.deleted_at === null).map((c: ProductContract) => ({
+            id: c.id,
+            name: c.name,
+            price: c.price,
+            qtde: c.qtde,
+            commission: c.commission,
+            product_with_characteristics: c.product_with_characteristics
+        }));
                 
         allProductsStockData.value = [...productsStockData.value];
     };
@@ -999,8 +990,6 @@
             );
 
             const res = await getShoppingById(routeShoppingId.value);
-
-            console.log(res);
 
             if(!res.success)
             {

@@ -33,6 +33,24 @@
                     class="rounded-xl"
                     :filter="searchInput"
                 >
+                    <template v-slot:top-right>
+                        <q-input
+                            outlined
+                            v-model="searchInput"
+                            type="text"
+                            dense
+                            label=""
+                            @update:model-value="applyFilters"
+                        >
+                            <template v-slot:append>
+                                <q-icon name="search" />
+                            </template>
+                            <template v-slot:label>
+                                <span class="text-xs">Buscar por uma compra ...</span>
+                            </template>
+                        </q-input>
+                    </template>
+
                     <template v-slot:no-data>
                         <div class="ml-auto mr-auto">
                             <q-icon name="warning" size="30px"/>
@@ -110,7 +128,7 @@
 
     const getAllCashRegister = async () => {
         const res = await getAll();
-        const data = res.data;
+        const data = res.data as CashRegisterContract[];
 
         if(!res.success)
         {
@@ -120,8 +138,24 @@
             );
         };
 
-        cashRegister.value = data;
-        allCashRegister.value = [...cashRegister.value];
+        allCashRegister.value = data;
+        applyFilters();
+    };
+
+    const applyFilters = () => {
+        let filtred = [...allCashRegister.value];
+
+        if(searchInput.value.trim()) {
+            const search = searchInput.value.trim().toLocaleLowerCase();
+
+            filtred = filtred.filter(c => 
+                String(c.customer).includes(search) ||
+                String(c.description).includes(search) 
+                
+            );
+        };
+
+        cashRegister.value = filtred;
         totalBalance.value = cashRegister.value.reduce((total, a) => total + (a.input_value - a.output_value), 0);
     };
 

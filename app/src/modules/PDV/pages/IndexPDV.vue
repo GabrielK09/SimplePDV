@@ -24,6 +24,43 @@
                     class="rounded-xl"
                     :filter="searchInput"
                 >
+                    <template v-slot:top-right>
+                        <div class="flex">
+                            <div class="mr-4">
+                                <q-select 
+                                    v-model="byStatus" 
+                                    :options="statusOptions" 
+                                    option-label="Status"
+                                    emit-value
+                                    map-options
+                                    outlined
+                                    dense
+                                    :display-value="selectedLabel"
+                                    :clearable="true"
+                                    @update:model-value="applyFilters"
+                                />
+                            </div>
+
+                            <div class="">
+                                <q-input
+                                    outlined
+                                    v-model="searchInput"
+                                    type="text"
+                                    dense
+                                    label=""
+                                    @update:model-value="applyFilters"
+                                >
+                                    <template v-slot:append>
+                                        <q-icon name="search" />
+                                    </template>
+                                    <template v-slot:label>
+                                        <span class="text-xs">Buscar por uma venda ...</span>
+                                    </template>
+                                </q-input>
+                            </div>
+                        </div>
+                    </template>
+
                     <template v-slot:body="props">
                         <q-tr :props="props">
                             <q-td v-for="col in props.cols">
@@ -136,13 +173,21 @@
 
 <script setup lang="ts">
     import { QTableColumn } from 'quasar';
-    import { onMounted, ref } from 'vue';
+    import { computed, onMounted, ref } from 'vue';
     import { getAll } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import { useRouter } from 'vue-router';
     import SaleDetails from './Show/SaleDetails.vue';
     import { cancelShoppingOrSale } from '../services/payMentFormsService';
+
+    const statusOptions: Exclude<FilterByStatus, null>[] = [
+        'Pendente', 
+        'Concluída', 
+        'Cancelada'
+    ];
+
+    const byStatus = ref<FilterByStatus>(null);
 
     const { notify } = useNotify();
     const router = useRouter();
@@ -191,7 +236,6 @@
     const allPDVs = ref<PDVContract[]>([]);
     const pdvs = ref<PDVContract[]>([]);
 
-    const showActions = ref<boolean>(true);
     const showConfirmDialog = ref<boolean>(false);
     const showSaleDetails = ref<boolean>(false);
     const selectedSaleId = ref<number>(0);
@@ -200,7 +244,7 @@
 
     const getAllPdv = async () => {
         const res = await getAll();
-        const data = res.data;
+        const data = res.data as PDVContract[];
 
         if(!res.success)
         {
@@ -210,9 +254,33 @@
             );
         };
 
-        pdvs.value = data;
-        allPDVs.value = [...pdvs.value];
+        allPDVs.value = data;
+        applyFilters();
     };
+
+    const applyFilters = () => {
+        let filtred = [...allPDVs.value];
+
+        if(byStatus.value) {
+            filtred = filtred.filter(s => s.status === byStatus.value);
+        };
+
+        if(searchInput.value.trim()) 
+        {
+            const search = searchInput.value.trim().toLowerCase();
+
+            filtred = filtred.filter(s =>
+                String(s.id).includes(search) ||
+                String(s.customer).includes(search)
+            );
+        };
+
+        pdvs.value = filtred;
+    };
+
+    const selectedLabel = computed(() => {
+        return byStatus.value ?? 'Todos';
+    }); 
 
     const showCancelSale = (saleId: number): void => {
         showConfirmDialog.value = true;

@@ -1,9 +1,11 @@
+
+
 interface ShoppingContract {
     id: number|null;
     load: number|null;
     shopping_itens: ShoppingItemContract[];
     total_shopping: number|null;
-    status?: 'Pendente'|'Cancelada'|'Concluída'|'';
+    status?: 'Pendente'|'Cancelada'|'Concluída'|null;
 };
 
 interface ShoppingItemContract {

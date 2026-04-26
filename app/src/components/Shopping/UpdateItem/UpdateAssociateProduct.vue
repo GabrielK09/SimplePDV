@@ -57,8 +57,6 @@
 
     const saveData = () => {
         if (!newProduct.value) return;
-
-        console.log(newProduct.value);
         
         emit('update:product', newProduct.value);
         emit('close', true);

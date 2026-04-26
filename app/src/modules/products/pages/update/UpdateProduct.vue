@@ -168,7 +168,7 @@
     import QGridTable from 'src/components/Products/UseGrid/QTable/QGridTable.vue';
     import CreateGridProduct from 'src/components/Products/UseGrid/Create/CreateGridProduct.vue';
     import formatGridDataForPush from 'src/helpers/FormatValue/Grid/formatGridDataForPush';
-    import productSchema from '../schema/producSchema';
+    import productSchema from '../../schema/productSchema';
 
     const props = defineProps<{
         productId: number;

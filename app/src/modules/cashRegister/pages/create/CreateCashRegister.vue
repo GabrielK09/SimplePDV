@@ -94,43 +94,24 @@
 <script setup lang="ts">
     import { computed, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import * as Yup from 'yup';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { createManualCashRegister } from '../../services/cashRegisterService';
+import cashRegisterSchema from '../../schema/cashRegisterSchema';
 
     const cashRegisterData = ref<CashRegisterContract>({
         id: 0,
         sale_id: 0,
         shopping_id: 0,
+        customer_id: null,
         customer: '',
         description: '',
         input_value: 0,
         output_value: 0,
         specie: '',
-        specie_id: 0,
+        specie_id: 1,
         total_balance: 0
     });
 
-    const cashRegisterSchema = computed(() =>
-        Yup.object({
-            description: Yup.string().required('A descrição do movimento financeiro é obrigatória!'),
-            input_value: Yup.number().min(0, 'O valor de entrada não pode ser menor que zero.'),
-            output_value: Yup.number().min(0, 'O valor de saída não pode ser menor que zero.')
-        })
-        .test(
-            'input-or-output',
-            'Informe apenas um dos valores, entrada ou saída',
-            (obj) => {
-                const inputValue = Number(obj.input_value ?? 0);
-                const outputValue = Number(obj.output_value ?? 0);
-
-                const haveInput = inputValue > 0;
-                const haveOutput = outputValue > 0;
-
-                return (!haveInput && haveOutput) || (haveInput && !haveOutput);
-            }
-        )
-    );
 
     const formErrors = ref<Record<string, string>>({});
 
@@ -148,7 +129,7 @@
 
     const submitCashRegister = async () => {
         try {
-            await cashRegisterSchema.value.validate(cashRegisterData.value, { abortEarly: false });
+            await cashRegisterSchema().validate(cashRegisterData.value, { abortEarly: false });
 
             const res = await createManualCashRegister(cashRegisterData.value);
 

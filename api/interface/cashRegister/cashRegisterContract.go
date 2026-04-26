@@ -51,11 +51,16 @@ func (c CashRegisterContract) Validate() map[string]string {
 		errorsField["output_value"] = "O valor de saída não pode ser informando quando houver um valor de entrada informado."
 	}
 
-	if c.CustomerId < 1 {
-		errorsField["customer_id"] = "Identificador do cliente "
+	if c.ShoppingId > 0 && c.SaleId > 0 {
+		errorsField["shopping_id"] = "Impossível processar uma compra e uma venda ao mesmo tempo."
+		errorsField["sale_id"] = "Impossível processar uma venda e uma compra ao mesmo tempo."
 	}
 
-	if c.SpecieId < 1 {
+	if c.CustomerId <= 0 && (c.ShoppingId > 0 || c.SaleId > 0) {
+		errorsField["customer_id"] = "Identificador do cliente inválido."
+	}
+
+	if c.SpecieId <= 0 {
 		errorsField["specie_id"] = "Identificador da espécie inválido."
 	}
 

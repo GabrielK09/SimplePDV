@@ -3,12 +3,18 @@ import type { RouteRecordRaw } from 'vue-router';
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        redirect: '/admin'
+        redirect: '/admin',
+        meta: {
+            title: ''
+        }
     },
     {
         path: '/auth/login',
         name: 'auth.login',
         component: () => import('src/modules/auth/Login.vue'),
+        meta: {
+            title: 'Login'
+        }
     },
     {
         path: '/admin',
@@ -18,14 +24,15 @@ const routes: RouteRecordRaw[] = [
             {
                 path: '',
                 component: () => import('src/modules/dashBoard/pages/DashBoard.vue'),
-            },
-            {
-                path: 'api',
-                name: 'api',
-                component: () => import('src/modules/api/ApiTest.vue')
+                meta: {
+                    title: 'DashBoard'
+                }
             },
             {
                 path: 'cash-register',
+                meta: {
+                    title: 'Caixa'
+                },
                 children: [
                     {
                         path: '',
@@ -41,6 +48,9 @@ const routes: RouteRecordRaw[] = [
             },
             {
                 path: 'products',
+                meta: {
+                    title: 'Produtos'
+                },
                 children: [
                     {
                         path: '',
@@ -51,6 +61,9 @@ const routes: RouteRecordRaw[] = [
             },
             {
                 path: 'pdv',
+                meta: {
+                    title: 'PDV'
+                },
                 children: [
                     {
                         path: 'list-pdv',
@@ -66,6 +79,9 @@ const routes: RouteRecordRaw[] = [
             },
             {
                 path: 'customers',
+                meta: {
+                    title: 'Clientes'
+                },
                 children: [
                     {
                         path: '',
@@ -76,7 +92,9 @@ const routes: RouteRecordRaw[] = [
             },
             {
                 path: 'shopping',
-                name: 'shopping',
+                meta: {
+                    title: 'Compras'
+                },
                 children: [
                     {
                         path: '',

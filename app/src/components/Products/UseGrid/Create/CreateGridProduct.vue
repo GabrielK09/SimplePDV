@@ -112,13 +112,10 @@
         try {
             await gridSchema.value.validate(productCharacteristics.value, { abortEarly: false });
 
-            console.log(productCharacteristics.value);
-            
             emits('return:grids', productCharacteristics.value);
             emits('close', true);
             
         } catch (error: any) {
-            console.log(error);
             
             if(error.inner)
             {

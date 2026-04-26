@@ -25,20 +25,40 @@
                     class="rounded-xl"
                 >
                     <template v-slot:top-right>
-                        <q-input
-                            outlined
-                            v-model="searchInput"
-                            type="text"
-                            label=""
-                            @update:model-value="filterCustomers"
-                        >
-                            <template v-slot:append>
-                                <q-icon name="search" />
-                            </template>
-                            <template v-slot:label>
-                                <span class="text-xs">Buscar por um cliente ...</span>
-                            </template>
-                        </q-input>
+                        <div class="flex">
+                            <div class="mr-4">
+                                <q-select 
+                                    v-model="byStatus" 
+                                    :options="statusOptions" 
+                                    option-label="Status"
+                                    emit-value
+                                    map-options
+                                    outlined
+                                    dense
+                                    :display-value="selectedLabel"
+                                    :clearable="true"
+                                    @update:model-value="applyFilters"
+                                />
+                            </div>
+                            
+                            <div>
+                                <q-input
+                                    outlined
+                                    v-model="searchInput"
+                                    type="text"
+                                    label=""
+                                    dense
+                                    @update:model-value="applyFilters"
+                                >
+                                    <template v-slot:append>
+                                        <q-icon name="search" />
+                                    </template>
+                                    <template v-slot:label>
+                                        <span class="text-xs">Buscar por um cliente ...</span>
+                                    </template>
+                                </q-input>
+                            </div>
+                        </div>
                     </template>
 
                     <template v-slot:body="props">
@@ -60,8 +80,9 @@
                                                 <q-item 
                                                     clickable 
                                                     v-close-popup  
+                                                    v-if="props.row.deleted_at === null"
+                                                    :disable="props.row.id === 1 || props.row.deleted_at !== null"
                                                     @click="buildShowCustomerUpdate(props.row.id)"
-                                                    :disable="props.row.id === 1"
                                                 >
                                                     <q-item-section avatar>
                                                         <q-icon name="edit" color="black" size="20px" />
@@ -74,8 +95,9 @@
                                                 <q-item 
                                                     clickable 
                                                     v-close-popup                                          
-                                                    @click="showDialogDeleteProduct(props.row.id)"
+                                                    v-if="props.row.id === 1 || props.row.deleted_at === null"
                                                     :disable="props.row.id === 1"
+                                                    @click="showDialogActionCustomer(props.row.id, 'delete')"
                                                 >
                                                     <q-item-section avatar>
                                                         <q-icon name="delete" color="red" size="20px" />
@@ -84,16 +106,35 @@
                                                         <q-item-label>Deletar</q-item-label>
                                                     </q-item-section>
                                                 </q-item>
+
+                                                <q-item
+                                                    clickable 
+                                                    v-close-popup  
+                                                    v-if="props.row.deleted_at !== null"
+                                                    @click="showDialogActionCustomer(props.row.id, 'active')"
+                                                >
+                                                    <q-item-section avatar>
+                                                        <q-icon name="rotate_left" color="green" size="20px" />
+                                                    </q-item-section>
+                                                    <q-item-section>
+                                                        <q-item-label>Ativar</q-item-label>
+                                                    </q-item-section>
+                                                </q-item>
                                             </q-list>
                                         </q-menu>
                                     </q-btn>
                                 </template>
 
                                 <template v-else>
-                                    <div
-                                        class="text-center"
-                                    >
-                                        {{ col.value }}
+                                    <div class="text-center">
+                                        <span v-if="props.row.deleted_at !== null" class="text-gray-400">
+                                            {{ col.value }}
+
+                                        </span>
+                                        <div v-else>
+                                            {{ col.value }}
+
+                                        </div>
                                     </div>
                                 </template>
                             </q-td>
@@ -127,8 +168,8 @@
 
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
-    import { onMounted, ref } from 'vue';
-    import { deleteCustomer, getAll } from '../services/customerService';
+    import { computed, onMounted, ref } from 'vue';
+    import { getAll, manageCustomerService } from '../services/customerService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import UpdateCustomer from './update/UpdateCustomer.vue';    
     import CreateCustomer from './create/CreateCustomer.vue';
@@ -146,6 +187,14 @@
         update: UpdateCustomer;
         create: CreateCustomer
     };
+
+    const statusOptions: Exclude<FilterByActiveOrDisable, null>[] = [
+        'Ativos',
+        'Inativos',
+        'Todos'
+    ];
+
+    const byStatus = ref<FilterByActiveOrDisable>(null);
 
     const pagination = ref({
         sortBy: 'id',
@@ -199,7 +248,7 @@
 
     const getAllCustomers = async () => {
         const res = await getAll();
-        const data = res.data;
+        const data = res.data as CustomerContract[];
 
         if(!res.success)
         {
@@ -209,21 +258,61 @@
             );
         };
 
-        customers.value = data;
-        allCustomers.value = [...customers.value];
-
+        allCustomers.value = data;
+        applyFilters();
     };
 
+    const applyFilters = () => {
+        let filtred = [...allCustomers.value];
+
+        if(byStatus.value) 
+        {
+            switch (byStatus.value) {
+                case 'Ativos':
+                    filtred = filtred.filter(c => c.deleted_at === null)
+                    break;  
+
+                case 'Inativos':
+                    filtred = filtred.filter(c => c.deleted_at !== null)
+                    break;  
+
+                case 'Todos':
+                    getAllCustomers();
+                    break;  
+            
+                default:
+                    getAllCustomers();
+                    break;
+            }
+        };
+
+        if(searchInput.value.trim())
+        {
+            const search = searchInput.value.trim().toLowerCase();
+
+            filtred = filtred.filter(c => 
+                String(c.name).includes(search) ||
+                String(c.id).includes(search) ||
+                String(c.cpf_cnpj === search)
+
+            );
+        };
+
+        customers.value = filtred;
+    };
+
+    const selectedLabel = computed(() => {
+        return byStatus.value ?? 'Todos';
+    }); 
+
     const buildShowCustomerUpdate = (customerId: number) => { 
-        console.log('Cliente da edição: ', customerId);
-        
         manageCustomerModal.value.update = {
             show: true,
             customerId: customerId
         };        
     };
 
-    const showDialogDeleteProduct = (customerId: number) => {
+    const showDialogActionCustomer = (customerId: number, operation: 'active'|'delete') => {
         if(customerId === 1)
         {
             notify(
@@ -234,12 +323,12 @@
         };
 
         $q.dialog({
-            title: 'Excluir cliente',
-            message: `Deseja realmente remover esse cliente (${customerId})?`,
+            title: `${operation === 'delete' ? 'Excluir' : 'Ativar'} cliente`,
+            message: `Deseja realmente ${operation === 'delete' ? 'deletear' : 'ativar'} esse cliente (${customerId})?`,
             cancel: {
                 push: true,
                 label: 'Não',
-                color: 'red',
+                color: operation === 'delete' ? 'red' : 'green'
             },
 
             ok: {
@@ -249,36 +338,31 @@
             },
 
         }).onOk(() => {
-            deleteCustomerByDialog(customerId);
+            manageProduct(customerId, operation);
 
         }).onCancel(() => {
             return;
         });
     };
 
-    const deleteCustomerByDialog = async (customerId: number) => {
-        const res = await deleteCustomer(customerId);
+    const manageProduct = async (productId: number, operation: 'active'|'delete') => {
+        const res = await manageCustomerService(productId, operation);
 
-        if(res.success)
+        if(!res.success)
         {
             notify(
-                'positive',
+                'negative',
                 res.message
             );
-
-        } else {
-            notify(
-                'positive',
-                res.message
-            );
+            return;
         };
 
-        getAllCustomers();
-    };
+        notify(
+            'positive',
+            res.message
+        );
 
-    const filterCustomers = () => {
-        customers.value = allCustomers.value.filter(product => product.name.toLowerCase().includes(searchInput.value));
-
+        await getAllCustomers();
     };
 
     onMounted(() => {

@@ -1,5 +1,5 @@
- <template>
-    <q-page padding>
+<template>
+    <q-page padding id="pdv">
         <main class="px-4" id="sale-page">
             <section class="section_pdv">
                 <div class="left-bar rounded-lg">
@@ -70,9 +70,9 @@
                                         />
                                     </q-td>
                                     
-                                    <q-td key="price" :props="props">
+                                    <q-td key="sale_value" :props="props">
                                         R$ {{
-                                            props.row.price
+                                            props.row.sale_value
                                                 .toFixed(2)
                                                 .replace('.', ',')
                                         }}
@@ -81,8 +81,8 @@
                                     <q-td key="total" :props="props">
                                         R$ {{
                                             hasCharacteristics(props.row) 
-                                                ? (props.row.price * props.row.product_with_characteristics.reduce((total: any, a: any) => total + (a.grid_qtde), 0)).toFixed(2).replace('.', ',')
-                                                : (props.row.price * props.row.qtde).toFixed(2).replace('.', ',')
+                                                ? (props.row.sale_value * props.row.product_with_characteristics.reduce((total: any, a: any) => total + (a.grid_qtde), 0)).toFixed(2).replace('.', ',')
+                                                : (props.row.sale_value * props.row.qtde).toFixed(2).replace('.', ',')
                                         }}
                                     </q-td>
 
@@ -108,7 +108,7 @@
                                                 <div
                                                     v-for="(characteristic, i) in props.row.product_with_characteristics"
                                                     :key="`${props.row.product_id}-${characteristic.size}`"
-                                                    class="col-12 col-sm-6 col-md-3"
+                                                    class="col-12 col-sm-3 col-md-4"
                                                 >       
                                                     <q-card flat bordered class="w-max">
                                                         <q-card-section>
@@ -239,7 +239,7 @@
 
 <script setup lang="ts">
     import { SessionStorage, QTableColumn } from 'quasar';
-    import { computed, onMounted, reactive, ref, watch } from 'vue';
+    import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
@@ -305,9 +305,9 @@
             style: 'width: 90px'
         },
         {
-            name: 'price',
+            name: 'sale_value',
             label: 'Preço',
-            field: 'price',
+            field: 'sale_value',
             align: 'right',
             style: 'width: 100px'
         },
@@ -457,7 +457,7 @@
                     id: null,
                     product_id: p.id,
                     name: p.name,
-                    price: p.price,
+                    sale_value: p.sale_value,
                     qtde: p.qtde ?? 1,
                     product_with_characteristics: p.product_with_characteristics ?? []
 
@@ -471,23 +471,12 @@
         disableButtons.finallySale = false;
     };
 
-    const calculateTotalItem = (item: SaleItemContract): number => {
-        hasCharacteristics(item)
-            ? item.product_with_characteristics.reduce((total, item) => {
-                return total + (item.grid_qtde ?? 0)
-            }, 0)
-
-            : item.qtde
-
-        return item.price * item.qtde;
-    };
-
     const cloneProducts = (items: SaleItemContract[]) =>
         items.map(item => ({ ...item }));
 
     const calculateTotal = computed(() => {
         const subTotal = productsSale.value.reduce((total, p) => {
-            return total + (Number(p.price) * p.qtde);
+            return total + (Number(p.sale_value) * p.qtde);
         }, 0);
 
         totalSale.value = subTotal;
@@ -519,7 +508,7 @@
         const currentMap = new Map(
             productsSale.value.map(item => [
                 item.product_id,
-                { qtde: item.qtde, price: item.price }
+                { qtde: item.qtde, sale_value: item.sale_value }
             ])
         );
 
@@ -529,7 +518,7 @@
             if (!current) return true;
             
             if (
-                current.qtde !== oldItem.qtde || current.price !== oldItem.price
+                current.qtde !== oldItem.qtde || current.sale_value !== oldItem.sale_value
             ) return true;
         };
 
@@ -788,6 +777,16 @@
         nextRef = null;
     };
 
+    const handleBodyOverflow = () => {
+        const body = document.body;
+        if(window.innerWidth >= 1536) 
+        {
+            body.style.setProperty('overflow-y', 'hidden', 'important');
+        } else {
+            body.style.removeProperty('overflow-y');
+        };
+    };
+
     onBeforeRouteLeave((to, from, next) => {
         const hasOpenSale = SessionStorage.getItem('sale_id') || SessionStorage.getItem('sale') || productsSale.value?.length > 0
 
@@ -814,23 +813,28 @@
             );
 
             const res = await getSaleDetailsById(Number(route.query.id));
-            const resData: SaleContract = res.data.sale;
-
+            
             if(!res.success)
             {
                 notify(
                     'negative',
                     res.message
                 );
+                
+                return;
             };
-
-            productsSale.value = resData.products || [];
+            
+            const saleData = res.data.sale as SaleContract;
+            const saleWithProducts = res.data.sale_with_products as SaleItemContract[];
+        
+            productsSale.value = saleWithProducts;
+            
             originalProductsSale.value = cloneProducts(productsSale.value);
 
             pdvData.value = {
-                customer: resData.customer,
-                id: resData.id,
-                customer_id: resData.customer_id,
+                customer: saleData.customer,
+                id: saleData.id,
+                customer_id: saleData.customer_id,
                 products: productsSale.value,
                 specie: ''
             };
@@ -839,7 +843,7 @@
             disableButtons.deleteSale = false;
             disableButtons.saveSale = false;
             disableButtons.finallySale = false;
-
+            
             return;
         };
 
@@ -868,6 +872,13 @@
         disableButtons.saveSale = false;
         disableButtons.finallySale = false;
 
+        handleBodyOverflow();
+        window.addEventListener('resize', handleBodyOverflow);
+    });
+
+    onUnmounted(() => {        
+        document.body.style.setProperty('overflow-y', 'auto', 'important');
+        
     });
 </script>
 
@@ -887,7 +898,7 @@
         }
     }
 
-    @media (min-width: 1536px) {
+    @media (min-width: 1535px) {
         body {
             overflow-y: hidden !important;
         }

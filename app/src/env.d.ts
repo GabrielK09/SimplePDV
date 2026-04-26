@@ -6,5 +6,6 @@ declare namespace NodeJS {
     API_URL: string;
     API_CNPJ: string;
     API_CEP: string;
+    APP_ENV: 'dev'|'prod';
   }
 }

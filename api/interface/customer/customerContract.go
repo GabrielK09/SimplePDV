@@ -3,7 +3,6 @@ package customer
 import (
 	"context"
 	"errors"
-	"fmt"
 	u "myApi/helpers/logger"
 	"time"
 
@@ -12,11 +11,12 @@ import (
 )
 
 type CustomerContract struct {
-	Id        int       `json:"id"`
-	Name      string    `json:"name"`
-	CpfCnpj   string    `json:"cpf_cnpj"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id        int        `json:"id"`
+	Name      string     `json:"name"`
+	CpfCnpj   string     `json:"cpf_cnpj"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 var conn *pgxpool.Pool
@@ -47,7 +47,8 @@ func GetAll() ([]CustomerContract, error) {
 		SELECT
 			id,
 			name,
-			cpf_cnpj
+			cpf_cnpj,
+			deleted_at
 			
 		FROM
 			customers
@@ -72,6 +73,7 @@ func GetAll() ([]CustomerContract, error) {
 			&c.Id,
 			&c.Name,
 			&c.CpfCnpj,
+			&c.DeletedAt,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao ler os dados do select dos clientes: ", err)
 			return nil, err
@@ -125,20 +127,14 @@ func (c *CustomerContract) Create() error {
 
 	defer tx.Rollback(ctx)
 
-	query := `
-		INSERT INTO customers 
-			(name, cpf_cnpj)
-
-		VALUES
-			($1, $2)
-
-		RETURNING 
-			id
-	`
-
 	if err = tx.QueryRow(
 		ctx,
-		query,
+		`
+			INSERT INTO customers 
+				(name, cpf_cnpj)
+			VALUES
+				($1, $2)
+		`,
 		&c.Name,
 		&c.CpfCnpj,
 	).Scan(&c.Id); err != nil {
@@ -164,51 +160,16 @@ func Delete(id int, deletedAt time.Time) error {
 
 	defer tx.Rollback(ctx)
 
-	verify := `
-		SELECT
-			id
-		FROM
-			sale_itens
-		WHERE
-			customer_id = $1
-		LIMIT
-			1
-	`
-
-	var saleCustomerId int
-
-	err = conn.QueryRow(
-		ctx,
-		verify,
-		saleCustomerId,
-	).Scan(
-		&saleCustomerId,
-	)
-
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			u.ErrorLogger.Println("Erro ao conferir se possui cadastro em vendas: ", err)
-			return err
-		}
-
-	} else {
-		return fmt.Errorf("Cliente já cadastradao em uma venda.")
-	}
-
-	query := `
-		UPDATE
-			customers
-
-		SET
-			deleted_at = $2
-
-		WHERE
-			id = $1
-	`
-
 	if _, err = conn.Exec(
 		ctx,
-		query,
+		`
+			UPDATE
+				customers
+			SET
+				deleted_at = $2
+			WHERE
+				id = $1
+		`,
 		id,
 		deletedAt,
 	); err != nil {
@@ -219,40 +180,107 @@ func Delete(id int, deletedAt time.Time) error {
 	return nil
 }
 
-func (c *CustomerContract) Update() (CustomerContract, error) {
-	quey := `
-		UPDATE
-			customers
-		SET
-			name = $2, 
-			cpf_cnpj = $3
+func Active(id int, deletedAt time.Time) error {
+	tx, err := conn.Begin(ctx)
 
-		WHERE
-			id = $1
-		
-		RETURNING
-			id,
-			name,
-			cpf_cnpj
-	`
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição: ", err)
+		return err
+	}
 
-	err := conn.QueryRow(
-		context.Background(),
-		quey,
+	defer tx.Rollback(ctx)
+
+	if _, err = conn.Exec(
+		ctx,
+		`
+			UPDATE
+				customers
+
+			SET
+				updated_at = $2,
+				deleted_at = NULL
+			WHERE
+				id = $1
+		`,
+		id,
+		deletedAt,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao deletar: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *CustomerContract) Update() error {
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transação:", err)
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE
+				customers
+			SET
+				name = $2, 
+				cpf_cnpj = $3
+			WHERE
+				id = $1		
+		`,
 		c.Id,
 		c.Name,
 		c.CpfCnpj,
-	).Scan(
-		&c.Id,
-		&c.Name,
-		&c.CpfCnpj,
-	)
-
-	if err != nil {
-		return CustomerContract{}, err
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar os dados do cliente.")
+		return err
 	}
 
-	return *c, nil
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE	
+				cash_registers
+			SET
+				customer = $1
+			WHERE
+				customer_id = $2
+		`,
+		c.Name,
+		c.Id,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar os dados do cliente:", err)
+		return err
+	} // Altera os clientes do caixa
+
+	if _, err := tx.Exec(
+		ctx,
+		`
+			UPDATE	
+				sales
+			SET
+				customer = $1
+			WHERE
+				customer_id = $2
+		`,
+		c.Name,
+		c.Id,
+	); err != nil {
+		u.ErrorLogger.Println("Erro ao alterar os dados do cliente:", err)
+		return err
+	} // Altera os clientes das vendas
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao comitar os dados do cliente:", err)
+		return err
+	}
+
+	return nil
 }
 
 func CreateDefaultCustomer() error {
@@ -268,19 +296,16 @@ func CreateDefaultCustomer() error {
 
 	defer tx.Rollback(ctx)
 
-	selectQuery := `
-		SELECT
-			id
-
-		FROM
-			customers
-
-		LIMIT 1
-	`
-
 	if err := tx.QueryRow(
 		ctx,
-		selectQuery,
+		`
+			SELECT
+				id
+			FROM
+				customers
+			LIMIT 
+				1
+		`,
 	).Scan(&c.Id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao conferir se o cliente padrão existe: ", err)
 		return err

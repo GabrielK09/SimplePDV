@@ -51,15 +51,13 @@
     }>();
 
     const emits = defineEmits<{
-        (e: 'close', value: boolean),
-        (e: 'confirm', value: boolean)
+        (e: 'close', value: boolean): void
+        (e: 'confirm', value: boolean): void
     }>();
 
     const generateQrCodePix = async () => {
         const res = await generateQRCodeBuilder(props.totalSale, props.pixKey);
         const base64 = res.base64;
-
-        console.log(res);
 
         if(!base64)
         {

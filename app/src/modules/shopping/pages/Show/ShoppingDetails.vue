@@ -226,8 +226,6 @@
     }>();
 
     const hasCharacteristics = (row: any): boolean => {
-        console.log(row);
-        
         return Array.isArray(row.product_with_characteristics) && row.product_with_characteristics.length > 0;
     };
 
@@ -255,9 +253,6 @@
             );
             emits('close', true);
         };
-
-        console.log(res.data);
-        
 
         const shoppingDetails: ShoppingContract = res.data.shopping;
         const shoppingWithProducts: ShoppingItemContract[] = res.data.shoppingWithProducts;
