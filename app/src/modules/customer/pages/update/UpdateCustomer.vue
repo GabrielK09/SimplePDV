@@ -1,7 +1,7 @@
 <template>
     <q-dialog v-model="internalDialog" persistent>
         <q-card>
-            <main class="min-h-[60vh] flex flex-center text-xl">
+            <main class="flex flex-center text-xl">
                 <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                     <header class="border-gray-100 flex">
                         <h2 class="text-gray-600 flex flex-1 justify-center">Edição do cliente</h2>
@@ -65,7 +65,7 @@
                                 <q-btn
                                     color="primary"
                                     type="submit"
-                                    label="Cadastrar cliente"
+                                    label="Salvar dados do cliente"
                                     no-caps
                                     :loading="loadingLogin"
                                 />
@@ -120,23 +120,22 @@ import validateCPF from 'src/helpers/CPF_CNPJ/validateCPF';
 
             const res = await updateCustomerById(customer.value.id, customer.value);
 
-            if(res.success)
+            if(!res.success)
             {
-                notify(
-                    'positive',
-                    'Cliente alterado com sucesso!'
-
-                );
-
-                internalDialog.value = false;
-
-            } else {
                 notify(
                     'negative',
                     res.message
 
                 );
             };
+
+            notify(
+                'positive',
+                'Cliente alterado com sucesso!'
+
+            );
+
+            closeUpdate();
 
         } catch (error: any) {
             console.error('Erro:', error.inner);

@@ -55,6 +55,6 @@
         (e: 'return:informed-load', value: number): void
     }>();
 
-    const informedLoad = ref<number>(0);
+    const informedLoad = ref<number|null>(null);
     const internalDialog = ref<boolean>(true);
 </script>

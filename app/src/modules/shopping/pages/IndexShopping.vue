@@ -26,7 +26,7 @@
                 >
                     <template v-slot:top-right>
                         <div class="flex">
-                            <div class="mr-4">
+                            <div class="mr-4 select-status">
                                 <q-select 
                                     v-model="byStatus" 
                                     :options="statusOptions" 
@@ -108,7 +108,7 @@
                                                     v-if="props.row.status === 'Concluída'"
                                                     clickable 
                                                     v-close-popup
-                                                    @click="showCancelShopping(props.row.id)"
+                                                    @click="showDialogActionShopping(props.row.id)"
                                                 >
                                                     <q-item-section avatar>
                                                         <q-icon name="cancel" color="red" size="20px"/>
@@ -151,19 +151,10 @@
 
                         </div>
                     </template>
-
                 </q-table>
             </div>
         </div>
     </q-page>
-
-    <QDialogConfirm
-        v-if="showConfirmDialog"
-        :text="'Deseja realmente cancelar essa compra?'"
-        :show="showConfirmDialog"
-        @confirm="handleConfirmDialog($event)"
-        @close="showConfirmDialog = !$event"
-    />
 
     <ShoppingDetails
         v-if="showShoppingDetails"
@@ -173,12 +164,12 @@
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn } from 'quasar';
+    import { QTableColumn, useQuasar } from 'quasar';
     import { computed, onMounted, ref } from 'vue';
     import { getAll } from '../services/shoppingService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { cancelShoppingOrSale } from 'src/modules/PDV/services/payMentFormsService';
-    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
+
     import { useRouter } from 'vue-router';
     import ShoppingDetails from './Show/ShoppingDetails.vue';
 
@@ -191,7 +182,8 @@
     const byStatus = ref<FilterByStatus>(null);
 
     const { notify } = useNotify();
-    const showConfirmDialog = ref<boolean>(false);
+    const $q = useQuasar();
+
     const router = useRouter();
 
     const pagination = ref({
@@ -281,11 +273,40 @@
         return byStatus.value ?? 'Todos';
     }); 
 
-    const handleConfirmDialog = async (event: boolean): Promise<void> => {
-        if(!event) return;
+    const buildShowShoppingDetails = (shoppingId: number): void => {
+        showShoppingDetails.value = !showShoppingDetails.value;
+        selectedShoppingId.value = shoppingId;
+    };
+
+    const showDialogActionShopping = (shoppingId: number) => {
+        $q.dialog({
+            title: 'Cancelar compra',
+            message: `Deseja realmente cancelar essa compra (${shoppingId})?`,
+            cancel: {
+                push: true,
+                label: 'Não',
+                color: 'red'
+            },
+
+            ok: {
+                push: true,
+                label: 'Sim',
+                color: 'green',
+            },
+
+        }).onOk(() => {
+            handleConfirmDialog(shoppingId);
+
+        }).onCancel(() => {
+            return;
+        });
+    };
+
+    const handleConfirmDialog = async (shoppingId: number): Promise<void> => {
+        if(shoppingId <= 0) return;
 
         const res = await cancelShoppingOrSale({
-            shopping_id: selectedShoppingId.value,
+            shopping_id: shoppingId,
             route: 'shopping'
         });
 
@@ -296,7 +317,6 @@
                 res.message || 'Erro ao realizar a operação.'
             );
 
-            showConfirmDialog.value = false;
             return;
         };
 
@@ -305,21 +325,9 @@
             res.message
         );
 
-        showConfirmDialog.value = false;
-
         await getAllshopping();
 
         return;
-    };
-
-    const showCancelShopping = (shoppingId: number): void => {
-        showConfirmDialog.value = true;
-        selectedShoppingId.value = shoppingId;
-    };
-
-    const buildShowShoppingDetails = (shoppingId: number): void => {
-        showShoppingDetails.value = !showShoppingDetails.value;
-        selectedShoppingId.value = shoppingId;
     };
 
     const importShopping = (shoppingId: number) => {

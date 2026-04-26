@@ -26,21 +26,40 @@
                     class="rounded-xl"
                 >
                     <template v-slot:top-right>
-                        <q-input
-                            outlined
-                            v-model="searchInput"
-                            type="text"
-                            dense
-                            label=""
-                            @update:model-value="filterProducts"
-                        >
-                            <template v-slot:append>
-                                <q-icon name="search" />
-                            </template>
-                            <template v-slot:label>
-                                <span class="text-xs">Buscar por um produto ...</span>
-                            </template>
-                        </q-input>
+                        <div class="flex">
+                            <div class="mr-4 select-status">
+                                <q-select 
+                                    v-model="byStatus" 
+                                    :options="statusOptions" 
+                                    option-label="Status"
+                                    emit-value
+                                    map-options
+                                    outlined
+                                    dense
+                                    :display-value="selectedLabel"
+                                    :clearable="true"
+                                    @update:model-value="applyFilters"
+                                />
+                            </div>
+
+                            <div>
+                                <q-input
+                                    outlined
+                                    v-model="searchInput"
+                                    type="text"
+                                    dense
+                                    label=""
+                                    @update:model-value="applyFilters"
+                                >
+                                    <template v-slot:append>
+                                        <q-icon name="search" />
+                                    </template>
+                                    <template v-slot:label>
+                                        <span class="text-xs">Buscar por um produto ...</span>
+                                    </template>
+                                </q-input>
+                            </div>
+                        </div>
                     </template>
 
                     <template v-slot:body="props">
@@ -147,7 +166,7 @@
 
 <script setup lang="ts">
     import { QTableColumn, useQuasar } from 'quasar';
-    import { onMounted, ref, watch } from 'vue';
+    import { computed, onMounted, ref, watch } from 'vue';
     import { getAll, manageProductService } from '../services/productsService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import UpdateProduct from './update/UpdateProduct.vue';
@@ -166,6 +185,14 @@
         update: UpdateProduct;
         create: CreateProduct
     };
+
+    const statusOptions: Exclude<FilterByActiveOrDisable, null>[] = [
+        'Ativos',
+        'Inativos',
+        'Todos'
+    ];
+
+    const byStatus = ref<FilterByActiveOrDisable>(null);
 
     const $q = useQuasar();
     const { notify } = useNotify();
@@ -226,6 +253,67 @@
 
     const searchInput = ref<string>('');
 
+    const getAllProducts = async (rowsPerPage?: number) => {
+        const res = await getAll(rowsPerPage);
+
+        if(!res.success)
+        {
+            notify(
+                'negative',
+                res.message
+            );
+
+            return;
+        };
+
+        const data = res.data;
+
+        allProducts.value = data;
+
+        applyFilters();
+    };
+
+    const applyFilters = () => {
+        let filtred = [...allProducts.value];
+
+        if(byStatus.value) 
+        {
+            switch (byStatus.value) {
+                case 'Ativos':
+                    filtred = filtred.filter(c => c.deleted_at === null)
+                    break;  
+
+                case 'Inativos':
+                    filtred = filtred.filter(c => c.deleted_at !== null)
+                    break;  
+
+                case 'Todos':
+                    getAllProducts();
+                    break;  
+            
+                default:
+                    getAllProducts();
+                    break;
+            }
+        };
+
+        if(searchInput.value.trim())
+        {
+            const search = searchInput.value.trim().toLowerCase();
+
+            filtred = filtred.filter(c => 
+                String(c.name).includes(search) ||
+                String(c.id).includes(search) 
+            );
+        };
+
+        products.value = filtred;
+    };
+
+    const selectedLabel = computed(() => {
+        return byStatus.value ?? 'Todos';
+    }); 
+
     const showDialogActionProduct = (productId: number, operation: 'active'|'delete') => {
         $q.dialog({
             title: `${operation === 'delete' ? 'Excluir' : 'Ativar'} produto`,
@@ -250,35 +338,12 @@
         });
     };
 
-    const filterProducts = (): void => {
-        products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : null);
-    };
-
     watch(
         () => pagination.value.rowsPerPage,
         async (newRowsPerPage) => {
             await getAllProducts(newRowsPerPage);
         }
     );
-
-    const getAllProducts = async (rowsPerPage?: number) => {
-        const res = await getAll(rowsPerPage);
-
-        const data = res.data;
-
-        if(!res.success)
-        {
-            notify(
-                'negative',
-                res.message
-            );
-
-            return;
-        };
-
-        products.value = data;
-        allProducts.value = [...products.value];
-    };
 
     const manageProduct = async (productId: number, operation: 'active'|'delete') => {
         const res = await manageProductService(productId, operation);

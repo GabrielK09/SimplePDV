@@ -13,7 +13,7 @@ type SaleItemContract []struct {
 	ProductId                  int                                                      `json:"product_id"`
 	Name                       string                                                   `json:"name"`
 	Qtde                       int                                                      `json:"qtde"`
-	SaleValue                  float64                                                  `json:"price"`
+	SaleValue                  float64                                                  `json:"sale_value"`
 	Status                     string                                                   `json:"status"`
 	ProductWithCharacteristics *[]productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
 	CreatedAt                  time.Time                                                `json:"created_at"`

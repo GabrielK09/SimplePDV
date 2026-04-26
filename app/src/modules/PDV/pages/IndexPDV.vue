@@ -26,7 +26,7 @@
                 >
                     <template v-slot:top-right>
                         <div class="flex">
-                            <div class="mr-4">
+                            <div class="mr-4 select-status">
                                 <q-select 
                                     v-model="byStatus" 
                                     :options="statusOptions" 
@@ -109,7 +109,7 @@
                                                         v-if="props.row.status === 'Concluída'"
                                                         clickable 
                                                         v-close-popup
-                                                        @click="showCancelSale(props.row.id)"
+                                                        @click="showDialogActionPDV(props.row.id)"
                                                     >
                                                         <q-item-section avatar>
                                                             <q-icon name="cancel" color="red" size="20px"/>
@@ -136,7 +136,6 @@
 
                                     <template v-else>
                                         {{ col.value }}
-
                                     </template>
                                 </div>
                             </q-td>
@@ -156,27 +155,20 @@
         </div>
     </q-page>
 
-    <QDialogConfirm
-        v-if="showConfirmDialog"
-        :text="'Deseja realmente cancelar essa venda?'"
-        :show="showConfirmDialog"
-        @confirm="handleConfirmDialog($event)"
-        @close="showConfirmDialog = !$event"
-    />
-
     <SaleDetails
         v-if="showSaleDetails"
         :saleId="selectedSaleId"
         @close="showSaleDetails = !$event"
     />
+
+
 </template>
 
 <script setup lang="ts">
-    import { QTableColumn } from 'quasar';
+    import { QTableColumn, useQuasar } from 'quasar';
     import { computed, onMounted, ref } from 'vue';
     import { getAll } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import { useRouter } from 'vue-router';
     import SaleDetails from './Show/SaleDetails.vue';
     import { cancelShoppingOrSale } from '../services/payMentFormsService';
@@ -235,8 +227,8 @@
 
     const allPDVs = ref<PDVContract[]>([]);
     const pdvs = ref<PDVContract[]>([]);
+    const $q = useQuasar();
 
-    const showConfirmDialog = ref<boolean>(false);
     const showSaleDetails = ref<boolean>(false);
     const selectedSaleId = ref<number>(0);
 
@@ -268,10 +260,9 @@
         if(searchInput.value.trim()) 
         {
             const search = searchInput.value.trim().toLowerCase();
-
+            
             filtred = filtred.filter(s =>
-                String(s.id).includes(search) ||
-                String(s.customer).includes(search)
+                String(s.id).includes(search)
             );
         };
 
@@ -282,16 +273,35 @@
         return byStatus.value ?? 'Todos';
     }); 
 
-    const showCancelSale = (saleId: number): void => {
-        showConfirmDialog.value = true;
-        selectedSaleId.value = saleId;
+    const showDialogActionPDV = (saleID: number) => {
+        $q.dialog({
+            title: 'Cancelar venda',
+            message: `Deseja realmente cancelar essa venda (${saleID})?`,
+            cancel: {
+                push: true,
+                label: 'Não',
+                color: 'red'
+            },
+
+            ok: {
+                push: true,
+                label: 'Sim',
+                color: 'green',
+            },
+
+        }).onOk(() => {
+            handleConfirmDialog(saleID);
+
+        }).onCancel(() => {
+            return;
+        });
     };
 
-    const handleConfirmDialog = async (event: boolean): Promise<void> => {
-        if(!event) return;
+    const handleConfirmDialog = async (saleID: number): Promise<void> => {
+        if(saleID <= 0) return;
 
         const res = await cancelShoppingOrSale({
-            sale_id: selectedSaleId.value,
+            sale_id: saleID,
             route: 'sale'
         });
 
@@ -302,8 +312,6 @@
                 res.message || 'Erro ao realizar a operação.'
             );
 
-            showConfirmDialog.value = false;
-
             return;
         };
 
@@ -311,8 +319,6 @@
             'positive',
             res.message
         );
-
-        showConfirmDialog.value = false;
 
         await getAllPdv();
 

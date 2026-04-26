@@ -301,17 +301,9 @@ func (s *SaleContract) Create() (int, error) {
 		ctx,
 		`
 			INSERT INTO sales
-				(
-					customer_id, 
-					customer, 
-					sale_value
-				)
+				(customer_id, customer, sale_value)
 
-			VALUES(
-				$1, 
-				$2,
-				$3
-			)
+			VALUES($1, $2, $3)
 
 			RETURNING
 				id

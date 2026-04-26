@@ -1,7 +1,7 @@
 <template>
     <q-dialog v-model="internalDialog" persistent>
         <q-card>
-            <main class="min-h-[60vh] flex flex-center text-xl">
+            <main class="flex flex-center text-xl">
                 <section class="w-[80vh] rounded-lg shadow px-4 bg-white">
                     <header class="border-gray-100 flex">
                         <h2 class="text-gray-600 flex flex-1 justify-center">Edição do produto</h2>

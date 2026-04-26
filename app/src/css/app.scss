@@ -38,3 +38,9 @@
 body {
     background-color: rgb(236, 238, 242);
 }
+
+@media (max-width: 1536px) {
+    .select-status {
+        margin: 0 10px 10px 0;
+    }
+}

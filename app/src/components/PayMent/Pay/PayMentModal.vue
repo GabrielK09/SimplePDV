@@ -34,9 +34,9 @@
                                     dense
                                     outlined
                                     placeholder="0,00"
-                                    mask="##,##"
-                                    fill-mask="0"
+                                    mask="###.###.###,##"
                                     reverse-fill-mask
+                                    @focus="payMentValues[i].amount = ''"
                                     :disable="payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
                                 />
                             </div>
@@ -188,7 +188,6 @@
 
         return {
             totalPaid: totalPaid
-
         };
     });
 
@@ -288,27 +287,29 @@
         confirmValues();
     };
 
-    const onKeyDownF3Money = (e: KeyboardEvent) =>
-    {
-        if(disableBtn.value) return;
-        if(e.key.toLocaleLowerCase() !== 'f3') return;
-        if(!internalDialog.value) return;
+    /*
+        const onKeyDownF3Money = (e: KeyboardEvent) =>
+        {
+            if(disableBtn.value) return;
+            if(e.key.toLocaleLowerCase() !== 'f3') return;
+            if(!internalDialog.value) return;
 
-        const payMent = payMentValues.value.find(p => p.specie === 'Dinheiro');
+            const payMent = payMentValues.value.find(p => p.specie === 'Dinheiro');
 
-        if (!payMent) return;
+            if (!payMent) return;
 
-        if(!props.totalSale) return;
-        payMent.amount = props.totalSale.toString();
+            if(!props.totalSale) return;
+            payMent.amount = props.totalSale.toString();
 
-        finallySale();
-    };
+            finallySale();
+        };
+    */
 
     onMounted(async () => {
         await getPayMentForms();
 
         document.addEventListener('keydown', onKeyDownEnter);
-        document.addEventListener('keydown', onKeyDownF3Money);
+        //document.addEventListener('keydown', onKeyDownF3Money);
     });
 
     onUnmounted(() => {

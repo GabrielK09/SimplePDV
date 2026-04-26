@@ -106,18 +106,17 @@ func (payMent PayContract) Validate() map[string]string {
 	return errorsField
 }
 
-func createInCashRegister(ctx context.Context, tx pgx.Tx, inputValue, outputValue float64, customerID, saleId, shoppingId int, specie PayMentBody) map[string]string {
+func createInCashRegister(ctx context.Context, tx pgx.Tx, inputValue, outputValue float64, saleId, customerID, shoppingId int, specie PayMentBody) map[string]string {
 	u.InfoLogger.Println("Called createInCashRegister")
 	errorsField := make(map[string]string)
 
 	var c cashRegister.CashRegisterContract
+	var customer customer.CustomerContract
 
 	if customerID <= 0 {
 		errorsField["customer_id"] = "O ID do cliente precisa ser maior do que zero."
 		return errorsField
 	}
-
-	var customer customer.CustomerContract
 
 	err := tx.QueryRow(
 		ctx,
@@ -138,14 +137,14 @@ func createInCashRegister(ctx context.Context, tx pgx.Tx, inputValue, outputValu
 		return errorsField
 	}
 
+	c.CustomerId = customerID
+	c.Customer = customer.Name
+
 	c.SpecieId = specie.SpecieId
 	c.Specie = specie.Specie
 
 	c.SaleId = saleId
 	c.ShoppingId = shoppingId
-
-	c.CustomerId = customer.Id
-	c.Customer = customer.Name
 
 	if inputValue > 0 && outputValue > 0 {
 		u.ErrorLogger.Println("Um registro no caixa não pode ter um valor de entrada e um de saída no mesmo registro.")
@@ -394,16 +393,7 @@ func insertSalePayMents(ctx context.Context, tx pgx.Tx, saleID, customerID int, 
 
 			}
 
-			if err := createInCashRegister(
-				ctx,
-				tx,
-				specie.AmountPaid,
-				0.0,
-				customerID,
-				saleID,
-				0,
-				specie,
-			); len(err) > 0 {
+			if err := createInCashRegister(ctx, tx, specie.AmountPaid, 0.0, customerID, saleID, 0, specie); len(err) > 0 {
 				return fmt.Errorf("Erros: %s", err)
 			}
 		}
@@ -797,16 +787,7 @@ func insertShoppingPayMents(ctx context.Context, tx pgx.Tx, shoppingID int, spec
 
 			}
 
-			if err := createInCashRegister(
-				ctx,
-				tx,
-				0.0,
-				specie.AmountPaid,
-				1,
-				0,
-				shoppingID,
-				specie,
-			); len(err) > 0 {
+			if err := createInCashRegister(ctx, tx, 0.0, specie.AmountPaid, 0, 1, shoppingID, specie); len(err) > 0 {
 				return fmt.Errorf("Erros: %s", err)
 			}
 		}
@@ -1213,7 +1194,7 @@ func backShoppingPayMent(ctx context.Context, tx pgx.Tx, shoppingID int) error {
 	}
 
 	for _, specie := range payMentShoppingForms {
-		if err := createInCashRegister(ctx, tx, specie.AmountPaid, 0.0, 1, 0, shoppingID, specie); len(err) > 0 {
+		if err := createInCashRegister(ctx, tx, specie.AmountPaid, 0.0, 0, 1, shoppingID, specie); len(err) > 0 {
 			u.ErrorLogger.Printf("Erro no insert de estorno no caixa venda - %s", err)
 			return fmt.Errorf("Erro ao registrar o estorno no caixa.")
 		}

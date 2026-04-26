@@ -34,44 +34,18 @@ func DBSeed(db *pgxpool.Pool, ctx context.Context) {
 		u.ErrorLogger.Fatal("Erro ao truncar tabela de produtos e ou clientes:", err)
 	}
 
-	queryForInsertProducts := `	
-		INSERT INTO products
-			(name, price, qtde, commission, returned, saled)
-
-		VALUES
-			(
-				'PRODUTO TESTE',
-				10,
-				10,
-				0,
-				0,
-				0
-			)
-		
-		RETURNING 
-			id
-	`
-
 	if _, err := tx.Exec(
 		ctx,
-		queryForInsertProducts,
+		`	
+			INSERT INTO products (name, price, qtde, commission, returned, saled) VALUES ('PRODUTO TESTE', 10, 10, 0, 0, 0)
+		`,
 	); err != nil {
 		u.ErrorLogger.Fatal("Erro ao criar o produto padrão:", err)
 	}
 
-	selectForVerifyExistsCustomerQuery := `
-		SELECT
-			id
-
-		FROM
-			customers
-
-		LIMIT 1
-	`
-
 	if err := tx.QueryRow(
 		ctx,
-		selectForVerifyExistsCustomerQuery,
+		`SELECT id FROM customers LIMIT 1`,
 	).Scan(&c.Id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Fatal("Erro ao conferir se o cliente padrão existe: ", err)
 
@@ -81,16 +55,9 @@ func DBSeed(db *pgxpool.Pool, ctx context.Context) {
 		u.InfoLogger.Fatal("O cliente existe")
 	}
 
-	queryForInsertCustomer := `
-		INSERT INTO customers 
-			(id, name, cpf_cnpj)
-		VALUES
-			(1, 'CONSUMIDOR PADRÃO', '')
-	`
-
 	if _, err := tx.Exec(
 		ctx,
-		queryForInsertCustomer,
+		`INSERT INTO customers  (id, name, cpf_cnpj) VALUES (1, 'CONSUMIDOR PADRÃO', '')`,
 	); err != nil {
 		u.ErrorLogger.Fatal("Erro ao fazer o insert: ", err)
 	}

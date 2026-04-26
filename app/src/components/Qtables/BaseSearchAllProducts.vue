@@ -70,7 +70,7 @@
             </q-card-section>
 
             <div id="action_bar">
-                <div class="bg-[#03202e] w-[60%] mb-4 p-3 text-white flex justify-end rounded-lg">
+            <div class="action-bar-content bg-[#03202e] w-[60%] mb-4 p-3 text-white flex justify-end rounded-lg">
                     <q-btn
                         no-caps
                         dense
@@ -340,5 +340,50 @@
 
     #action_bar.hidde {
         animation: hidde_action_bar 0.4s ease-in-out;
+    }
+
+    #action_bar .action-bar-content {
+        width: 60% !important;
+    }
+
+    @media (max-width: 768px) {
+        #action_bar {
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 0 8px 8px 8px;
+        }
+        
+        #action_bar .action-bar-content {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            padding: 10px !important;
+            border-radius: 12px;
+            display: flex !important;
+            flex-wrap: wrap;
+            justify-content: center !important;
+            gap: 8px;
+        }
+
+
+        #action_bar .q-btn {
+            margin-right: 0 !important;
+            min-width: calc(50% - 8px);
+            flex: 1 1 calc(50% - 8px);
+        }
+
+        #action_bar .q-btn .q-btn__content {
+            font-size: 12px;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.2;
+        }
+    }
+    
+    @media (max-width: 420px) {
+        #action_bar .q-btn {
+            min-width: 100%;
+            flex-basis: 100%;
+        }
     }
 </style>

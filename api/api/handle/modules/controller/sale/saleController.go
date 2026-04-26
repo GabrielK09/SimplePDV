@@ -208,9 +208,7 @@ func HandlePostSale(w http.ResponseWriter, r *http.Request) {
 
 	payload.Id = saleId
 
-	resp := responsehelper.Response(true, payload, "Dados da venda cadastrado com sucesso.")
-
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responsehelper.Response(true, payload, "Dados da venda cadastrado com sucesso."))
 
 }
 

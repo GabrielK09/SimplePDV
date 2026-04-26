@@ -177,7 +177,7 @@
                             color="red"
                             icon="delete"
                             :disable="disableButtons.deleteSale"
-                            @click="deleteSale"
+                            @click="showManageSaleDialog('delete')"
                         />
 
                         <q-btn
@@ -185,7 +185,7 @@
                             color="grey"
                             icon="save"
                             :disable="disableButtons.saveSale"
-                            @click="showConfirmSaveSaleDialog"
+                            @click="showManageSaleDialog('save')"
                         />
 
                         <q-btn
@@ -210,18 +210,6 @@
         @emit:selected-products="pushProducts($event)"
     />
 
-    <QDialogConfirm
-        v-if="showConfirmDialog"
-        v-model:show="showConfirmDialog"
-        :text="textOperation"
-        :operation="operation"
-        :on-leave="onLeaveConfirmDialog"
-        @close="showConfirmDialog = !$event"
-        @confirm="handleConfirmDialog(operation, $event)"
-        @leave:cancel-and-leave="cancelAndLeave($event)"
-        @leave:save-and-leave="saveSaleForPay($event)"
-    />
-
     <PayMentSale
         v-if="showPayMentForms"
         :sale-id="returningSaleId"
@@ -238,17 +226,16 @@
 </template>
 
 <script setup lang="ts">
-    import { SessionStorage, QTableColumn } from 'quasar';
+    import { SessionStorage, QTableColumn, useQuasar } from 'quasar';
     import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
     import BaseInputSearchProducts from 'src/components/Qinputs/BaseInputSearchProducts.vue';
     import BaseCustomerSelect from 'src/components/Qselects/BaseCustomerSelect.vue';
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
-    import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
     import PayMentSale from 'src/components/PayMent/Pay/PayMentModal.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
-    import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+    import { useRoute, useRouter } from 'vue-router';
 
     type DisableButtons = {
         editPayMentsForms: boolean;
@@ -261,8 +248,6 @@
         rowsPerPage: 0,
         sortBy: 'product_id'
     });
-
-    let nextRef: any = null;
 
     const { notify } = useNotify();
 
@@ -330,10 +315,9 @@
     const returningSaleId = ref<number>();
     const showConfigPayMentForm = ref<boolean>(false);
     const showBaseSearchAllProducs = ref<boolean>(false);
-    const showConfirmDialog = ref<boolean>(false);
-    const onLeaveConfirmDialog = ref<boolean>(false);
+    
     const showPayMentForms = ref<boolean>(false);
-    const textOperation = ref<string>('');
+    const $q = useQuasar();
     const operation = ref<'save'|'delete'|''>('');
     const totalSale = ref<number>(0);
 
@@ -483,16 +467,33 @@
         return subTotal.toFixed(2).replace('.', ',');
     });
 
-    const deleteSale = () => {
-        textOperation.value = 'Deseja realmente cancelar essa venda?';
-        operation.value = 'delete';
-        showConfirmDialog.value = true;
-    };
+    const showManageSaleDialog = (operation: 'save'|'delete') => {
+        const titleDialog: string = operation === 'save' ? 'Salvar venda' : 'Cancelar venda?';
 
-    const showConfirmSaveSaleDialog = () => {
-        textOperation.value = 'Deseja salvar essa venda?'
-        operation.value = 'save';
-        showConfirmDialog.value = true;
+        const messageDialog: string = operation === 'save' ? 'Deseja salvar essa venda?' : 'Deseja realmente cancelar essa venda?';
+
+        $q.dialog({
+            title: titleDialog,
+            message: messageDialog,
+
+            cancel: {
+                push: true,
+                label: 'Não',
+                color: 'red'
+            },
+
+            ok: {
+                push: true,
+                label: 'Sim',
+                color: 'green',
+            },
+        }).onOk(() => {
+            handleConfirmDialog(operation, true);
+
+        }).onCancel(() => {
+            return;
+        });
+
     };
 
     const hasProductChanged = (): boolean => {
@@ -525,7 +526,7 @@
         return false;
     };
 
-    const handleConfirmDialog = (operation: 'save'|'delete'|'', confirmed: boolean) => {
+    const handleConfirmDialog = (operation: 'save'|'delete', confirmed: boolean) => {
         if(confirmed && operation === 'save')
         {
             if(SessionStorage.getItem('sale') && routeSaleId.value !== 0)
@@ -544,7 +545,6 @@
                 if(routeSaleId.value !== 0) router.replace({query: {}});
 
                 productsSale.value = [];
-                showConfirmDialog.value = false;
 
                 disableButtons.editPayMentsForms = false;
                 disableButtons.deleteSale = true;
@@ -567,7 +567,6 @@
             router.replace({query: {}});
 
             productsSale.value = [];
-            showConfirmDialog.value = false;
 
             disableButtons.editPayMentsForms = false;
             disableButtons.deleteSale = true;
@@ -576,8 +575,6 @@
 
             return;
         };
-
-        showConfirmDialog.value = false;
 
         resetSale(false);
     };
@@ -766,17 +763,6 @@
         disableButtons.finallySale = false;
     };
 
-    const cancelAndLeave = (confirm: boolean) => {
-        if (confirm && nextRef)
-        {
-            nextRef();
-        } else if (nextRef){
-            nextRef(false);
-        };
-
-        nextRef = null;
-    };
-
     const handleBodyOverflow = () => {
         const body = document.body;
         if(window.innerWidth >= 1536) 
@@ -786,22 +772,7 @@
             body.style.removeProperty('overflow-y');
         };
     };
-
-    onBeforeRouteLeave((to, from, next) => {
-        const hasOpenSale = SessionStorage.getItem('sale_id') || SessionStorage.getItem('sale') || productsSale.value?.length > 0
-
-        if (hasOpenSale) {
-            textOperation.value = 'Existe uma venda aberta!'
-            showConfirmDialog.value = true;
-            onLeaveConfirmDialog.value = true;
-
-            nextRef = next;
-            return;
-        };
-
-        next();
-    });
-
+    
     onMounted(async () => {
         productsSale.value = [];
 
@@ -878,7 +849,7 @@
 
     onUnmounted(() => {        
         document.body.style.setProperty('overflow-y', 'auto', 'important');
-        
+        resetSale(false);
     });
 </script>
 

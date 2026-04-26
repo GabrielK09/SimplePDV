@@ -18,6 +18,8 @@
                         type="date"
                         label="Data inicial"
                         outlined
+                        min="0001-01-01"
+                        max="9999-12-31"
                         :error="!!formErrors.start_date"
                         :error-message="formErrors.start_date"
                     />
@@ -29,6 +31,8 @@
                         type="date"
                         label="Data final"
                         outlined
+                        min="0001-01-01"
+                        max="9999-12-31"
                         :error="!!formErrors.end_date"
                         :error-message="formErrors.end_date"
                     />

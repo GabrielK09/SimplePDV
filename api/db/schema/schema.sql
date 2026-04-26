@@ -215,7 +215,7 @@ CREATE TABLE public.cash_registers (
   sale_id integer NULL,
   shopping_id integer NULL,
   description character varying NOT NULL,
-  customer_id integer,
+  customer_id integer NULL,
   customer varchar NULL,
   specie_id integer NOT NULL,
   specie character varying NOT NULL,
@@ -224,13 +224,11 @@ CREATE TABLE public.cash_registers (
   total_balance NUMERIC(12,2) NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  
   CONSTRAINT fk_cash_registers_sale_id_foreign FOREIGN KEY (sale_id) REFERENCES public.sales(id),
   CONSTRAINT fk_cash_registers_shopping_id_foreign FOREIGN KEY (shopping_id) REFERENCES public.shopping(id),
   CONSTRAINT fk_cash_registers_customer_id_foreign FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT fk_cash_registers_specie_id_foreign FOREIGN KEY (specie_id) REFERENCES public.pay_ment_forms(id)
 );
-
 CREATE INDEX idx_cash_registers_customer_id ON cash_registers(customer_id);
 CREATE INDEX idx_cash_registers_sale_id ON cash_registers(sale_id);
 CREATE INDEX idx_cash_registers_shopping_id ON cash_registers(shopping_id);

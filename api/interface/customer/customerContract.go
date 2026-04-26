@@ -283,11 +283,11 @@ func (c *CustomerContract) Update() error {
 	return nil
 }
 
-func CreateDefaultCustomer() error {
+func CreateDefaultCustomer(db *pgxpool.Pool, ctx context.Context) error {
 	u.InfoLogger.Println("CreateDefaultCustomer started")
 
 	var c CustomerContract
-	tx, err := conn.Begin(ctx)
+	tx, err := db.Begin(ctx)
 
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)

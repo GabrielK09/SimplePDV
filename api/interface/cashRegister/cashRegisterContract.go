@@ -236,7 +236,7 @@ func (c *CashRegisterContract) Create(
 
 	if c.CustomerId < 1 {
 		c.CustomerId = 1
-		c.Customer = "Consumidor padrão."
+		c.Customer = "Consumidor padrão"
 	}
 
 	if len(errorsField) > 0 {

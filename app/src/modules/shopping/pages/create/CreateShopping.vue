@@ -1,13 +1,14 @@
 <template>
-    <q-page padding id="q-page">
+    <q-page padding>
         <div class="m-2 text-3xl" >
             <main class="rounded-md flex flex-center text-xl mt-4">
-                <section class="rounded-lg px-4">
+                <section class="rounded-lg px-4 w-[100%]">
                     <div>
                         <q-table
                             v-model:pagination="pagination"
                             :rows="productsStockData"
                             :columns="productsColumns"
+                            row-key="product_id"
                         >
                             <template v-slot:top>
                                 <div class="w-full">
@@ -88,7 +89,7 @@
                                 no-caps
                                 color="primary"
                                 label="Adicionar"
-                                :disable="selectedProductsId === 0"
+                                :disable="selectedProductsId === null"
                                 @click="associateCheckedProdutcs"
                             />
                         </div>
@@ -230,7 +231,7 @@
                         </q-table>
                     </div>
 
-                    <div class="bg-white rounded-lg h-auto p-4 w-full laptop:mr-6 flex flex-col mt-4">
+                    <div class="bg-white rounded-lg h-auto p-4 w-full laptop:mr-6 flex flex-col mt-4 shadow-md">
                         <div class="flex-1 overflow-y-auto">
                             <div class="mt-4 border p-2 rounded">
                                 Total da compra R$ {{ totalShopping }}
@@ -250,7 +251,6 @@
                         <q-btn
                             outline
                             no-caps
-                            class="ml-4"
                             label="Continuar depois"
                             @click="submitShopping(true)"
                             :disable="associateProducts.length === 0"
@@ -259,7 +259,6 @@
                         <q-btn
                             color="blue"
                             no-caps
-                            class="ml-4"
                             label="Cadastrar produto"
                             @click="showCreateProductComponent = !showCreateProductComponent"
                         />
@@ -267,7 +266,6 @@
                         <q-btn
                             color="green"
                             no-caps
-                            class="ml-4"
                             label="Confirmar compra"
                             @click="submitShopping(false)"
                             :disable="associateProducts.length === 0"
@@ -278,7 +276,7 @@
         </div>
 
         <div id="action_bar">
-            <div class="bg-[#03202e] w-[60%] mb-4 p-3 text-white flex justify-end rounded-lg">
+            <div class="action-bar-content bg-[#03202e] w-[60%] mb-4 p-3 text-white flex justify-end rounded-lg">
                 <q-btn 
                     no-caps
                     color="green" 
@@ -660,15 +658,8 @@
                 res.message
             );
         };
-
-        productsStockData.value = res.data.filter((p: ProductContract) => p.deleted_at === null).map((c: ProductContract) => ({
-            id: c.id,
-            name: c.name,
-            price: c.price,
-            qtde: c.qtde,
-            commission: c.commission,
-            product_with_characteristics: c.product_with_characteristics
-        }));
+        
+        productsStockData.value = res.data;
                 
         allProductsStockData.value = [...productsStockData.value];
     };
@@ -991,6 +982,7 @@
 
             const res = await getShoppingById(routeShoppingId.value);
 
+
             if(!res.success)
             {
                 notify(
@@ -1025,12 +1017,6 @@
  </script>
 
 <style>
-    .actions_ {
-        display: flex;
-        justify-content: end;
-        margin: 15px 0 0 0;
-    }
-
     @keyframes up_action_bar {
         from {
             transform: translateY(100%);
@@ -1060,5 +1046,65 @@
 
     #action_bar.hidde {
         animation: hidde_action_bar 0.4s ease-in-out;
+    }
+
+    #action_bar .action-bar-content {
+        width: 60% !important;
+    }
+
+    /* mobile */
+    @media (max-width: 768px) {
+        #action_bar {
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 0 8px 8px 8px;
+        }
+        
+        #action_bar .action-bar-content {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            padding: 10px !important;
+            border-radius: 12px;
+            display: flex !important;
+            flex-wrap: wrap;
+            justify-content: center !important;
+            gap: 8px;
+        }
+
+
+        #action_bar .q-btn {
+            margin-right: 0 !important;
+            min-width: calc(50% - 8px);
+            flex: 1 1 calc(50% - 8px);
+        }
+
+        #action_bar .q-btn .q-btn__content {
+            font-size: 12px;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .actions_ {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0 0 0;
+        }
+    }
+
+   @media (max-width: 420px) {
+        #action_bar .q-btn {
+            min-width: 100%;
+            flex-basis: 100%;
+        }
+    }
+
+   .actions_ {
+        display: flex;
+        justify-content: end;
+        gap: 16px;
+        margin: 15px 0 0 0;
     }
 </style>

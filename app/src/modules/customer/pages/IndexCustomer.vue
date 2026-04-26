@@ -26,7 +26,7 @@
                 >
                     <template v-slot:top-right>
                         <div class="flex">
-                            <div class="mr-4">
+                            <div class="mr-4 select-status">
                                 <q-select 
                                     v-model="byStatus" 
                                     :options="statusOptions" 
@@ -157,12 +157,12 @@
     <UpdateCustomer
         v-if="manageCustomerModal.update.show"
         :customer-id="manageCustomerModal.update.customerId"
-        @close="manageCustomerModal.update.show = !$event"
+        @close="closeManageProductModal($event)"
     />
 
     <CreateCustomer
         v-if="manageCustomerModal.create.show"
-        @close="manageCustomerModal.create.show = !$event"
+        @close="closeManageProductModal($event)"
     />
 </template>
 
@@ -365,7 +365,23 @@
         await getAllCustomers();
     };
 
+    const closeManageProductModal = (_: boolean): void => {        
+        manageCustomerModal.value = {
+            create: {
+                show: false
+            },
+
+            update: {
+                customerId: null,
+                show: false
+            }
+        };
+
+        getAllCustomers();
+    };
+
     onMounted(() => {
         getAllCustomers();
     });
 </script>
+

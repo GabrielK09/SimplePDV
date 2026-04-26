@@ -49,7 +49,15 @@ func main() {
 
 	if appEnv == "dev" {
 		switch jobFlag {
-		case "createUser":
+		case "setupData":
+			if err = paymentform.CreateDefaultPayMents(dbConn, ctx); err != nil {
+				log.Println("Erro ao criar as espécies padrão: ", err)
+			}
+
+			if err = customer.CreateDefaultCustomer(dbConn, ctx); err != nil {
+				log.Println("Erro ao criar o consumidor padrão: ", err)
+			}
+
 			jobs.CreateUser(dbConn, ctx)
 			return
 
@@ -81,12 +89,12 @@ func main() {
 	user.SetConnection(dbConn)
 	processpayment.SetConnection(dbConn)
 
-	if err = paymentform.CreateDefaultPayMents(); err != nil {
-		log.Fatal("Erro ao criar as espécies padrão: ", err)
+	if err = paymentform.CreateDefaultPayMents(dbConn, ctx); err != nil {
+		log.Println("Erro ao criar as espécies padrão: ", err)
 	}
 
-	if err = customer.CreateDefaultCustomer(); err != nil {
-		log.Fatal("Erro ao criar o consumidor padrão: ", err)
+	if err = customer.CreateDefaultCustomer(dbConn, ctx); err != nil {
+		log.Println("Erro ao criar o consumidor padrão: ", err)
 	}
 
 	api.StartServer()

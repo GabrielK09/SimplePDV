@@ -180,12 +180,12 @@ func ShowById(id int) (*PayMentForms, error) {
 
 }
 
-func CreateDefaultPayMents() error {
+func CreateDefaultPayMents(db *pgxpool.Pool, ctx context.Context) error {
 	u.InfoLogger.Println("CreateDefaultPayMents started")
 
 	var p PayMentForms
 
-	tx, err := conn.Begin(ctx)
+	tx, err := db.Begin(ctx)
 
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao iniciar a transiction: ", err)
@@ -194,19 +194,9 @@ func CreateDefaultPayMents() error {
 
 	defer tx.Rollback(ctx)
 
-	selectQuery := `
-		SELECT
-			id
-		FROM
-			pay_ment_forms
-
-		LIMIT 1
-
-	`
-
 	if err = tx.QueryRow(
 		ctx,
-		selectQuery,
+		`SELECT id FROM pay_ment_forms LIMIT 1`,
 	).Scan(&p.Id); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		u.ErrorLogger.Println("Erro ao conferir se os pagamentos existem: ", err)
 		return err
