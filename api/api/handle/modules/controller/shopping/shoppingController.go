@@ -4,18 +4,12 @@ import (
 	"encoding/json"
 	u "myApi/helpers/logger"
 	responsehelper "myApi/helpers/response"
-	productcharacteristics "myApi/interface/product/productCharacteristics"
 	"myApi/interface/shopping"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
-
-type ProductWithCharacteristics struct {
-	Product         shopping.ShoppingItenContract                           `json:"product"`
-	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"product_with_characteristics"`
-}
 
 func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -40,31 +34,6 @@ func HandleGetAllShopping(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppings, "Todas as compras cadastradas."))
-}
-
-func HandleGetLastShoppingLoad(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
-
-		json.NewEncoder(w).Encode(resp)
-		return
-	} // Erro de método da rota
-
-	shoppingId, err := shopping.ReturnLastShoppingLoad()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		u.ErrorLogger.Println("Erro ao retornar o ID: ", err)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Falha na operação."))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, shoppingId, ""))
 }
 
 func HandlePostCreateShopping(w http.ResponseWriter, r *http.Request) {

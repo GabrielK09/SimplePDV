@@ -37,7 +37,7 @@
                                     mask="##,##"
                                     fill-mask="0"
                                     reverse-fill-mask
-                                    :disable="calculatePayMent.totalPaid >= (props.totalSale || 0) || payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
+                                    :disable="payMentValues[i].specie.toLocaleLowerCase() === 'pix' && payMentValues[i].pix_key === ''"
                                 />
                             </div>
                         </q-item-section>

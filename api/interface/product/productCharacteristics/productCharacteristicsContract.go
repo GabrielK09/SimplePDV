@@ -80,10 +80,8 @@ func GetAllByProductId(productId int) ([]ProductCharacteristicsContract, error) 
 				created_at,
 				updated_at,
 				deleted_at
-
 			FROM
 				product_grids
-
 			WHERE
 				product_id = $1 AND
 				deleted_at IS NULL
@@ -319,10 +317,8 @@ func Show(productId int) (*[]ProductCharacteristicsContract, error) {
 				product_id,
 				size,
 				grid_qtde
-
 			FROM
 				product_grids
-				
 			WHERE	
 				product_id = $1 AND
 				deleted_at IS NULL
@@ -368,10 +364,8 @@ func ShowById(gridId, productId int) (ProductCharacteristicsContract, error) {
 				product_id,
 				size,
 				grid_qtde
-
 			FROM
 				product_grids
-				
 			WHERE	
 				id = $1 AND
 				product_id = $2
@@ -411,10 +405,8 @@ func Delete(id, productId int, deletedAt time.Time) error {
 	queryUpdateGridDeletedAt := `
 		UPDATE
 			product_grids
-
 		SET
 			deleted_at = $1
-
 		WHERE 
 			product_id = $2 AND
 			id = $3
@@ -454,10 +446,8 @@ func (p *ProductCharacteristicsContract) DiscountedGridQtde(ctx context.Context,
 		`
 			UPDATE	
 				product_grids
-
 			SET
 				grid_qtde = grid_qtde - $2
-
 			WHERE	
 				product_id = $1 AND
 				size = $3
@@ -475,7 +465,6 @@ func (p *ProductCharacteristicsContract) DiscountedGridQtde(ctx context.Context,
 		`
 			UPDATE	
 				products
-
 			SET
 				qtde = (
 					SELECT
@@ -514,10 +503,8 @@ func (p *ProductCharacteristicsContract) AddGridQtde(ctx context.Context, tx pgx
 		`
 			UPDATE	
 				product_grids
-
 			SET
 				grid_qtde = grid_qtde + $2
-
 			WHERE	
 				product_id = $1 AND
 				size = $3
@@ -535,7 +522,6 @@ func (p *ProductCharacteristicsContract) AddGridQtde(ctx context.Context, tx pgx
 		`
 			UPDATE	
 				products
-
 			SET
 				qtde = (
 					SELECT

@@ -136,12 +136,12 @@
     <UpdateProduct
         v-if="manageProductModal.update.show"
         :product-id="manageProductModal.update.productId"
-        @close="manageProductModal.update.show = !$event"
+        @close="closeManageProductModal(!$event)"
     />
 
     <CreateProduct
         v-if="manageProductModal.create.show"
-        @close="manageProductModal.create.show = !$event"
+        @close="closeManageProductModal(!$event)"
     />
 </template>
 
@@ -277,10 +277,8 @@
 
             return;
         };
-
-        const productsData = data.map((c: any) => c.product);
-
-        products.value = productsData;
+    
+        products.value = data;
         allProducts.value = [...products.value];
     };
 
@@ -305,10 +303,27 @@
     };
 
     const buildUpdateProduct = (productId: number): void => {
+        console.log(productId);
+        
         manageProductModal.value.update = {
             show: true,
             productId: productId
         };
+    };
+
+    const closeManageProductModal = (_: boolean): void => {        
+        manageProductModal.value = {
+            create: {
+                show: false
+            },
+
+            update: {
+                productId: null,
+                show: false
+            }
+        };
+
+        getAllProducts();
     };
 
     onMounted(() => {

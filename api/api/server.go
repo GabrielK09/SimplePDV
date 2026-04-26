@@ -203,7 +203,6 @@ func StartServer() {
 
 	// Compras \\
 	api.HandleFunc("/shopping/all", shoppingcontroller.HandleGetAllShopping)
-	api.HandleFunc("/shopping/return-last-load", shoppingcontroller.HandleGetLastShoppingLoad)
 	api.HandleFunc("/shopping/create", shoppingcontroller.HandlePostCreateShopping)
 	api.HandleFunc("/shopping/details/{id}", shoppingcontroller.HandleGetShoppingById)
 	api.HandleFunc("/shopping/update", shoppingcontroller.HandlePutUpdateShopping)
@@ -226,6 +225,6 @@ func StartServer() {
 		port = "8000"
 	}
 
-	log.Println("Servidor rodando em http://localhost:8000/api")
+	log.Printf("Servidor rodando em http://localhost:%s/api", port)
 	u.ErrorLogger.Fatal(http.ListenAndServe(":"+port, c))
 }

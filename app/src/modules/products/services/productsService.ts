@@ -181,7 +181,7 @@ export async function deleteProductCharacteristics(ids: GetProductCharacteristic
 
         return apiResponse(
             true,
-            data.message,
+            data.message || 'Produto deletado com sucesso!',
             data.data || []
         );
 

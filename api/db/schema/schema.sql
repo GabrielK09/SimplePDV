@@ -42,7 +42,7 @@ CREATE TABLE public.products (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_productS_active_name ON products(name) WHERE deleted_at IS NULL;
+CREATE INDEX idx_products_active_name ON products(name) WHERE deleted_at IS NULL;
 
 CREATE TYPE sizes AS ENUM ('PP', 'P', 'M', 'G', 'GG', 'XG', 'XGG', 'EG', 'EGG', 'O');
 

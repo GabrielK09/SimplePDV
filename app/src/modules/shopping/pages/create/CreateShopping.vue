@@ -331,7 +331,7 @@
         @close="showInformLoadComponent = !$event"
     />
 
-    <PayMentSale
+    <PayMentShopping
         v-if="showPayMentForms"
         :shopping-id="shoppingPrePayLoad.id"
         :total-sale="shoppingPrePayLoad.total_shopping"
@@ -356,7 +356,7 @@
     import CreateProductComponent from 'src/components/Products/CreateComponent/CreateProductComponent.vue';
     import InformLoad from 'src/components/Shopping/InformLoad.vue';
     import { useRoute, useRouter } from 'vue-router';
-    import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
+    import PayMentShopping from 'src/components/PayMent/Pay/PayMentModal.vue';
     import QSelectGridTable from 'src/components/Products/UseGrid/QTable/QSelectGridTable.vue';
     import { createshopping, getShoppingById, updateShoppingDetails } from '../../services/shoppingService';
 
@@ -589,7 +589,7 @@
             'info',
             'Produto adicionado com sucesso!'
         );
-            
+        
         if (productStockData.product_with_characteristics !== null)
         {
             const characteristics = productStockData.product_with_characteristics;
@@ -666,14 +666,18 @@
             );
         };
 
-        productsStockData.value = res.data.map((c: ProductResponse) => ({
-            id: c.product.id,
-            name: c.product.name,
-            price: c.product.price,
-            qtde: c.product.qtde,
-            commission: c.product.commission,
-            product_with_characteristics: c.characteristics
-        }));
+        // productsStockData.value = res.data.map((c: ProductResponse) => ({
+        //     id: c.product.id,
+        //     name: c.product.name,
+        //     price: c.product.price,
+        //     qtde: c.product.qtde,
+        //     commission: c.product.commission,
+        //     product_with_characteristics: c.characteristics
+        // }));
+
+        console.log(res.data);
+
+        productsStockData.value = res.data;
                 
         allProductsStockData.value = [...productsStockData.value];
     };

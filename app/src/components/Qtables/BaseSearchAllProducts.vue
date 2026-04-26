@@ -129,7 +129,8 @@
 
     const selectedProductsIds = ref<number[]>([]);
     const selectedProductsId = ref<number | null>(null);
-    const indexOfProductHaveCharacteristics = ref<number | null>();
+
+    const idOfProductHaveCharacteristics = ref<number | null>();
     
     const confirm = ref<boolean>(true);
     const showSizeGrid = ref<boolean>(false);
@@ -176,7 +177,7 @@
 
     const closeQSelectGridTable = (event: boolean) => {
         propsComponent.typeSearch === 'single' 
-            ?  selectedProductsId.value = null
+            ? selectedProductsId.value = null
             : selectedProductsIds.value = [];
 
         showSizeGrid.value = event;
@@ -193,17 +194,20 @@
     });
 
     const getAllProducts = async (perPager: number) => {
-        const res: any[] = (await getAll(perPager)).data;
+        const res = (await getAll(perPager));
 
-        const formatedProducts: ProductContract[] = res.map(r => ({
-            id: r.product.id,
-            name: r.product.name,
-            commission: r.product.commission,
-            price: r.product.price,
+        const data = res.data;
+        console.log(data);
+
+        const formatedProducts: ProductContract[] = data.map((r: ProductContract) => ({
+            id: r.id,
+            name: r.name,
+            commission: r.commission,
+            price: r.price,
             qtde: 1,
-            deleted_at: r.product.deleted_at,
-            use_grid: r.product.use_grid,
-            product_with_characteristics: r.characteristics,
+            deleted_at: r.deleted_at,
+            use_grid: r.use_grid,
+            product_with_characteristics: r.product_with_characteristics
 
         })).filter((r: ProductContract) => r.deleted_at === null);
 
@@ -213,7 +217,7 @@
     };
 
     const filterProducts = () => {
-        products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : null);
+        products.value = allProducts.value.filter(product => product.name ? product.name.toLowerCase().includes(searchInput.value) : []);
     };
 
     const selectedProducts = computed<SaleItemContract[]>(() => {        
@@ -234,39 +238,30 @@
         (ids) => {
             const actionBar = document.getElementById('action_bar') as HTMLElement;
 
-            if(actionBar && ids.length > 0)
+            if(actionBar)
             {                
-                actionBar.style.display = 'flex';
-            } else {
-                actionBar.style.display = 'none';  
+                actionBar.style.display = ids.length > 0 ? 'flex' : 'none';
             };
-        }
-    )
+            
+            ids.forEach(i => {
+                const productData = products.value.find(p => p.id === i);
 
-    watch(selectedProducts, (newProducts) => {
-        newProducts.forEach(p => {            
-            if(p.product_with_characteristics !== null && p.use_grid) 
-            {   
-                const index = newProducts.findIndex(item => item.id === p.id);
-
-                if (index > -1)
+                if(productData?.use_grid && productData?.product_with_characteristics !== null)
                 {
-                    indexOfProductHaveCharacteristics.value = index;
+                    idOfProductHaveCharacteristics.value = productData.id;
 
-                    productCharacteristics.value = p.product_with_characteristics;
+                    productCharacteristics.value = productData.product_with_characteristics;
 
-                    showSizeGrid.value = true;
+                    showSizeGrid.value = true;   
                 };
-            };
-        });
-    }, {    
-        immediate: true 
-    });
+            });
+        }
+    );
 
     const handelSelectedGrid = (grid: ProductCharacteristicsContract) => {    
-        if(indexOfProductHaveCharacteristics.value < 0) return;
+        if(idOfProductHaveCharacteristics.value < 0) return;
 
-        const oldProductData = selectedProducts.value[indexOfProductHaveCharacteristics.value];
+        const oldProductData = selectedProducts.value.find(p => p.id === idOfProductHaveCharacteristics.value);
 
         const normalizedProduct: SaleItemContract = {
             id: oldProductData.id,
@@ -282,7 +277,17 @@
             }]
         };
 
-        selectedProducts.value[indexOfProductHaveCharacteristics.value] = normalizedProduct;
+        let newProduct = selectedProducts.value.find(p => p.id === idOfProductHaveCharacteristics.value);
+
+        newProduct = {
+            id: normalizedProduct.id,
+            name: normalizedProduct.name,
+            price: normalizedProduct.price,
+            product_id: normalizedProduct.product_id,
+            product_with_characteristics: normalizedProduct.product_with_characteristics,
+            qtde: normalizedProduct.qtde,
+            use_grid: normalizedProduct.use_grid
+        };
         
         showSizeGrid.value = false;
     };

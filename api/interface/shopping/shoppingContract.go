@@ -113,7 +113,6 @@ func GetAll() ([]ShoppingContract, error) {
 			operation,
 			total_shopping,
 			status
-
 		FROM			
 			shopping
 	`
@@ -172,9 +171,8 @@ func (s *ShoppingContract) Create() (int, error) {
 		`
 			INSERT INTO shopping
 				(load, operation, total_shopping)
-
-			VALUES($1, 'Entrada', $2)
-
+			VALUES
+				($1, 'Entrada', $2)
 			RETURNING
 				id
 		`,
@@ -221,8 +219,8 @@ func (s *ShoppingContract) Create() (int, error) {
 				`
 					INSERT INTO shopping_itens
 						(shopping_id, product_id, name, qtde_purchased, purchased_value)
-
-					VALUES($1, $2, $3, $4, $5)
+					VALUES
+						($1, $2, $3, $4, $5)
 				`,
 				s.Id,
 				p.ProductId,
@@ -243,8 +241,8 @@ func (s *ShoppingContract) Create() (int, error) {
 				`
 					INSERT INTO shopping_itens
 						(shopping_id, product_id, name, qtde_purchased, purchased_value)
-
-					VALUES($1, $2, $3, $4, $5)
+					VALUES	
+						($1, $2, $3, $4, $5)
 				`,
 				s.Id,
 				p.ProductId,
@@ -278,10 +276,8 @@ func Show(shoppingId int) (*ShoppingContract, error) {
 				operation,
 				status,
 				total_shopping
-				
 			FROM
 				shopping
-
 			WHERE
 				id = $1
 		`,
@@ -315,7 +311,6 @@ func ShowShoppingItens(shopingId int) (*[]ShoppingItenContract, error) {
 				purchased_value
 			FROM
 				shopping_itens
-
 			WHERE
 				shopping_id = $1
 		`,
@@ -362,7 +357,6 @@ func ShowShoppingGridItens(shopingId, productId int) (*[]productcharacteristics.
 				grid_qtde
 			FROM
 				shopping_itens_grid
-
 			WHERE
 				shopping_id = $1 AND
 				product_id = $2
@@ -404,10 +398,8 @@ func checkExistLoad(load int) (bool, error) {
 		`
 			SELECT
 				id
-
 			FROM
 				shopping
-
 			WHERE
 				load = $1
 		`,
@@ -424,31 +416,6 @@ func checkExistLoad(load int) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func ReturnLastShoppingLoad() (int, error) {
-	var shoppingId int
-
-	if err := conn.QueryRow(
-		ctx,
-		`
-			SELECT
-				load
-			FROM
-				shopping
-
-			ORDER BY
-				load DESC
-
-			LIMIT 
-				1
-		`,
-	).Scan(&shoppingId); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		u.ErrorLogger.Println("Erro ao conferir o ultimo ID do compras: ", err)
-		return 0, err
-	}
-
-	return shoppingId, nil
 }
 
 func (s *ShoppingContract) UpdateShopping() error {
@@ -471,15 +438,12 @@ func (s *ShoppingContract) UpdateShopping() error {
 					`
 						UPDATE
 							shopping_itens_grid
-					
 						SET
 							grid_qtde = $2
-		
 						WHERE
 							shopping_id = $1 AND 
 							size_saled = $3 AND
 							product_id = $4
-							
 					`,
 					s.Id,
 					c.GridQtde,
@@ -497,7 +461,6 @@ func (s *ShoppingContract) UpdateShopping() error {
 					`
 						UPDATE
 							shopping_itens
-					
 						SET
 							qtde_purchased = (
 								SELECT
@@ -511,7 +474,6 @@ func (s *ShoppingContract) UpdateShopping() error {
 									size_saled = $2 AND 
 									product_id = $3
 							)
-								
 						WHERE
 							shopping_id = $1 AND 
 							product_id = $3
@@ -534,15 +496,12 @@ func (s *ShoppingContract) UpdateShopping() error {
 				`
 					UPDATE
 						shopping_itens
-				
 					SET
 						qtde_purchased = $2,
-						Purchased_Value = $3
-	
+						purchased_value = $3
 					WHERE
 						shopping_id = $1 AND
 						product_id = $4
-						
 				`,
 				s.Id,
 				p.QtdePurchased,

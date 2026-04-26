@@ -60,9 +60,9 @@ func HandleAuth(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&bodyUserData); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		resp := responsehelper.Response(false, err, "Erro ao processar os dados.")
+		u.ErrorLogger.Println("Erro ao processar os dados:", err)
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
 		return
 	}
 

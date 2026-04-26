@@ -6,7 +6,6 @@ import (
 	responsehelper "myApi/helpers/response"
 	"myApi/interface/product"
 	_ "myApi/interface/product/productCharacteristics"
-	productcharacteristics "myApi/interface/product/productCharacteristics"
 
 	"net/http"
 	"strconv"
@@ -15,11 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v5"
 )
-
-type ProductWithCharacteristics struct {
-	Product         product.ProductContract                                 `json:"product"`
-	Characteristics []productcharacteristics.ProductCharacteristicsContract `json:"characteristics"`
-}
 
 func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -46,13 +40,10 @@ func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		resp := responsehelper.Response(false, nil, "Método não permetido.")
 
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
 		return
 	}
-
-	var productsWithCharacteristics []ProductWithCharacteristics
 
 	products, err := product.GetAll(perPage)
 
@@ -63,30 +54,8 @@ func HandleGetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productCharacteristics, err := productcharacteristics.GetAll()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar todos os produtos."))
-		return
-	}
-
-	characteristicsMap := make(map[int][]productcharacteristics.ProductCharacteristicsContract)
-
-	for _, c := range productCharacteristics {
-		characteristicsMap[c.ProductId] = append(characteristicsMap[c.ProductId], c)
-	}
-
-	for _, p := range products {
-		productsWithCharacteristics = append(productsWithCharacteristics, ProductWithCharacteristics{
-			Product:         p,
-			Characteristics: characteristicsMap[p.Id],
-		})
-	}
-
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responsehelper.Response(true, productsWithCharacteristics, "Todos os produtos cadastrados."))
+	json.NewEncoder(w).Encode(responsehelper.Response(true, products, "Todos os produtos cadastrados."))
 }
 
 func HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -233,17 +202,6 @@ func HandleGetByIdProduct(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar o produto."))
 		return
 	}
-
-	allProductCharacteristics, err := productcharacteristics.GetAllByProductId(productData.Id)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao retornar a grade do produto."))
-		return
-	}
-
-	productData.ProductWithCharacteristics = allProductCharacteristics
 
 	w.WriteHeader(http.StatusOK)
 

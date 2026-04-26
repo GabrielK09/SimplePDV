@@ -33,30 +33,6 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := payMents.Validate(); len(err) > 0 {
-		u.ErrorLogger.Println("Erro ao validar o pagamento da compra.")
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao validar o pagamento da compra."))
-		return
-	}
-
-	var totalPaide float64
-
-	for _, p := range payMents.Species {
-		totalPaide += p.AmountPaid
-	}
-
-	if err := processpayment.PayMentShoppingOrSale(payMents, totalPaide); err != nil {
-		u.ErrorLogger.Println("Erro ao pagar a compra/venda: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar o pagamento da venda."))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-
 	if payMents.SaleId > 0 {
 		label = "Venda"
 	}
@@ -65,21 +41,53 @@ func HandlePutPaySaleOrShopping(w http.ResponseWriter, r *http.Request) {
 		label = "Compra"
 	}
 
+	if err := payMents.Validate(); len(err) > 0 {
+		u.ErrorLogger.Println("Erro ao validar o pagamento da compra.")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao validar o pagamento da compra."))
+		return
+	}
+
+	if err := processpayment.PayMentShoppingOrSale(r.Context(), payMents); err != nil {
+		u.ErrorLogger.Printf("Erro ao pagar a %s: %s", label, err)
+		w.WriteHeader(http.StatusInternalServerError)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, err, fmt.Sprintf("Erro ao processar o pagamento da %s.", label)))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
 	json.NewEncoder(w).Encode(responsehelper.Response(true, payMents, fmt.Sprintf("%s concluída com sucesso!", label)))
 }
 
 func HandlePutCancelSaleOrShopping(w http.ResponseWriter, r *http.Request) {
 	u.InfoLogger.Println("Called HandlePutCancelSaleOrShopping")
 
-	var label string
-	var cancelBody processpayment.CancelContract
+	if r.Method != http.MethodPatch {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Método não permetido."))
+		return
+	} // Erro de método da rota
+
+	var cancelBody processpayment.CancelContract
 	if err := json.NewDecoder(r.Body).Decode(&cancelBody); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
 		json.NewEncoder(w).Encode(responsehelper.Response(false, err, "Erro ao processar os dados."))
 		return
 	}
+
+	if cancelBody.SaleId > 0 && cancelBody.ShoppingId > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, nil, "Uma venda e uma compra não podem ser canceladas ao mesmo tempo."))
+		return
+	}
+
+	var label string
 
 	if cancelBody.SaleId > 0 {
 		label = "Venda"
@@ -89,10 +97,14 @@ func HandlePutCancelSaleOrShopping(w http.ResponseWriter, r *http.Request) {
 		label = "Compra"
 	}
 
-	if err := processpayment.CancelSaleOrShopping(cancelBody); err != nil {
+	if err := processpayment.CancelSaleOrShopping(r.Context(), cancelBody); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		u.ErrorLogger.Println("Erro no CancelSaleOrShopping:", err)
 
-		json.NewEncoder(w).Encode(responsehelper.Response(false, err, fmt.Sprintf("Erro ao cancelar %s", strings.ToLower(label))))
+		errorsField := make(map[string]string)
+		errorsField["cancel"] = fmt.Sprintf("%s", err)
+
+		json.NewEncoder(w).Encode(responsehelper.Response(false, errorsField, fmt.Sprintf("Erro ao cancelar %s", strings.ToLower(label))))
 		return
 	}
 

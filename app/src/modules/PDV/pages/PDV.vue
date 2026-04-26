@@ -245,7 +245,7 @@
     import BaseSearchAllProducts from 'src/components/Qtables/BaseSearchAllProducts.vue';
     import PayMentForms from 'src/components/PayMent/PayMentForms/PayMentForms.vue';
     import QDialogConfirm from 'src/helpers/QDialog/Confirm/QDialogConfirm.vue';
-    import PayMentSale from 'src/components/PayMent/Pay/PayMentSale.vue';
+    import PayMentSale from 'src/components/PayMent/Pay/PayMentModal.vue';
     import { getSaleDetailsById, insertNewItens, saveSaleService } from '../services/pdvService';
     import { useNotify } from 'src/helpers/QNotify/useNotify';
     import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';

@@ -174,26 +174,23 @@ func (p *ProductContract) Update() error {
 }
 
 func Show(id int) (*ProductContract, error) {
-	query := `
-		SELECT
-			id,
-			name, 
-			price, 
-			qtde, 
-			commission, 
-			use_grid 
-		FROM
-			products
-
-		WHERE
-			id = $1
-	`
-
 	var p ProductContract
 
 	if err := conn.QueryRow(
 		context.Background(),
-		query,
+		`
+			SELECT
+				id,
+				name, 
+				price, 
+				qtde, 
+				commission, 
+				use_grid 
+			FROM
+				products
+			WHERE
+				id = $1
+		`,
 		id,
 	).Scan(
 		&p.Id,
@@ -204,6 +201,19 @@ func Show(id int) (*ProductContract, error) {
 		&p.UseGrid,
 	); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
+	}
+
+	if p.UseGrid {
+		productGrids, err := productcharacteristics.GetAllByProductId(p.Id)
+
+		if err != nil {
+			u.ErrorLogger.Println("Erro ao consultar a grade dos produtos:", err)
+			return nil, err
+		}
+
+		for _, grid := range productGrids {
+			p.ProductWithCharacteristics = append(p.ProductWithCharacteristics, grid)
+		}
 	}
 
 	return &p, nil
@@ -283,6 +293,15 @@ func ShowByName(productName string) ([]ProductContract, error) {
 func GetAll(perPage any) ([]ProductContract, error) {
 	var products []ProductContract
 
+	tx, err := conn.Begin(ctx)
+
+	if err != nil {
+		u.ErrorLogger.Println("Erro ao iniciar a transição:", err)
+		return nil, err
+	}
+
+	defer tx.Rollback(ctx)
+
 	query := `
 		SELECT
 			id,
@@ -290,9 +309,7 @@ func GetAll(perPage any) ([]ProductContract, error) {
 			price,
 			qtde,           
 			commission,
-			use_grid,
-			deleted_at
-
+			use_grid
 		FROM
 			products
 
@@ -301,21 +318,14 @@ func GetAll(perPage any) ([]ProductContract, error) {
 	`
 
 	var rows pgx.Rows
-	var err error
 
 	if perPage == "all" {
-		rows, err = conn.Query(ctx, query)
+		rows, err = tx.Query(ctx, query)
 	} else {
 		query += " LIMIT $1"
 
-		rows, err = conn.Query(ctx, query)
+		rows, err = tx.Query(ctx, query, perPage)
 	}
-
-	rows, err = conn.Query(
-		ctx,
-		query,
-		perPage,
-	)
 
 	if err != nil {
 		u.ErrorLogger.Println("Erro ao realizar a query:", err)
@@ -334,13 +344,38 @@ func GetAll(perPage any) ([]ProductContract, error) {
 			&p.Qtde,
 			&p.Commission,
 			&p.UseGrid,
-			&p.DeletedAt,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao ler os dados do select:", err)
 			return nil, err
 		}
 
 		products = append(products, p)
+	}
+
+	for i := range products {
+		productID := products[i].Id
+
+		if products[i].UseGrid {
+			grids, err := productcharacteristics.GetAllByProductId(productID)
+ 
+			if err != nil {
+				u.ErrorLogger.Println("Erro ao localizar os dados da grade do produto:", err)
+				return nil, err
+			}
+
+			if len(grids) == 0 {
+				products[i].ProductWithCharacteristics = nil
+
+			} else {
+				products[i].ProductWithCharacteristics = grids
+
+			}
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		u.ErrorLogger.Println("Erro ao commitar:", err)
+		return nil, err
 	}
 
 	return products, nil
@@ -368,20 +403,16 @@ func Delete(id int, deletedAt time.Time) error {
 		return fmt.Errorf("Produto não localizado.")
 	}
 
-	queryUpdateDeletedAt := `
-		UPDATE
-			products
-
-		SET
-			deleted_at = $2
-
-		WHERE 
-			id = $1
-	`
-
 	if _, err = conn.Exec(
 		ctx,
-		queryUpdateDeletedAt,
+		`
+			UPDATE
+				products
+			SET
+				deleted_at = $2
+			WHERE 
+				id = $1
+		`,
 		id,
 		deletedAt,
 	); err != nil {
@@ -389,20 +420,16 @@ func Delete(id int, deletedAt time.Time) error {
 		return err
 	}
 
-	queryUpdateGridDeletedAt := `
-		UPDATE
-			product_grids
-
-		SET
-			deleted_at = $2
-
-		WHERE 
-			product_id = $1
-	`
-
 	if _, err = conn.Exec(
 		ctx,
-		queryUpdateGridDeletedAt,
+		`
+			UPDATE
+				product_grids
+			SET
+				deleted_at = $2
+			WHERE 
+				product_id = $1
+		`,
 		id,
 		deletedAt,
 	); err != nil {
@@ -428,33 +455,17 @@ func Active(id int, updatedAt time.Time) error {
 
 	defer tx.Rollback(ctx)
 
-	product, err := Show(id)
-
-	if err != nil {
-		u.ErrorLogger.Println("Ocorreu um erro ao consultar o produto: ", err)
-		return err
-	}
-
-	if product == nil {
-		u.ErrorLogger.Println("Produto não localizado.")
-		return fmt.Errorf("Produto não localizado.")
-	}
-
-	queryActiveProduct := `
-		UPDATE
-			products
-
-		SET
-			updated_at = $2,
-			deleted_at = NULL
-
-		WHERE 
-			id = $1
-	`
-
-	if _, err = conn.Exec(
+	if _, err = tx.Exec(
 		ctx,
-		queryActiveProduct,
+		`
+			UPDATE
+				products
+			SET
+				updated_at = $2,
+				deleted_at = NULL
+			WHERE 
+				id = $1
+		`,
 		id,
 		updatedAt,
 	); err != nil {
@@ -470,7 +481,7 @@ func Active(id int, updatedAt time.Time) error {
 	return nil
 }
 
-func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grid *ProductGrids) error {
+func DiscountedQtde(ctx context.Context, tx pgx.Tx, productID, qtde int, haveGrid bool, grid *ProductGrids) error {
 	if !haveGrid && qtde <= 0 {
 		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
@@ -488,22 +499,21 @@ func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde in
 				WHERE	
 					id = $1
 			`,
-			p.Id,
+			productID,
 			qtde,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao descontar a qtde:", err)
 			return err
 		}
+
 	} else {
 		if _, err := tx.Exec(
 			ctx,
 			`
 				UPDATE	
 					product_grids
-
 				SET
 					grid_qtde = grid_qtde - $3
-
 				WHERE	
 					size = $1 AND
 					product_id = $2
@@ -533,7 +543,7 @@ func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde in
 				WHERE
 					id = $1
 			`,
-			p.Id,
+			productID,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao descontar a qtde:", err)
 			return err
@@ -543,7 +553,7 @@ func (p *ProductContract) DiscountedQtde(ctx context.Context, tx pgx.Tx, qtde in
 	return nil
 }
 
-func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, haveGrid bool, grid *ProductGrids) error {
+func AddQtde(ctx context.Context, tx pgx.Tx, productID, qtde int, haveGrid bool, grid *ProductGrids) error {
 	if !haveGrid && qtde <= 0 {
 		return fmt.Errorf("Qtde inválida: %d", qtde)
 	}
@@ -561,7 +571,7 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, have
 				WHERE	
 					id = $1
 			`,
-			p.Id,
+			productID,
 			qtde,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao adicionar a qtde:", err)
@@ -606,7 +616,7 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, have
 				WHERE
 					id = $1
 			`,
-			p.Id,
+			productID,
 		); err != nil {
 			u.ErrorLogger.Println("Erro ao adicionar a qtde:", err)
 			return err
@@ -617,7 +627,6 @@ func (p *ProductContract) AddQtde(ctx context.Context, tx pgx.Tx, qtde int, have
 }
 
 // Processamento de qtdes futuras e reservadas
-
 func VerifyQtdes() (*VerifyQtde, error) {
 	var qtdesData VerifyQtde
 

@@ -198,6 +198,7 @@
 
     const nameUpper = computed({
         get: () => product.value.name,
+
         set: (val: string) => {
             product.value.name = val.toUpperCase();
         }
@@ -214,7 +215,6 @@
                 notify(
                     'positive',
                     res.message
-
                 );
 
                 if(product.value.use_grid && props.productId > 0)
@@ -237,8 +237,8 @@
                     };
                 };
 
-                internalDialog.value = !internalDialog.value;
-
+                closeUpdate();
+    
             } else {
                 notify(
                     'negative',
@@ -289,10 +289,8 @@
 
                     return;
                 };
-
-                console.log(res);
-                
-                product.value.product_with_characteristics = res.data;
+                                
+                product.value.product_with_characteristics = res.data || [];
             };
         }
     );
@@ -327,8 +325,7 @@
             return;
         };
 
-        const productData: ProductContract = res.data.product;
-        const productCharacteristicsData: ProductCharacteristicsContract[] = res.data.characteristics || [];
+        const productData: ProductContract = res.data;
 
         product.value = {
             id: productData.id,
@@ -337,7 +334,7 @@
             qtde: productData.qtde,
             commission: productData.commission,
             use_grid: productData.use_grid,
-            product_with_characteristics: productCharacteristicsData
+            product_with_characteristics: productData.product_with_characteristics || []
         };
     });
 
